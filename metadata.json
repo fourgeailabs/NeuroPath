@@ -1,0 +1,6 @@
+{
+  "name": "NeuroPath",
+  "description": "Adaptive, sensory-friendly educational platform designed for neurodiverse and neurotypical learners with interest-based lessons, state curriculum standards, 4-7-8 breathing & fidget sensory tools, TTS word highlighting, and AI-powered personalized tutoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Center NeuroPath symbol inside the 66dp safe zone (21dp to 87dp) -->
+    <!-- Brain / Lightbulb dome outline -->
+    <path
+        android:pathData="M43,30 C35,33 30,41 30,50 C30,57 34,63 39,66 C41,67 42,70 42,72 L42,76 C42,77.5 43.5,79 45,79 L63,79 C64.5,79 66,77.5 66,76 L66,72 C66,70 67,67 69,66 C74,63 78,57 78,50 C78,41 73,33 65,30 C58,27 50,27 43,30 Z"
+        android:strokeWidth="3.5"
+        android:strokeColor="#FFFFFF"
+        android:fillColor="#22FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    
+    <!-- Base screws of the bulb -->
+    <path
+        android:pathData="M46,82 L62,82 M48,85 L60,85"
+        android:strokeWidth="2.5"
+        android:strokeColor="#FEE180"
+        android:strokeLineCap="round" />
+
+    <!-- Neurodiversity Infinity Loop Filament inside the bulb -->
+    <path
+        android:pathData="M43,53 C43,47 48,46 51,51 C54,56 57,58 61,54 C64,50 67,52 65,57 C63,61 58,58 55,54 C52,49 49,47 45,51 C43,53 43,53 43,53 Z"
+        android:fillColor="#FEE180"
+        android:strokeWidth="1"
+        android:strokeColor="#FFEAA7" />
+
+    <!-- Sparkling star badge on top right -->
+    <path
+        android:pathData="M73,28 L75,34 L81,36 L75,38 L73,44 L71,38 L65,36 L71,34 Z"
+        android:fillColor="#F6D365" />
+        
+    <!-- Tiny spark on top left -->
+    <path
+        android:pathData="M33,32 L34.5,36 L38.5,37.5 L34.5,39 L33,43 L31.5,39 L27.5,37.5 L31.5,36 Z"
+        android:fillColor="#80E8DD" />
+</vector>
