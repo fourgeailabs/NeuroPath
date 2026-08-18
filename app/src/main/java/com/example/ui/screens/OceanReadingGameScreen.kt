@@ -93,7 +93,7 @@ fun OceanReadingGameScreen(
 
     // State for Fill-In-The-Blank (Cloze)
     val userAnswers = remember(currentPassage.id) { mutableStateMapOf<Int, String>() }
-    var activeSentenceIndex by remember(currentPassage.id) { mutableIntStateOf(0) }
+    var selectedSentenceId by remember(currentPassage.id) { mutableStateOf<Int?>(currentPassage.clozeSentences.firstOrNull()?.id) }
     var showHintForSentenceId by remember(currentPassage.id) { mutableStateOf<Int?>(null) }
     var isClozeCompleted by remember(currentPassage.id) { mutableStateOf(false) }
 
@@ -105,6 +105,13 @@ fun OceanReadingGameScreen(
     val oceanBluePrimary = Color(0xFF0077B6)
     val oceanTeal = Color(0xFF48CAE4)
     val oceanDeepBg = Color(0xFFE8F6FA)
+
+    // Pre-parse the 8x8 grid letters
+    val parsedGrid: List<List<String>> = remember(currentPassage.id) {
+        currentPassage.letterGrid.map { row ->
+            row.split(" ").filter { it.isNotBlank() }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -317,20 +324,30 @@ fun OceanReadingGameScreen(
                     val userAnswer = userAnswers[sentence.id]
                     val isCorrect = userAnswer?.equals(sentence.correctWord, ignoreCase = true) == true
                     val isWrong = userAnswer != null && !isCorrect
+                    val isTargetSelected = selectedSentenceId == sentence.id
 
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable {
+                                selectedSentenceId = sentence.id
+                                viewModel.triggerHapticPop()
+                            }
                             .testTag("cloze_card_${sentence.id}"),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = when {
                                 isCorrect -> Color(0xFFE8F5E9)
                                 isWrong -> Color(0xFFFFEBEE)
+                                isTargetSelected -> oceanTeal.copy(alpha = 0.15f)
                                 else -> MaterialTheme.colorScheme.surface
                             }
                         ),
-                        border = if (isCorrect) androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF4CAF50)) else null
+                        border = when {
+                            isCorrect -> androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF4CAF50))
+                            isTargetSelected -> androidx.compose.foundation.BorderStroke(2.dp, oceanBluePrimary)
+                            else -> null
+                        }
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -362,6 +379,19 @@ fun OceanReadingGameScreen(
                                             Text("Mastered", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                                         }
                                     }
+                                } else if (isTargetSelected) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = oceanBluePrimary.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            "Active Blank",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = oceanBluePrimary,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
                             }
 
@@ -380,12 +410,20 @@ fun OceanReadingGameScreen(
                                 )
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (userAnswer != null) oceanBluePrimary else oceanTeal.copy(alpha = 0.25f),
+                                    color = when {
+                                        userAnswer != null -> oceanBluePrimary
+                                        isTargetSelected -> oceanBluePrimary.copy(alpha = 0.25f)
+                                        else -> oceanTeal.copy(alpha = 0.25f)
+                                    },
+                                    border = if (isTargetSelected) androidx.compose.foundation.BorderStroke(1.5.dp, oceanBluePrimary) else null,
                                     modifier = Modifier
                                         .padding(horizontal = 4.dp, vertical = 2.dp)
                                         .clickable {
-                                            // Reset answer for this sentence
-                                            userAnswers.remove(sentence.id)
+                                            if (userAnswer != null) {
+                                                userAnswers.remove(sentence.id)
+                                            }
+                                            selectedSentenceId = sentence.id
+                                            viewModel.triggerHapticPop()
                                         }
                                 ) {
                                     Text(
@@ -484,11 +522,18 @@ fun OceanReadingGameScreen(
                                     color = if (isPlaced) MaterialTheme.colorScheme.surfaceVariant else oceanBluePrimary,
                                     modifier = Modifier
                                         .clickable(enabled = !isPlaced) {
-                                            // Find first unanswered sentence or replace
-                                            val unanswered = currentPassage.clozeSentences.find { userAnswers[it.id] == null }
-                                            if (unanswered != null) {
-                                                userAnswers[unanswered.id] = vocab.word
+                                            // Place in currently selected sentence or first empty sentence
+                                            val targetSentence = currentPassage.clozeSentences.find { it.id == selectedSentenceId }
+                                                ?: currentPassage.clozeSentences.find { userAnswers[it.id] == null }
+                                            
+                                            if (targetSentence != null) {
+                                                userAnswers[targetSentence.id] = vocab.word
                                                 viewModel.triggerHapticPop()
+                                                
+                                                // Advance selected sentence to next empty
+                                                val nextEmpty = currentPassage.clozeSentences.find { userAnswers[it.id] == null && it.id != targetSentence.id }
+                                                selectedSentenceId = nextEmpty?.id
+
                                                 // Check if all correct
                                                 val allCorrect = currentPassage.clozeSentences.all {
                                                     userAnswers[it.id]?.equals(it.correctWord, ignoreCase = true) == true
@@ -653,10 +698,32 @@ fun OceanReadingGameScreen(
                                                     .clickable {
                                                         viewModel.triggerHapticPop()
                                                         val cell = rowIdx to colIdx
-                                                        selectedCells = if (selectedCells.contains(cell)) {
+                                                        val newSelection = if (selectedCells.contains(cell)) {
                                                             selectedCells - cell
                                                         } else {
                                                             selectedCells + cell
+                                                        }
+                                                        selectedCells = newSelection
+
+                                                        // Check if the current selection matches any target word
+                                                        val constructedWord = newSelection.mapNotNull { (r, c) ->
+                                                            parsedGrid.getOrNull(r)?.getOrNull(c)
+                                                        }.joinToString("")
+
+                                                        val matchedWord = currentPassage.wordSearchWords.find { word ->
+                                                            word.equals(constructedWord, ignoreCase = true) ||
+                                                            word.reversed().equals(constructedWord, ignoreCase = true)
+                                                        }
+
+                                                        if (matchedWord != null && foundWords[matchedWord] != true) {
+                                                            foundWords[matchedWord] = true
+                                                            selectedCells = emptyList()
+                                                            viewModel.triggerHapticSuccess()
+                                                            viewModel.speechManager.speak("Found $matchedWord!")
+                                                            if (currentPassage.wordSearchWords.all { foundWords[it] == true } && !isWordSearchCompleted) {
+                                                                isWordSearchCompleted = true
+                                                                viewModel.awardMiniGameRewards(6, 2, "OCEAN_WORD_SEARCH")
+                                                            }
                                                         }
                                                     }
                                                     .testTag("grid_cell_${rowIdx}_$colIdx")

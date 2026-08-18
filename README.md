@@ -2,7 +2,7 @@
 ### Adaptive, Sensory-Friendly Educational Platform for Neurodiverse and Curious Minds
 
 [![Build Status](https://github.com/aistudio/neuropath/actions/workflows/build.yml/badge.svg)](.github/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)](app/build.gradle.kts)
+[![Version](https://img.shields.io/badge/version-1.7.1-blue.svg)](app/build.gradle.kts)
 [![Android](https://img.shields.io/badge/Platform-Android_14_%2B-green.svg)](app/build.gradle.kts)
 [![Compose](https://img.shields.io/badge/Jetpack_Compose-M3-purple.svg)](app/build.gradle.kts)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
@@ -134,17 +134,21 @@ cd neuropath
 ```
 
 ### GitHub Actions CI
-Every commit and pull request triggers an automated workflow in `.github/workflows/build.yml` that compiles the project and generates the downloadable debug APK artifact: `neuropath-v1.7.0-debug`.
+Every commit and pull request triggers an automated workflow in `.github/workflows/build.yml` that compiles the project and generates the downloadable debug APK artifact: `neuropath-v1.7.1-debug`.
 
 ---
 
 ## 📝 Changelog & Release Notes
 
-### **v1.7.0** (Current Release)
+### **v1.7.1** (Current Release)
+* 🌊 **Ocean Reading Quest Polish**: Added dynamic targeted sentence blank selection with glowing focus indicators, interactive marine vocabulary auto-placement, and automatic word recognition upon connecting letter sequences across the 8x8 letter grid.
+* 🎨 **Creative Studio Canvas Responsiveness**: Integrated `BoxWithConstraints` for pixel-perfect relative sticker and stamp placement across different screen sizes and orientations.
+* ⚙️ **CI/CD & Version Bump**: Updated app version to v1.7.1 (versionCode 9) and updated GitHub Actions APK artifact to `neuropath-v1.7.1-debug`.
+
+### **v1.7.0**
 * 🌊 **Ocean Reading Comprehension Game**: Added interactive Deep Sea Cloze fill-in-the-blank and 8x8 sensory Word Search Grid featuring marine biology vocabulary and facts.
 * 🐉 **Mythical Creatures & Folklore Theme**: Introduced the mythic world theme, lorekeeper buddy *Ignis the Drake*, dragon/phoenix avatar items, kitsune fox & pegasus pets, and folklore lorekeeper badges.
 * 🎨 **Creative Expression Studio**: Built a dual-mode creative suite with an Art Studio drawing canvas (custom brush widths, sensory colors, themed sticker stamps) and a Story Writer (adventure prompt starters, real-time Gemini AI idea generation, and TTS read-aloud playback).
-* ⚙️ **CI/CD & Version Bump**: Updated app version to v1.7.0 (versionCode 8) and updated GitHub Actions artifact naming.
 
 ### **v1.6.0**
 * 🎨 **Vibrant Palette Theme**: Fully adopted the modern high-contrast Vibrant Palette design system with tailored token definitions (`#00629D`, `#D1E4FF`, `#FFDBCB`, `#001E2F`).

@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -348,7 +349,10 @@ fun CreativeStudioScreen(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
                 ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val canvasWidth = maxWidth
+                        val canvasHeight = maxHeight
+
                         // Drawing surface
                         Canvas(
                             modifier = Modifier
@@ -356,8 +360,8 @@ fun CreativeStudioScreen(
                                 .pointerInput(selectedColor, selectedBrushWidth, selectedStickerEmoji) {
                                     detectTapGestures { tapOffset ->
                                         if (selectedStickerEmoji != null) {
-                                            val xRatio = tapOffset.x / size.width.toFloat()
-                                            val yRatio = tapOffset.y / size.height.toFloat()
+                                            val xRatio = if (size.width > 0) (tapOffset.x / size.width.toFloat()).coerceIn(0f, 1f) else 0f
+                                            val yRatio = if (size.height > 0) (tapOffset.y / size.height.toFloat()).coerceIn(0f, 1f) else 0f
                                             placedStickers.add(
                                                 PlacedSticker(
                                                     id = System.currentTimeMillis().toString(),
@@ -441,8 +445,8 @@ fun CreativeStudioScreen(
                             Box(
                                 modifier = Modifier
                                     .padding(
-                                        start = (placed.xRatio * 300).dp.coerceAtLeast(0.dp),
-                                        top = (placed.yRatio * 300).dp.coerceAtLeast(0.dp)
+                                        start = (placed.xRatio * canvasWidth.value).dp.coerceAtLeast(0.dp),
+                                        top = (placed.yRatio * canvasHeight.value).dp.coerceAtLeast(0.dp)
                                     )
                             ) {
                                 Text(placed.emoji, fontSize = 28.sp)
