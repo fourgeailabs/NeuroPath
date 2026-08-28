@@ -466,8 +466,8 @@ fun CreativeStudioScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         IconButton(
                             onClick = {
-                                if (strokes.isNotEmpty()) strokes.removeLast()
-                                else if (placedStickers.isNotEmpty()) placedStickers.removeLast()
+                                if (strokes.isNotEmpty()) strokes.removeAt(strokes.lastIndex)
+                                else if (placedStickers.isNotEmpty()) placedStickers.removeAt(placedStickers.lastIndex)
                                 viewModel.triggerHapticPop()
                             }
                         ) {
