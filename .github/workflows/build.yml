@@ -28,10 +28,13 @@ jobs:
       - name: Decode Debug Keystore
         run: |
           if [ -f "debug.keystore.base64" ]; then
-            base64 -di debug.keystore.base64 > debug.keystore
-          else
-            echo "debug.keystore.base64 not found!"
+            base64 -d debug.keystore.base64 > debug.keystore 2>/dev/null || base64 -di debug.keystore.base64 > debug.keystore 2>/dev/null || true
           fi
+          if [ ! -f "debug.keystore" ]; then
+            echo "Generating fallback debug keystore..."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          ls -la debug.keystore
 
       - name: Build Debug APK
         run: |
