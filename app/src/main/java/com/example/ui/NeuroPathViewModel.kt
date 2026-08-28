@@ -161,6 +161,13 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _isChatGenerating = MutableStateFlow(false)
     val isChatGenerating: StateFlow<Boolean> = _isChatGenerating.asStateFlow()
+    
+    // Offline Curriculum Sync
+    private val _isDownloadingCurriculum = MutableStateFlow(false)
+    val isDownloadingCurriculum: StateFlow<Boolean> = _isDownloadingCurriculum.asStateFlow()
+
+    private val _dailyQuote = MutableStateFlow("You are capable of amazing things!")
+    val dailyQuote: StateFlow<String> = _dailyQuote.asStateFlow()
 
     // Parent PIN Gate
     private val _pinInput = MutableStateFlow("")
@@ -195,6 +202,37 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
         initDefaultChatGreeting()
+        initiateOfflineCurriculumSync()
+        fetchDailyQuote()
+    }
+
+    fun initiateOfflineCurriculumSync() {
+        if (_isDownloadingCurriculum.value) return
+        _isDownloadingCurriculum.value = true
+        viewModelScope.launch {
+            // Simulate the time to sync data from K12.com to offline local storage
+            delay(15000)
+            _isDownloadingCurriculum.value = false
+        }
+    }
+
+    fun fetchDailyQuote() {
+        viewModelScope.launch {
+            val theme = getActiveTheme()
+            val prompt = "Give a 1-sentence encouraging, friendly, and simple motivational quote for a child, using a ${theme.title} theme. Keep it very easy to read and understand."
+            val quote = GeminiClient.generateChatReply(
+                conversationHistory = listOf("user" to prompt),
+                systemPrompt = "You are a warm, supportive tutor for young kids.",
+                useThinkingPro = false
+            )
+            if (quote.isNotBlank()) {
+                _dailyQuote.value = quote
+            }
+        }
+    }
+
+    fun readDailyQuote() {
+        speechManager.speak(_dailyQuote.value)
     }
 
     fun getActiveTheme(): WorldTheme {
@@ -271,6 +309,34 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         _showErrorCoach.value = false
         navigateTo(AppScreen.MASTERY_JOURNEY)
         readCurrentQuestion()
+    }
+
+    fun getAiHelpForCurrentTeachStep() {
+        viewModelScope.launch {
+            val step = _activeLesson.value?.teachSteps?.getOrNull(_currentTeachStep.value) ?: return@launch
+            speechManager.speak("Thinking of a good way to explain this...")
+            val prompt = "Explain the concept of '${step.title}' to a child who is struggling to understand it. Use simple terms and the ${getActiveTheme().title} theme. Keep it to 2 short sentences."
+            val explanation = GeminiClient.generateChatReply(
+                conversationHistory = listOf("user" to prompt),
+                systemPrompt = "You are a warm, supportive tutor for young kids.",
+                useThinkingPro = false
+            )
+            speechManager.speak(explanation)
+        }
+    }
+
+    fun getAiHelpForCurrentQuestion() {
+        viewModelScope.launch {
+            val question = _activeLesson.value?.questions?.getOrNull(_journeyQuestionIndex.value) ?: return@launch
+            speechManager.speak("Let's look at this together...")
+            val prompt = "A child needs help with this question: '${question.questionText}'. Give a small hint without giving away the direct answer. Use the ${getActiveTheme().title} theme. Keep it to 2 short sentences."
+            val explanation = GeminiClient.generateChatReply(
+                conversationHistory = listOf("user" to prompt),
+                systemPrompt = "You are a warm, supportive tutor for young kids.",
+                useThinkingPro = false
+            )
+            speechManager.speak(explanation)
+        }
     }
 
     fun readCurrentQuestion() {

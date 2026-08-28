@@ -35,7 +35,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -290,7 +290,7 @@ fun OceanReadingGameScreen(
                                     .testTag("read_passage_tts_btn")
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.VolumeUp,
+                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                     contentDescription = "Read passage aloud",
                                     tint = oceanBluePrimary
                                 )
@@ -484,7 +484,7 @@ fun OceanReadingGameScreen(
                                     }
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.VolumeUp,
+                                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                         contentDescription = "Read sentence",
                                         tint = oceanBluePrimary,
                                         modifier = Modifier.size(18.dp)

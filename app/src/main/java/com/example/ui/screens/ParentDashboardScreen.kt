@@ -32,6 +32,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -65,6 +69,7 @@ import com.example.data.model.WorldTheme
 import com.example.ui.AppScreen
 import com.example.ui.NeuroPathViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParentDashboardScreen(
     viewModel: NeuroPathViewModel,
@@ -84,6 +89,9 @@ fun ParentDashboardScreen(
     var readAloud by remember(profile) { mutableStateOf(profile.readAnswersAloud) }
     var dailyMinutes by remember(profile) { mutableIntStateOf(profile.dailyGoalMinutes) }
 
+    var expandedGrade by remember { mutableStateOf(false) }
+    var expandedState by remember { mutableStateOf(false) }
+
     val activeNeuroTypes = remember(profile.neurodivergentTypesCsv) {
         profile.neurodivergentTypesCsv.split(",").filter { it.isNotBlank() }.toMutableSet()
     }
@@ -93,7 +101,7 @@ fun ParentDashboardScreen(
     val totalFocusMinutes = progressLogs.sumOf { it.durationSeconds } / 60
     val totalQuestionsAnswered = progressLogs.sumOf { it.totalQuestions }
     val totalCorrect = progressLogs.sumOf { it.correctQuestions }
-    val overallAccuracy = if (totalQuestionsAnswered > 0) ((totalCorrect.toFloat() / totalQuestionsAnswered.toFloat()) * 100).toInt() else 100
+    val overallAccuracy = if (totalQuestionsAnswered > 0) ((totalCorrect.toFloat() / totalQuestionsAnswered.toFloat()) * 100).toInt() else 0
     val totalSensoryBreaks = progressLogs.sumOf { it.sensoryBreaksTaken }
 
     LazyColumn(
@@ -165,9 +173,9 @@ fun ParentDashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        MetricBox("⏱️ Focus Time", "${totalFocusMinutes.coerceAtLeast(14)} min", MaterialTheme.colorScheme.primaryContainer, Modifier.weight(1f))
+                        MetricBox("⏱️ Focus Time", "$totalFocusMinutes min", MaterialTheme.colorScheme.primaryContainer, Modifier.weight(1f))
                         MetricBox("🎯 Accuracy", "$overallAccuracy%", Color(0xFFD4EDDA), Modifier.weight(1f))
-                        MetricBox("🫧 Breaks Logged", "${totalSensoryBreaks + 3}", Color(0xFFD1ECF1), Modifier.weight(1f))
+                        MetricBox("🫧 Breaks Logged", "$totalSensoryBreaks", Color(0xFFD1ECF1), Modifier.weight(1f))
                     }
 
                     Spacer(Modifier.height(14.dp))
@@ -178,7 +186,7 @@ fun ParentDashboardScreen(
 
                     EducationalSubject.values().forEach { subject ->
                         val record = lessonRecords.find { it.subjectId == subject.id }
-                        val score = record?.scorePercent ?: if (subject == EducationalSubject.MATH) 90 else 75
+                        val score = record?.scorePercent ?: 0
 
                         Row(
                             modifier = Modifier
@@ -229,25 +237,30 @@ fun ParentDashboardScreen(
 
                     // Grade Level Selector
                     Text("Grade Level (Pre-K to 12th):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ExposedDropdownMenuBox(
+                        expanded = expandedGrade,
+                        onExpandedChange = { expandedGrade = !expandedGrade }
                     ) {
-                        GradeLevel.values().forEach { grade ->
-                            val isSelected = selectedGrade == grade.name
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                modifier = Modifier.clickable { selectedGrade = grade.name }
-                            ) {
-                                Text(
-                                    grade.displayName,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        OutlinedTextField(
+                            value = GradeLevel.values().find { it.name == selectedGrade }?.displayName ?: selectedGrade,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGrade) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedGrade,
+                            onDismissRequest = { expandedGrade = false }
+                        ) {
+                            GradeLevel.values().forEach { grade ->
+                                DropdownMenuItem(
+                                    text = { Text(grade.displayName) },
+                                    onClick = {
+                                        selectedGrade = grade.name
+                                        expandedGrade = false
+                                    }
                                 )
                             }
                         }
@@ -255,25 +268,30 @@ fun ParentDashboardScreen(
 
                     // State Standards Selector
                     Text("Educational State Standard:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ExposedDropdownMenuBox(
+                        expanded = expandedState,
+                        onExpandedChange = { expandedState = !expandedState }
                     ) {
-                        US_STATE_CURRICULA.forEach { stateItem ->
-                            val isSelected = selectedState == stateItem.code
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                modifier = Modifier.clickable { selectedState = stateItem.code }
-                            ) {
-                                Text(
-                                    "${stateItem.code} - ${stateItem.name}",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        OutlinedTextField(
+                            value = US_STATE_CURRICULA.find { it.code == selectedState }?.let { "${it.code} - ${it.name}" } ?: selectedState,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedState) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expandedState,
+                            onDismissRequest = { expandedState = false }
+                        ) {
+                            US_STATE_CURRICULA.forEach { stateItem ->
+                                DropdownMenuItem(
+                                    text = { Text("${stateItem.code} - ${stateItem.name}") },
+                                    onClick = {
+                                        selectedState = stateItem.code
+                                        expandedState = false
+                                    }
                                 )
                             }
                         }

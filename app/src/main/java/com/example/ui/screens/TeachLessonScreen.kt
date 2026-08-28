@@ -260,6 +260,23 @@ fun TeachLessonScreen(
                         )
                     }
                 }
+
+                Spacer(Modifier.height(16.dp))
+
+                // Get AI Help Button
+                Button(
+                    onClick = { viewModel.getAiHelpForCurrentTeachStep() },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(theme.emoji, fontSize = 18.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("I'm confused, AI Buddy help!", fontWeight = FontWeight.Bold)
+                }
             }
         }
 

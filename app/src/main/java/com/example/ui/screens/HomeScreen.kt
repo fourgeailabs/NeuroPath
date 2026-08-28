@@ -75,6 +75,8 @@ fun HomeScreen(
     val badgeItem = DEFAULT_AVATAR_SHOP_ITEMS.find { it.id == profile.equippedBadgeId }
 
     val gradeObj = GradeLevel.values().find { it.name == profile.gradeLevel } ?: GradeLevel.KINDERGARTEN
+    val isDownloadingCurriculum by viewModel.isDownloadingCurriculum.collectAsState()
+    val dailyQuote by viewModel.dailyQuote.collectAsState()
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
@@ -82,6 +84,41 @@ fun HomeScreen(
             contentPadding = PaddingValues(bottom = 90.dp, top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // 0. Offline Sync Banner
+            item {
+                AnimatedVisibility(visible = isDownloadingCurriculum) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFFF3CD),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFE8A1))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("☁️", fontSize = 20.sp)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    "Downloading K12 Curriculum...",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF856404)
+                                )
+                                Text(
+                                    "Saving lessons & videos for offline use. You can keep playing!",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF856404)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // 1. Top Header with Parent Lock & Avatar Shop Shortcut
             item {
                 Row(
@@ -474,7 +511,6 @@ fun HomeScreen(
 
                 Card(
                     modifier = Modifier
-                        .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .clickable {
                             if (activeLesson != null) {
@@ -482,29 +518,29 @@ fun HomeScreen(
                             }
                         }
                         .testTag("subject_card_${subject.id}"),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(16.dp),
+                            shape = RoundedCornerShape(12.dp),
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(54.dp)
+                            modifier = Modifier.size(42.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(subject.emoji, fontSize = 28.sp)
+                                Text(subject.emoji, fontSize = 24.sp)
                             }
                         }
 
-                        Spacer(Modifier.width(14.dp))
+                        Spacer(Modifier.width(12.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             Row(
@@ -513,21 +549,21 @@ fun HomeScreen(
                             ) {
                                 Text(
                                     subject.title,
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 if (record?.completed == true) {
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = RoundedCornerShape(6.dp),
                                         color = Color(0xFFD4EDDA)
                                     ) {
                                         Text(
                                             "✅ Mastered",
-                                            fontSize = 10.sp,
+                                            fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF155724),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                                         )
                                     }
                                 }
@@ -537,41 +573,82 @@ fun HomeScreen(
                                 activeLesson?.title ?: subject.description,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1
+                                maxLines = 1,
+                                fontSize = 11.sp
                             )
-
-                            Spacer(Modifier.height(4.dp))
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    "⚡ Standard: ${activeLesson?.stateStandardCode ?: "Aligned"}",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    "• 20 Q's Adaptive",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
+
+                        Spacer(Modifier.width(8.dp))
 
                         // Play / Launch Lesson Button
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(42.dp)
+                            modifier = Modifier.size(36.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.PlayArrow,
                                     contentDescription = "Start Lesson",
                                     tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 6. Gemini Daily Motivation Quote
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clickable { viewModel.readDailyQuote() }
+                                .testTag("read_quote_btn")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.VolumeUp,
+                                    contentDescription = "Read Quote",
+                                    tint = MaterialTheme.colorScheme.onTertiary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
+                        }
+
+                        Spacer(Modifier.width(16.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Daily Inspiration",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                dailyQuote,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
                         }
                     }
                 }

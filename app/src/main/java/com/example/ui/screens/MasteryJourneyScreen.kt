@@ -328,6 +328,24 @@ fun MasteryJourneyScreen(
             }
         }
 
+        Spacer(Modifier.height(8.dp))
+
+        if (!isSubmitted) {
+            Button(
+                onClick = { viewModel.getAiHelpForCurrentQuestion() },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(theme.emoji, fontSize = 18.sp)
+                Spacer(Modifier.width(8.dp))
+                Text("I'm confused, AI Buddy help!", fontWeight = FontWeight.Bold)
+            }
+        }
+
         // Action Button: Check Answer or Next Question
         Spacer(Modifier.height(8.dp))
 
