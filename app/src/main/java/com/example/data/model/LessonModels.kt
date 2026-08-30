@@ -8,8 +8,13 @@ data class ConceptStep(
     val tipOrFunFact: String,
     val interactivePrompt: String? = null,
     val interactiveAnswers: List<String>? = null,
-    val interactiveCorrectIndex: Int? = null
-)
+    val interactiveCorrectIndex: Int? = null,
+    val practiceOptions: List<String>? = interactiveAnswers,
+    val correctOptionIndex: Int? = interactiveCorrectIndex
+) {
+    val answersList: List<String> get() = practiceOptions ?: interactiveAnswers ?: emptyList()
+    val answerIndex: Int get() = correctOptionIndex ?: interactiveCorrectIndex ?: 0
+}
 
 data class QuestionItem(
     val id: Int,

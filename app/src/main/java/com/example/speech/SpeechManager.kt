@@ -1,11 +1,16 @@
 package com.example.speech
 
 import android.content.Context
-import android.os.Build
+import android.content.Intent
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.example.data.model.AppLanguage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,8 +22,19 @@ class SpeechManager(private val context: Context) {
     private var isInitialized = false
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    private var speechRecognizer: SpeechRecognizer? = null
+
     private val _isSpeaking = MutableStateFlow(false)
     val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
+
+    private val _isListening = MutableStateFlow(false)
+    val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
+
+    private val _currentSpokenTranscription = MutableStateFlow<String?>(null)
+    val currentSpokenTranscription: StateFlow<String?> = _currentSpokenTranscription.asStateFlow()
+
+    private val _speechTextResult = MutableStateFlow<String?>(null)
+    val speechTextResult: StateFlow<String?> = _speechTextResult.asStateFlow()
 
     private val _activeUtteranceId = MutableStateFlow<String?>(null)
     val activeUtteranceId: StateFlow<String?> = _activeUtteranceId.asStateFlow()
@@ -27,21 +43,36 @@ class SpeechManager(private val context: Context) {
     private val _highlightRange = MutableStateFlow<Pair<Int, Int>?>(null)
     val highlightRange: StateFlow<Pair<Int, Int>?> = _highlightRange.asStateFlow()
 
-    // Word index fallback for simulation or timer-based pacing
     private val _currentWordIndex = MutableStateFlow<Int>(-1)
     val currentWordIndex: StateFlow<Int> = _currentWordIndex.asStateFlow()
 
     private var speechRate: Float = 0.88f
     private var speechPitch: Float = 1.05f
+    private var currentLanguage: AppLanguage = AppLanguage.ENGLISH_US
 
     init {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
+                tts?.language = currentLanguage.locale
                 tts?.setSpeechRate(speechRate)
                 tts?.setPitch(speechPitch)
                 isInitialized = true
                 setupUtteranceListener()
+            }
+        }
+    }
+
+    fun setLanguage(languageCode: String) {
+        val appLang = AppLanguage.fromCode(languageCode)
+        currentLanguage = appLang
+        if (isInitialized) {
+            try {
+                val result = tts?.setLanguage(appLang.locale)
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts?.language = Locale.US
+                }
+            } catch (_: Exception) {
+                tts?.language = Locale.US
             }
         }
     }
@@ -70,6 +101,7 @@ class SpeechManager(private val context: Context) {
                     _activeUtteranceId.value = null
                     _highlightRange.value = null
                     _currentWordIndex.value = -1
+                    _currentSpokenTranscription.value = null
                 }
             }
 
@@ -80,6 +112,7 @@ class SpeechManager(private val context: Context) {
                     _activeUtteranceId.value = null
                     _highlightRange.value = null
                     _currentWordIndex.value = -1
+                    _currentSpokenTranscription.value = null
                 }
             }
 
@@ -95,33 +128,96 @@ class SpeechManager(private val context: Context) {
     fun speak(text: String, utteranceId: String = "neuropath_speech") {
         if (!isInitialized) return
         stop()
+        _currentSpokenTranscription.value = text
         _activeUtteranceId.value = utteranceId
         _isSpeaking.value = true
         _highlightRange.value = Pair(0, text.indexOf(' ').takeIf { it != -1 } ?: text.length)
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 
-    fun speakWordByWordWithTimer(words: List<String>, onWordAdvance: (Int) -> Unit) {
-        // Fallback for visual rhythm animation
-        var index = 0
-        val wordDurationMs = (400 / speechRate).toLong()
-        val runnable = object : Runnable {
-            override fun run() {
-                if (index < words.size && _isSpeaking.value) {
-                    onWordAdvance(index)
-                    _currentWordIndex.value = index
-                    index++
-                    mainHandler.postDelayed(this, wordDurationMs)
+    fun startListening(onTextRecognized: (String) -> Unit, onError: (String) -> Unit = {}) {
+        stop()
+        _isListening.value = true
+        _speechTextResult.value = null
+
+        mainHandler.post {
+            try {
+                if (SpeechRecognizer.isRecognitionAvailable(context)) {
+                    speechRecognizer?.destroy()
+                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+
+                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, currentLanguage.code)
+                        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                        putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak into your microphone...")
+                    }
+
+                    speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+                        override fun onReadyForSpeech(params: Bundle?) {}
+                        override fun onBeginningOfSpeech() {}
+                        override fun onRmsChanged(rmsdB: Float) {}
+                        override fun onBufferReceived(buffer: ByteArray?) {}
+                        override fun onEndOfSpeech() {
+                            _isListening.value = false
+                        }
+
+                        override fun onError(error: Int) {
+                            _isListening.value = false
+                            val errorMsg = when (error) {
+                                SpeechRecognizer.ERROR_NO_MATCH -> "No speech recognized"
+                                SpeechRecognizer.ERROR_NETWORK -> "Network required for speech"
+                                else -> "Voice assist unavailable"
+                            }
+                            onError(errorMsg)
+                        }
+
+                        override fun onResults(results: Bundle?) {
+                            _isListening.value = false
+                            val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                            val recognized = matches?.firstOrNull()
+                            if (!recognized.isNull_or_blank()) {
+                                _speechTextResult.value = recognized
+                                recognized?.let { onTextRecognized(it) }
+                            }
+                        }
+
+                        override fun onPartialResults(partialResults: Bundle?) {
+                            val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                            matches?.firstOrNull()?.let {
+                                _speechTextResult.value = it
+                            }
+                        }
+
+                        override fun onEvent(eventType: Int, params: Bundle?) {}
+                    })
+
+                    speechRecognizer?.startListening(intent)
+                } else {
+                    _isListening.value = false
+                    onError("Speech recognition not supported on this device")
                 }
+            } catch (e: Exception) {
+                _isListening.value = false
+                onError(e.message ?: "Voice assist failed")
             }
         }
-        mainHandler.post(runnable)
+    }
+
+    fun stopListening() {
+        _isListening.value = false
+        try {
+            speechRecognizer?.stopListening()
+            speechRecognizer?.destroy()
+            speechRecognizer = null
+        } catch (_: Exception) {}
     }
 
     fun stop() {
         try {
             tts?.stop()
         } catch (_: Exception) {}
+        stopListening()
         _isSpeaking.value = false
         _activeUtteranceId.value = null
         _highlightRange.value = null
@@ -134,4 +230,8 @@ class SpeechManager(private val context: Context) {
             tts?.shutdown()
         } catch (_: Exception) {}
     }
+}
+
+private fun String?.isNull_or_blank(): Boolean {
+    return this == null || this.trim().isEmpty()
 }

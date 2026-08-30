@@ -12,26 +12,79 @@ object CurriculumCatalog {
         subject: EducationalSubject,
         gradeLevel: GradeLevel,
         stateStandardCode: String,
-        themeWorldId: String = "dino"
+        themeWorldId: String = "dino",
+        country: String = "United States"
     ): List<FullLesson> {
-        val all = getMasterCurriculum(themeWorldId)
+        val all = getMasterCurriculum(themeWorldId, country)
         val filtered = all.filter { it.subject == subject }
-        return if (filtered.isNotEmpty()) filtered else getMasterCurriculum(themeWorldId).filter { it.subject == subject }
+        return if (filtered.isNotEmpty()) filtered else getMasterCurriculum(themeWorldId, country).filter { it.subject == subject }
     }
 
-    fun getLessonById(id: String, themeWorldId: String = "dino"): FullLesson? {
-        return getMasterCurriculum(themeWorldId).find { it.id == id }
+    fun getLessonById(id: String, themeWorldId: String = "dino", country: String = "United States"): FullLesson? {
+        return getMasterCurriculum(themeWorldId, country).find { it.id == id }
     }
 
-    fun getMasterCurriculum(themeId: String = "dino"): List<FullLesson> {
+    fun getMasterCurriculum(themeId: String = "dino", country: String = "United States"): List<FullLesson> {
+        val isUk = country.contains("United Kingdom", ignoreCase = true) || country.equals("GB", ignoreCase = true) || country.equals("UK", ignoreCase = true)
+        val isCa = country.contains("Canada", ignoreCase = true)
+        val isAu = country.contains("Australia", ignoreCase = true)
+        val isIndia = country.contains("India", ignoreCase = true)
+        val isDe = country.contains("Germany", ignoreCase = true)
+        val isFr = country.contains("France", ignoreCase = true)
+        val isJp = country.contains("Japan", ignoreCase = true)
+
+        val mathStandard = when {
+            isUk -> "DfE.KS1.MATH.01 (UK Key Stage 1)"
+            isCa -> "ONTARIO.MATH.GR.1 (Ontario Ministry Curriculum)"
+            isAu -> "ACARA.AC9M1N01 (Australian Curriculum F-10)"
+            isIndia -> "NCERT.MATH.P1 (NEP 2020 Foundational Stage)"
+            isDe -> "KMK.MATH.PR1 (KMK Bildungsstandards)"
+            isFr -> "SOCLE.FR.MATH.C2 (Cycle 2 Éducation Nationale)"
+            isJp -> "MEXT.MATH.E1 (文部科学省 学習指導要領)"
+            else -> "CCSS.MATH.CONTENT.K.OA.A.1 (US Common Core & State Standards)"
+        }
+
+        val readingStandard = when {
+            isUk -> "DfE.KS1.ENG.READ (UK Letters and Sounds Phonics)"
+            isCa -> "ONTARIO.LANG.GR.1 (Ontario Language Curriculum)"
+            isAu -> "ACARA.AC9E1LY01 (Australian English Literacy)"
+            isIndia -> "NCERT.ENG.LANG.01 (NCERT English Foundational)"
+            isDe -> "KMK.DEU.PR1 (KMK Grundschul-Lehrplan)"
+            isFr -> "SOCLE.FR.FRANCAIS (Cycle 2 Français)"
+            isJp -> "MEXT.KOKUGO.E1 (文部科学省 国語科指導要領)"
+            else -> "CCSS.ELA-LITERACY.RF.K.1 (US Common Core ELA Standards)"
+        }
+
+        val scienceStandard = when {
+            isUk -> "DfE.KS1.SCI.01 (UK National Curriculum Science)"
+            isCa -> "ONTARIO.SCI.GR.1 (Ontario Science & Technology)"
+            isAu -> "ACARA.AC9S1U01 (Australian Science Understanding)"
+            isIndia -> "NCERT.EVS.P1 (NCERT Environmental Studies)"
+            isDe -> "KMK.SU.PR1 (Sachunterricht Bildungsplan)"
+            isFr -> "SOCLE.FR.SCI.C2 (Questionner le monde)"
+            isJp -> "MEXT.RIKA.E1 (文部科学省 生活科・理科)"
+            else -> "NGSS.K-LS1-1 (Next Generation Science Standards)"
+        }
+
+        val socialStandard = when {
+            isUk -> "DfE.KS1.HIST.GEO (UK History & Geography)"
+            isCa -> "ONTARIO.SS.GR.1 (Social Studies Heritage & Community)"
+            isAu -> "ACARA.AC9HS1K01 (Australian HASS Framework)"
+            isIndia -> "NCERT.SOC.P1 (NCERT Social Science & Civics)"
+            isDe -> "KMK.SU.GEMEIN (Gesellschaftliches Lernen)"
+            isFr -> "SOCLE.FR.EMC (Enseignement moral et civique)"
+            isJp -> "MEXT.SHAKAI.E1 (文部科学省 生活科・社会科)"
+            else -> "NCSS.D2.Civ.1.K-2 (National Social Studies Framework)"
+        }
+
         return listOf(
             // 1. MATHEMATICS: Addition & Counting Patterns (20 Questions Adaptive)
             FullLesson(
                 id = "math_counting_patterns",
                 subject = EducationalSubject.MATH,
                 gradeLevel = GradeLevel.KINDERGARTEN,
-                stateStandardCode = "CCSS.MATH.CONTENT.K.OA.A.1",
-                standardDescription = "Represent addition and subtraction with objects, fingers, mental images, drawings, or sounds.",
+                stateStandardCode = mathStandard,
+                standardDescription = "Master foundational number sense, addition models, skip counting, and geometry in strict alignment with accredited $country educational standards.",
                 title = "Counting Clusters & Stepping Patterns",
                 summary = "Discover how combining smaller groups makes bigger numbers using visual stepping stones!",
                 themeWorldId = themeId,
@@ -75,8 +128,8 @@ object CurriculumCatalog {
                 id = "reading_phonemic_awareness",
                 subject = EducationalSubject.READING,
                 gradeLevel = GradeLevel.KINDERGARTEN,
-                stateStandardCode = "CCSS.ELA-LITERACY.RF.K.2",
-                standardDescription = "Demonstrate understanding of spoken words, syllables, and sounds (phonemes).",
+                stateStandardCode = readingStandard,
+                standardDescription = "Demonstrate phonological awareness, sound blending, and reading comprehension aligned with $country educational benchmarks.",
                 title = "Phoneme Blends & Sound Builders",
                 summary = "Unlock secret words by listening to starting, middle, and ending vowel sounds!",
                 themeWorldId = themeId,
@@ -88,8 +141,8 @@ object CurriculumCatalog {
                         visualEmoji = "🚂 [C] + [A] + [T] = CAT 🐱",
                         tipOrFunFact = "Saying each sound out loud while tapping your arm helps memory stick!",
                         interactivePrompt = "Which sound does 'S' make?",
-                        interactiveAnswers = listOf("Ssss like a snake", "Buh like a ball", "Mmm like yummy"),
-                        interactiveCorrectIndex = 0
+                        practiceOptions = listOf("Ssss like a snake", "Buh like a ball", "Mmm like yummy"),
+                        correctOptionIndex = 0
                     ),
                     ConceptStep(
                         stepNumber = 2,
@@ -98,8 +151,8 @@ object CurriculumCatalog {
                         visualEmoji = "🎩 🦇 🐱 🚪",
                         tipOrFunFact = "Listen to the end of the word — it bounces the same way!",
                         interactivePrompt = "Which word rhymes with SUN?",
-                        interactiveAnswers = listOf("RUN", "CAR", "DOG"),
-                        interactiveCorrectIndex = 0
+                        practiceOptions = listOf("RUN", "CAR", "DOG"),
+                        correctOptionIndex = 0
                     ),
                     ConceptStep(
                         stepNumber = 3,
@@ -108,8 +161,8 @@ object CurriculumCatalog {
                         visualEmoji = "👀 'THE' 'AND' 'CAN' 🚀",
                         tipOrFunFact = "Recognizing sight words helps you read whole adventure stories without stopping!",
                         interactivePrompt = "Choose the sight word spelled correctly:",
-                        interactiveAnswers = listOf("THE", "TEH", "HET"),
-                        interactiveCorrectIndex = 0
+                        practiceOptions = listOf("THE", "TEH", "HET"),
+                        correctOptionIndex = 0
                     )
                 ),
                 questions = generate20ReadingQuestions(themeId)
@@ -120,8 +173,8 @@ object CurriculumCatalog {
                 id = "science_ecosystems_forces",
                 subject = EducationalSubject.SCIENCE,
                 gradeLevel = GradeLevel.GRADE_1,
-                stateStandardCode = "NGSS.1-LS1-1",
-                standardDescription = "Use materials to design a solution to a human problem by mimicking how plants/animals survive.",
+                stateStandardCode = scienceStandard,
+                standardDescription = "Observe patterns, living organism requirements, forces, and environments aligned with accredited $country science standards.",
                 title = "Habitats, Gravity & Living Wonders",
                 summary = "Explore how animals adapt, how gravity pulls objects, and why our planet is unique!",
                 themeWorldId = themeId,
@@ -133,8 +186,8 @@ object CurriculumCatalog {
                         visualEmoji = "🌲 🌊 🏜️ ❄️",
                         tipOrFunFact = "A camel's long eyelashes protect it from blowing desert sand!",
                         interactivePrompt = "Where does a dolphin feel most at home?",
-                        interactiveAnswers = listOf("The Ocean", "A Pine Forest", "A Sandy Desert"),
-                        interactiveCorrectIndex = 0
+                        practiceOptions = listOf("The Ocean", "A Pine Forest", "A Sandy Desert"),
+                        correctOptionIndex = 0
                     ),
                     ConceptStep(
                         stepNumber = 2,
@@ -143,8 +196,8 @@ object CurriculumCatalog {
                         visualEmoji = "🧲 ⬇️ 🍎 🚀",
                         tipOrFunFact = "Without gravity, we would float right up into the clouds like balloons!",
                         interactivePrompt = "When you drop a bouncy ball, what pulls it back to the ground?",
-                        interactiveAnswers = listOf("Gravity", "Electricity", "Wind"),
-                        interactiveCorrectIndex = 0
+                        practiceOptions = listOf("Gravity", "Electricity", "Wind"),
+                        correctOptionIndex = 0
                     ),
                     ConceptStep(
                         stepNumber = 3,
@@ -153,8 +206,8 @@ object CurriculumCatalog {
                         visualEmoji = "☀️ 🌍 🌙",
                         tipOrFunFact = "Plants use sunlight to make delicious food through photosynthesis!",
                         interactivePrompt = "What provides warm light and energy to all Earth's plants?",
-                        interactiveAnswers = listOf("The Sun", "The Moon", "Flashlights"),
-                        interactiveCorrectIndex = 0
+                        practiceOptions = listOf("The Sun", "The Moon", "Flashlights"),
+                        correctOptionIndex = 0
                     )
                 ),
                 questions = generate20ScienceQuestions(themeId)
@@ -165,8 +218,8 @@ object CurriculumCatalog {
                 id = "social_community_helpers",
                 subject = EducationalSubject.SOCIAL_STUDIES,
                 gradeLevel = GradeLevel.GRADE_1,
-                stateStandardCode = "NCSS.D2.Civ.2.K-2",
-                standardDescription = "Explain how all people, not just leaders, contribute to a thriving community.",
+                stateStandardCode = socialStandard,
+                standardDescription = "Explain how community helpers, rules, and geography contribute to a thriving society in $country.",
                 title = "Community Helpers, Maps & Traditions",
                 summary = "Discover how diverse helpers, kindness rules, and maps connect our vibrant neighborhoods!",
                 themeWorldId = themeId,

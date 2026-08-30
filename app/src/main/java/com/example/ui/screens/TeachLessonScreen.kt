@@ -275,7 +275,7 @@ fun TeachLessonScreen(
                 ) {
                     Text(theme.emoji, fontSize = 18.sp)
                     Spacer(Modifier.width(8.dp))
-                    Text("I'm confused, AI Buddy help!", fontWeight = FontWeight.Bold)
+                    Text("I'm confused, Learning Buddy help!", fontWeight = FontWeight.Bold)
                 }
             }
         }

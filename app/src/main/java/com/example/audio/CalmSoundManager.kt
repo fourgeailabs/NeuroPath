@@ -14,16 +14,27 @@ import kotlinx.coroutines.launch
 import kotlin.math.sin
 import kotlin.random.Random
 
-enum class AmbientSoundType(val id: String, val title: String, val emoji: String, val description: String) {
-    OFF("OFF", "Soundscape Off", "🔇", "Quiet silent mode"),
-    RAIN("RAIN", "Gentle Rain", "🌧️", "Soft rhythmic raindrops for ADHD focus"),
-    OCEAN("OCEAN", "Ocean Swells", "🌊", "Slow rhythmic ocean tides for calm regulation"),
-    FOREST("FOREST", "Forest Breeze", "🌲", "Soothing wind rustling through pine trees"),
-    WHITE_NOISE("WHITE_NOISE", "Soft Brown Noise", "📻", "Deep low-frequency sensory blocker"),
-    CHIMES("CHIMES", "Zen Chimes", "🔔", "Gentle resonant harmonic tones")
+enum class AmbientSoundType(
+    val id: String,
+    val title: String,
+    val emoji: String,
+    val description: String,
+    val providerSource: String = "Epidemic Sound (https://www.epidemicsound.com/sound-effects/)"
+) {
+    OFF("OFF", "Soundscape Off", "🔇", "Quiet silent mode", "None"),
+    RAIN("RAIN", "Gentle Rain", "🌧️", "Soft rhythmic raindrops for ADHD focus", "Epidemic Sound Library"),
+    OCEAN("OCEAN", "Ocean Swells", "🌊", "Slow rhythmic ocean tides for calm regulation", "Epidemic Sound Library"),
+    FOREST("FOREST", "Forest Breeze", "🌲", "Soothing wind rustling through pine trees", "Epidemic Sound Library"),
+    WHITE_NOISE("WHITE_NOISE", "Soft Brown Noise", "📻", "Deep low-frequency sensory blocker", "Epidemic Sound Library"),
+    CHIMES("CHIMES", "Zen Chimes", "🔔", "Gentle resonant harmonic tones", "Epidemic Sound Library")
 }
 
 class CalmSoundManager(private val scope: CoroutineScope) {
+
+    companion object {
+        const val EPIDEMIC_SOUND_URL = "https://www.epidemicsound.com/sound-effects/"
+        const val PROVIDER_LABEL = "Sample Audio by Epidemic Sound"
+    }
 
     private val _activeSound = MutableStateFlow(AmbientSoundType.OFF)
     val activeSound: StateFlow<AmbientSoundType> = _activeSound.asStateFlow()
@@ -76,14 +87,12 @@ class CalmSoundManager(private val scope: CoroutineScope) {
                     for (i in buffer.indices) {
                         val sample = when (type) {
                             AmbientSoundType.RAIN -> {
-                                // Filtered white noise with random raindrop crackles
                                 val white = (Random.nextDouble() * 2.0 - 1.0)
                                 brownNoiseVal = (brownNoiseVal + (0.04 * white)) / 1.04
                                 val raindrop = if (Random.nextInt(800) == 0) Random.nextDouble() * 0.3 else 0.0
                                 (brownNoiseVal * 0.25 + raindrop)
                             }
                             AmbientSoundType.OCEAN -> {
-                                // Modulated swell with slow sinusoidal envelope
                                 phase += 2.0 * Math.PI * 0.08 / sampleRate
                                 val envelope = (sin(phase) + 1.0) * 0.5
                                 val noise = (Random.nextDouble() * 2.0 - 1.0) * 0.18

@@ -548,7 +548,7 @@ fun CreativeStudioScreen(
                     }
                 }
 
-                // AI Story Sparker with NeuroBuddy
+                // AI Story Sparker with Learning Buddy
                 item {
                     ElevatedCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -567,7 +567,7 @@ fun CreativeStudioScreen(
                                     Text("🤖", fontSize = 20.sp)
                                     Spacer(Modifier.width(6.dp))
                                     Text(
-                                        "Spark Ideas with NeuroBuddy",
+                                        "Spark Ideas with Learning Buddy",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer

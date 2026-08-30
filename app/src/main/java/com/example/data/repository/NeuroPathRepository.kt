@@ -13,38 +13,85 @@ import kotlinx.coroutines.flow.Flow
 
 class NeuroPathRepository(private val db: AppDatabase) {
 
-    val profileFlow: Flow<ChildProfileEntity?> = db.childProfileDao().getProfileFlow(1)
+    val allProfilesFlow: Flow<List<ChildProfileEntity>> = db.childProfileDao().getAllProfilesFlow()
     val allProgressLogs: Flow<List<ProgressLogEntity>> = db.progressLogDao().getAllProgressLogs()
     val allSensorySessions: Flow<List<SensorySessionEntity>> = db.sensorySessionDao().getAllSensorySessions()
     val lessonRecords: Flow<List<LessonRecordEntity>> = db.lessonRecordDao().getAllLessonRecords()
+    val latestCurriculumFlow: Flow<com.example.data.local.entity.DownloadedCurriculumEntity?> = db.curriculumDao().getLatestCurriculumFlow()
+
+    suspend fun getLatestCurriculum(): com.example.data.local.entity.DownloadedCurriculumEntity? {
+        return db.curriculumDao().getLatestCurriculumDirect()
+    }
+
+    suspend fun saveDownloadedCurriculum(curriculum: com.example.data.local.entity.DownloadedCurriculumEntity) {
+        db.curriculumDao().insertCurriculum(curriculum)
+    }
+
+    fun getProfileFlow(id: Long): Flow<ChildProfileEntity?> {
+        return db.childProfileDao().getProfileFlow(id)
+    }
+
+    suspend fun getProfileDirect(id: Long): ChildProfileEntity? {
+        return db.childProfileDao().getProfileDirect(id)
+    }
+
+    suspend fun getAllProfilesDirect(): List<ChildProfileEntity> {
+        return db.childProfileDao().getAllProfilesDirect()
+    }
 
     suspend fun getOrCreateProfile(): ChildProfileEntity {
-        val existing = db.childProfileDao().getProfileDirect(1)
+        val existing = db.childProfileDao().getAllProfilesDirect().firstOrNull()
         if (existing != null) return existing
 
-        val defaultProfile = ChildProfileEntity(
+        // Fresh install state - Square one! No pre-installed mock profiles.
+        // TTS is strictly OFF by default (readAnswersAloud = false)
+        val freshProfile = ChildProfileEntity(
             id = 1,
-            name = "Alex",
+            name = "",
+            age = 6,
             gradeLevel = "KINDERGARTEN",
+            ageGroupTier = "ELEMENTARY",
             stateStandard = "CA",
             activeThemeId = "dino",
-            neurodivergentTypesCsv = "ADHD,AUTISM_ASD,DYSLEXIA,SENSORY_SENSITIVITY",
-            totalStars = 20,
-            totalGems = 6,
-            currentStreakDays = 4,
+            neurodivergentTypesCsv = "ADHD,AUTISM_ASD",
+            strugglesCsv = "Focus & Staying On Task, Task Initiation & Procrastination",
+            strengthsCsv = "Visual Pattern Recognition, Deep Passion & Hyperfocus",
+            hyperFixationsCsv = "Dinosaurs & Prehistoric Safari, Space Exploration & Astronomy",
+            totalStars = 0,
+            totalGems = 0,
+            currentStreakDays = 0,
             currentAvatarId = "av_robot",
-            unlockedItemIdsCsv = "av_robot,badge_mindful"
+            unlockedItemIdsCsv = "av_robot",
+            appLanguageCode = "en-US",
+            country = "United States",
+            stateOrProvince = "California",
+            city = "Los Angeles",
+            schoolDistrict = "Los Angeles Unified School District (LAUSD)",
+            readAnswersAloud = false, // OFF by default
+            isInitialSetupComplete = false // Forces fresh setup screen on first launch
         )
-        db.childProfileDao().insertOrUpdateProfile(defaultProfile)
-        return defaultProfile
+        val newId = db.childProfileDao().insertOrUpdateProfile(freshProfile)
+        return freshProfile.copy(id = if (newId > 0) newId else 1)
+    }
+
+    suspend fun insertProfile(profile: ChildProfileEntity): Long {
+        return db.childProfileDao().insertProfile(profile)
     }
 
     suspend fun updateProfile(profile: ChildProfileEntity) {
         db.childProfileDao().updateProfile(profile)
     }
 
-    suspend fun awardStarsAndGems(stars: Int, gems: Int) {
-        val profile = getOrCreateProfile()
+    suspend fun deleteProfile(id: Long) {
+        db.childProfileDao().deleteProfileById(id)
+    }
+
+    suspend fun updateParentPinForAll(pin: String) {
+        db.childProfileDao().updateParentPinForAll(pin)
+    }
+
+    suspend fun awardStarsAndGems(profileId: Long, stars: Int, gems: Int) {
+        val profile = getProfileDirect(profileId) ?: return
         val updated = profile.copy(
             totalStars = profile.totalStars + stars,
             totalGems = profile.totalGems + gems
@@ -52,8 +99,8 @@ class NeuroPathRepository(private val db: AppDatabase) {
         db.childProfileDao().updateProfile(updated)
     }
 
-    suspend fun unlockItem(itemId: String, starCost: Int, gemCost: Int): Boolean {
-        val profile = getOrCreateProfile()
+    suspend fun unlockItem(profileId: Long, itemId: String, starCost: Int, gemCost: Int): Boolean {
+        val profile = getProfileDirect(profileId) ?: return false
         if (profile.totalStars < starCost || profile.totalGems < gemCost) return false
         val currentItems = profile.unlockedItemIdsCsv.split(",").filter { it.isNotBlank() }.toMutableSet()
         currentItems.add(itemId)
@@ -66,8 +113,8 @@ class NeuroPathRepository(private val db: AppDatabase) {
         return true
     }
 
-    suspend fun equipItem(category: String, itemId: String) {
-        val profile = getOrCreateProfile()
+    suspend fun equipItem(profileId: Long, category: String, itemId: String) {
+        val profile = getProfileDirect(profileId) ?: return
         val updated = when (category) {
             "AVATAR" -> profile.copy(currentAvatarId = itemId)
             "HAT" -> profile.copy(equippedHatId = if (profile.equippedHatId == itemId) null else itemId)
@@ -79,6 +126,7 @@ class NeuroPathRepository(private val db: AppDatabase) {
     }
 
     suspend fun recordLessonCompletion(
+        profileId: Long,
         lessonId: String,
         subjectId: String,
         lessonTitle: String,
@@ -94,6 +142,7 @@ class NeuroPathRepository(private val db: AppDatabase) {
         // Record in progress log
         db.progressLogDao().insertLog(
             ProgressLogEntity(
+                profileId = profileId,
                 subjectId = subjectId,
                 lessonId = lessonId,
                 lessonTitle = lessonTitle,
@@ -128,12 +177,13 @@ class NeuroPathRepository(private val db: AppDatabase) {
             else -> 2
         }
         val gemsToAward = if (scorePercent >= 80) 1 else 0
-        awardStarsAndGems(starsToAward, gemsToAward)
+        awardStarsAndGems(profileId, starsToAward, gemsToAward)
     }
 
-    suspend fun logSensorySession(type: String, durationSeconds: Int, countAction: Int) {
+    suspend fun logSensorySession(profileId: Long, type: String, durationSeconds: Int, countAction: Int) {
         db.sensorySessionDao().insertSensorySession(
             SensorySessionEntity(
+                profileId = profileId,
                 activityType = type,
                 durationSeconds = durationSeconds,
                 countAction = countAction

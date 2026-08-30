@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,36 +16,60 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timeline
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,17 +82,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppLanguage
+import com.example.data.model.AppLanguageDictionary
+import com.example.data.model.EducationalLocaleManager
 import com.example.data.model.EducationalSubject
+import com.example.data.model.GLOBAL_EDUCATIONAL_LOCALES
+import com.example.data.local.entity.ChildProfileEntity
+import com.example.data.model.AgeGroupTier
 import com.example.data.model.GradeLevel
+import com.example.data.model.LocaleLegalComplianceManager
 import com.example.data.model.NeurodivergentType
-import com.example.data.model.US_STATE_CURRICULA
 import com.example.data.model.WorldTheme
 import com.example.ui.AppScreen
 import com.example.ui.NeuroPathViewModel
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Pin
+
+enum class ParentDashboardTab(val title: String, val iconEmoji: String) {
+    PROFILES("Child Profiles", "👥"),
+    SETTINGS("Settings & AI", "⚙️"),
+    STANDARDS("Standards & Locale", "🏛️"),
+    DISCLAIMERS("Disclaimers & Legal", "⚖️")
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,13 +120,44 @@ fun ParentDashboardScreen(
     viewModel: NeuroPathViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val allProfiles by viewModel.allProfiles.collectAsState()
     val profile by viewModel.currentProfile.collectAsState()
     val progressLogs by viewModel.progressLogs.collectAsState()
     val lessonRecords by viewModel.lessonRecords.collectAsState()
+    val isVerifyingLocation by viewModel.isVerifyingLocation.collectAsState()
+    val locationComplianceResult by viewModel.locationComplianceResult.collectAsState()
+    val uriHandler = LocalUriHandler.current
+
+    var selectedTab by remember { mutableStateOf(ParentDashboardTab.PROFILES) }
+    var editingProfileId by remember { mutableStateOf<Long?>(null) }
+    var showDeleteConfirmForProfile by remember { mutableStateOf<ChildProfileEntity?>(null) }
+
+    // Parent PIN Change State
+    var newPinText by remember { mutableStateOf("") }
+    var confirmPinText by remember { mutableStateOf("") }
+    var pinMessage by remember { mutableStateOf<String?>(null) }
+    var pinMessageIsError by remember { mutableStateOf(false) }
+
+    if (editingProfileId != null) {
+        ChildProfileSetupScreen(
+            viewModel = viewModel,
+            editingProfileId = editingProfileId,
+            onFinished = { editingProfileId = null }
+        )
+        return
+    }
 
     var childName by remember(profile) { mutableStateOf(profile.name) }
     var selectedGrade by remember(profile) { mutableStateOf(profile.gradeLevel) }
-    var selectedState by remember(profile) { mutableStateOf(profile.stateStandard) }
+    var selectedLanguageCode by remember(profile) { mutableStateOf(profile.appLanguageCode) }
+
+    // Granular Educational Location State
+    var country by remember(profile) { mutableStateOf(profile.country) }
+    var stateOrProvince by remember(profile) { mutableStateOf(profile.stateOrProvince) }
+    var city by remember(profile) { mutableStateOf(profile.city) }
+    var schoolDistrict by remember(profile) { mutableStateOf(profile.schoolDistrict) }
+
     var selectedThemeId by remember(profile) { mutableStateOf(profile.activeThemeId) }
     var dyslexiaEnabled by remember(profile) { mutableStateOf(profile.dyslexiaFontEnabled) }
     var contrastMode by remember(profile) { mutableStateOf(profile.highContrastMode) }
@@ -90,7 +166,15 @@ fun ParentDashboardScreen(
     var dailyMinutes by remember(profile) { mutableIntStateOf(profile.dailyGoalMinutes) }
 
     var expandedGrade by remember { mutableStateOf(false) }
-    var expandedState by remember { mutableStateOf(false) }
+    var expandedLanguage by remember { mutableStateOf(false) }
+    var expandedAiPlatform by remember { mutableStateOf(false) }
+
+    var customPlatform by remember(profile) {
+        mutableStateOf(if (profile.customAiPlatform.isBlank()) "Default (Free Tier Gemini AI)" else profile.customAiPlatform)
+    }
+    var customKey by remember(profile) { mutableStateOf(profile.customApiKey) }
+    var showCustomKey by remember { mutableStateOf(false) }
+    var showTermsDialog by remember { mutableStateOf(false) }
 
     val activeNeuroTypes = remember(profile.neurodivergentTypesCsv) {
         profile.neurodivergentTypesCsv.split(",").filter { it.isNotBlank() }.toMutableSet()
@@ -104,13 +188,16 @@ fun ParentDashboardScreen(
     val overallAccuracy = if (totalQuestionsAnswered > 0) ((totalCorrect.toFloat() / totalQuestionsAnswered.toFloat()) * 100).toInt() else 0
     val totalSensoryBreaks = progressLogs.sumOf { it.sensoryBreaksTaken }
 
+    val activeLang = AppLanguage.fromCode(selectedLanguageCode)
+    val legalNotice = remember(country) { LocaleLegalComplianceManager.getComplianceNotice(country) }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
+        // Top Header
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -125,7 +212,7 @@ fun ParentDashboardScreen(
                 }
 
                 Text(
-                    "🛡️ Parent & Educator Console",
+                    "🛡️ ${AppLanguageDictionary.getString("parent_console", selectedLanguageCode)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -147,354 +234,1213 @@ fun ParentDashboardScreen(
             }
         }
 
-        // Section 1: Real-Time Analytics & Progress Metrics
+        // Tab Navigation Bar
         item {
-            ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+            PrimaryTabRow(
+                selectedTabIndex = selectedTab.ordinal,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ParentDashboardTab.values().forEach { tab ->
+                    Tab(
+                        selected = selectedTab == tab,
+                        onClick = { selectedTab = tab },
+                        text = {
+                            Text(
+                                "${tab.iconEmoji} ${tab.title}",
+                                fontSize = 12.sp,
+                                fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
+        when (selectedTab) {
+            // TAB: CHILD PROFILES MANAGEMENT (LOCAL SAVE ONLY)
+            ParentDashboardTab.PROFILES -> {
+                // Section Header & Privacy Assurance
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
                     ) {
-                        Icon(imageVector = Icons.Default.Timeline, contentDescription = "Analytics", tint = MaterialTheme.colorScheme.primary)
-                        Text(
-                            "Learning & Sensory Metrics",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    Spacer(Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        MetricBox("⏱️ Focus Time", "$totalFocusMinutes min", MaterialTheme.colorScheme.primaryContainer, Modifier.weight(1f))
-                        MetricBox("🎯 Accuracy", "$overallAccuracy%", Color(0xFFD4EDDA), Modifier.weight(1f))
-                        MetricBox("🫧 Breaks Logged", "$totalSensoryBreaks", Color(0xFFD1ECF1), Modifier.weight(1f))
-                    }
-
-                    Spacer(Modifier.height(14.dp))
-
-                    // Subject Mastery Breakdown
-                    Text("Subject Mastery Progress:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Spacer(Modifier.height(8.dp))
-
-                    EducationalSubject.values().forEach { subject ->
-                        val record = lessonRecords.find { it.subjectId == subject.id }
-                        val score = record?.scorePercent ?: 0
-
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
+                            modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(subject.emoji, fontSize = 16.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Text(subject.title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(110.dp))
-                            LinearProgressIndicator(
-                                progress = { score / 100f },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text("$score%", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("🔒", fontSize = 24.sp)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    "On-Device Child Profiles & Privacy",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    "All child profiles, hyper-fixations, strengths, and IEP records are stored strictly on this device. Create, edit, or remove profiles anytime.",
+                                    fontSize = 11.5.sp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
                 }
-            }
-        }
 
-        // Section 2: Child Profile & State Standards Configuration
-        item {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        "👶 Learner & State Standards",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                // Child Profiles List
+                items(allProfiles) { p ->
+                    val isActive = p.id == profile.id
+                    val pTheme = WorldTheme.values().find { it.id == p.activeThemeId } ?: WorldTheme.DINOSAURS
+                    val pTier = AgeGroupTier.values().find { it.id == p.ageGroupTier } ?: AgeGroupTier.ELEMENTARY
 
-                    OutlinedTextField(
-                        value = childName,
-                        onValueChange = { childName = it },
-                        label = { Text("Child's First Name") },
+                    ElevatedCard(
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = if (isActive) Color(pTheme.surfaceHex) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                        ),
                         modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Grade Level Selector
-                    Text("Grade Level (Pre-K to 12th):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    ExposedDropdownMenuBox(
-                        expanded = expandedGrade,
-                        onExpandedChange = { expandedGrade = !expandedGrade }
                     ) {
-                        OutlinedTextField(
-                            value = GradeLevel.values().find { it.name == selectedGrade }?.displayName ?: selectedGrade,
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGrade) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = expandedGrade,
-                            onDismissRequest = { expandedGrade = false }
-                        ) {
-                            GradeLevel.values().forEach { grade ->
-                                DropdownMenuItem(
-                                    text = { Text(grade.displayName) },
-                                    onClick = {
-                                        selectedGrade = grade.name
-                                        expandedGrade = false
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = Color(pTheme.primaryHex),
+                                        modifier = Modifier.size(46.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(pTheme.emoji, fontSize = 22.sp)
+                                        }
                                     }
+                                    Spacer(Modifier.width(12.dp))
+                                    Column {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = if (p.name.isNotBlank()) p.name else "Learner",
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 17.sp,
+                                                color = if (isActive) Color(pTheme.primaryHex) else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            if (isActive) {
+                                                Spacer(Modifier.width(8.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = MaterialTheme.colorScheme.primary
+                                                ) {
+                                                    Text(
+                                                        "ACTIVE",
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        color = MaterialTheme.colorScheme.onPrimary,
+                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        Text(
+                                            text = "Age ${p.age} • ${pTier.title} • ${pTheme.title}",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Row {
+                                    IconButton(
+                                        onClick = { editingProfileId = p.id },
+                                        modifier = Modifier.testTag("parent_edit_profile_${p.id}")
+                                    ) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    if (allProfiles.size > 1) {
+                                        IconButton(
+                                            onClick = { showDeleteConfirmForProfile = p },
+                                            modifier = Modifier.testTag("parent_delete_profile_${p.id}")
+                                        ) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Delete Profile", tint = MaterialTheme.colorScheme.error)
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Strengths & Diagnoses summary
+                            if (p.strengthsCsv.isNotBlank() || p.hyperFixationsCsv.isNotBlank()) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = "Passions: ${p.hyperFixationsCsv.ifBlank { "Curiosity & Learning" }}",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                        }
-                    }
 
-                    // State Standards Selector
-                    Text("Educational State Standard:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    ExposedDropdownMenuBox(
-                        expanded = expandedState,
-                        onExpandedChange = { expandedState = !expandedState }
-                    ) {
-                        OutlinedTextField(
-                            value = US_STATE_CURRICULA.find { it.code == selectedState }?.let { "${it.code} - ${it.name}" } ?: selectedState,
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedState) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = expandedState,
-                            onDismissRequest = { expandedState = false }
-                        ) {
-                            US_STATE_CURRICULA.forEach { stateItem ->
-                                DropdownMenuItem(
-                                    text = { Text("${stateItem.code} - ${stateItem.name}") },
-                                    onClick = {
-                                        selectedState = stateItem.code
-                                        expandedState = false
-                                    }
+                            Spacer(Modifier.height(10.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "⭐ ${p.totalStars} Stars • 💎 ${p.totalGems} Gems • 🔥 ${p.currentStreakDays}d Streak",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
+
+                                if (!isActive) {
+                                    Button(
+                                        onClick = { viewModel.selectChildProfile(p) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        modifier = Modifier.testTag("switch_to_profile_${p.id}")
+                                    ) {
+                                        Text("Select Active", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-        }
 
-        // Section 3: Special Interest World Theme Selector
-        item {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        "🌟 Special Interest World Theme",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        "Personalizing lessons around a child's passionate interest increases dopamine engagement and retention for neurodivergent learners.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Row(
+                // Add Child Profile Button
+                item {
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.navigateTo(AppScreen.CHILD_PROFILE_SETUP)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            .height(50.dp)
+                            .testTag("parent_add_profile_btn"),
+                        shape = RoundedCornerShape(14.dp)
                     ) {
-                        WorldTheme.values().forEach { themeObj ->
-                            val isSelected = selectedThemeId == themeObj.id
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                modifier = Modifier.clickable { selectedThemeId = themeObj.id }
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Add Another Child Profile", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+
+                // Parent PIN Management Card
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Change Parent Passcode (PIN)",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Text(
+                                "Set a secure 4-digit code required to access this dashboard and switch critical settings.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                OutlinedTextField(
+                                    value = newPinText,
+                                    onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) newPinText = it },
+                                    label = { Text("New PIN (4 digits)") },
+                                    singleLine = true,
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
+                                    modifier = Modifier.weight(1f).testTag("new_parent_pin_input")
+                                )
+
+                                OutlinedTextField(
+                                    value = confirmPinText,
+                                    onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) confirmPinText = it },
+                                    label = { Text("Confirm PIN") },
+                                    singleLine = true,
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
+                                    modifier = Modifier.weight(1f).testTag("confirm_parent_pin_input")
+                                )
+                            }
+
+                            if (pinMessage != null) {
+                                Text(
+                                    text = pinMessage!!,
+                                    color = if (pinMessageIsError) MaterialTheme.colorScheme.error else Color(0xFF2E7D32),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    when {
+                                        newPinText.length != 4 -> {
+                                            pinMessage = "PIN must be exactly 4 digits."
+                                            pinMessageIsError = true
+                                        }
+                                        newPinText != confirmPinText -> {
+                                            pinMessage = "PINs do not match. Please re-enter."
+                                            pinMessageIsError = true
+                                        }
+                                        else -> {
+                                            viewModel.updateParentPin(newPinText)
+                                            pinMessage = "Passcode updated successfully across all profiles!"
+                                            pinMessageIsError = false
+                                            newPinText = ""
+                                            confirmPinText = ""
+                                        }
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.align(Alignment.End).testTag("save_parent_pin_btn")
+                            ) {
+                                Text("Update PIN", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // TAB 1: SETTINGS & GENERAL CONFIGURATION
+            ParentDashboardTab.SETTINGS -> {
+                // Global App Language Selector
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(imageVector = Icons.Default.Language, contentDescription = "Language", tint = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "🌐 ${AppLanguageDictionary.getString("app_language", selectedLanguageCode)}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Text(
+                                "Multi-language support for UI, Voice Assist tutoring, speech synthesis, and hints.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            ExposedDropdownMenuBox(
+                                expanded = expandedLanguage,
+                                onExpandedChange = { expandedLanguage = !expandedLanguage }
+                            ) {
+                                OutlinedTextField(
+                                    value = "${activeLang.flagEmoji} ${activeLang.displayName} (${activeLang.nativeName})",
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLanguage) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expandedLanguage,
+                                    onDismissRequest = { expandedLanguage = false }
                                 ) {
-                                    Text(themeObj.emoji, fontSize = 16.sp)
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        themeObj.title,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                    AppLanguage.values().forEach { lang ->
+                                        DropdownMenuItem(
+                                            text = { Text("${lang.flagEmoji} ${lang.displayName} - ${lang.nativeName}") },
+                                            onClick = {
+                                                selectedLanguageCode = lang.code
+                                                expandedLanguage = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Child Profile Configuration
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                "👶 Learner Profile",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            OutlinedTextField(
+                                value = childName,
+                                onValueChange = { childName = it },
+                                label = { Text("Child's First Name") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            // Grade Level Selector
+                            Text("Grade Level (Pre-K to 12th):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            ExposedDropdownMenuBox(
+                                expanded = expandedGrade,
+                                onExpandedChange = { expandedGrade = !expandedGrade }
+                            ) {
+                                OutlinedTextField(
+                                    value = GradeLevel.values().find { it.name == selectedGrade }?.displayName ?: selectedGrade,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedGrade) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expandedGrade,
+                                    onDismissRequest = { expandedGrade = false }
+                                ) {
+                                    GradeLevel.values().forEach { grade ->
+                                        DropdownMenuItem(
+                                            text = { Text(grade.displayName) },
+                                            onClick = {
+                                                selectedGrade = grade.name
+                                                expandedGrade = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Special Interest Theme Selector
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                "🌟 Special Interest World Theme",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                "Personalizing lessons around a child's passionate interest increases dopamine engagement and retention for neurodivergent learners.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                WorldTheme.values().forEach { themeObj ->
+                                    val isSelected = selectedThemeId == themeObj.id
+                                    Surface(
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier.clickable { selectedThemeId = themeObj.id }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(themeObj.emoji, fontSize = 16.sp)
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(
+                                                themeObj.title,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Neurodiversity Accommodations
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                "🧠 Neurodiversity Accommodation Tools",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            NeurodivergentType.values().forEach { type ->
+                                val isChecked = neuroTypesState.contains(type.name)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val updated = neuroTypesState.toMutableSet()
+                                            if (isChecked) updated.remove(type.name) else updated.add(type.name)
+                                            neuroTypesState = updated
+                                        }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        modifier = Modifier.weight(1f),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(type.icon, fontSize = 20.sp)
+                                        Spacer(Modifier.width(10.dp))
+                                        Column {
+                                            Text(type.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            Text(type.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Switch(
+                                        checked = isChecked,
+                                        onCheckedChange = { check ->
+                                            val updated = neuroTypesState.toMutableSet()
+                                            if (check) updated.add(type.name) else updated.remove(type.name)
+                                            neuroTypesState = updated
+                                        }
                                     )
                                 }
                             }
                         }
                     }
                 }
-            }
-        }
 
-        // Section 4: Neurodiversity Accommodations Switchboard
-        item {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        "🧠 Neurodiversity Accommodation Tools",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                // Speech & Accessibility
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                "🔊 Speech & Reading Accessibility",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
 
-                    NeurodivergentType.values().forEach { type ->
-                        val isChecked = neuroTypesState.contains(type.name)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    val updated = neuroTypesState.toMutableSet()
-                                    if (isChecked) updated.remove(type.name) else updated.add(type.name)
-                                    neuroTypesState = updated
-                                }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
                             Row(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(type.icon, fontSize = 20.sp)
-                                Spacer(Modifier.width(10.dp))
-                                Column {
-                                    Text(type.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text(type.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Read Questions & Answers Aloud", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("Automatic natural voice with karaoke word highlighting", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = readAloud, onCheckedChange = { readAloud = it })
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("OpenDyslexic Typography", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("Enhanced letter-spacing and weighted base forms", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(checked = dyslexiaEnabled, onCheckedChange = { dyslexiaEnabled = it })
+                            }
+
+                            Column {
+                                Text("Speech Rate: ${String.format("%.2f", ttsSpeed)}x", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Slider(
+                                    value = ttsSpeed,
+                                    onValueChange = { ttsSpeed = it },
+                                    valueRange = 0.6f..1.4f,
+                                    steps = 8
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // AI Provider & Custom API Key (BYO Provider)
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = "AI Settings", tint = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "🤖 AI Engine & Provider Keys (Advanced)",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = if (customKey.isBlank()) "Default Free Tier Gemini AI is currently active across all voice, tutoring, text reviews, and learning tools." else "Custom Provider API Key is configured and active.",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
                                 }
                             }
-                            Switch(
-                                checked = isChecked,
-                                onCheckedChange = { check ->
-                                    val updated = neuroTypesState.toMutableSet()
-                                    if (check) updated.add(type.name) else updated.remove(type.name)
-                                    neuroTypesState = updated
+
+                            Text("AI Platform Provider:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            ExposedDropdownMenuBox(
+                                expanded = expandedAiPlatform,
+                                onExpandedChange = { expandedAiPlatform = !expandedAiPlatform }
+                            ) {
+                                OutlinedTextField(
+                                    value = customPlatform,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAiPlatform) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expandedAiPlatform,
+                                    onDismissRequest = { expandedAiPlatform = false }
+                                ) {
+                                    listOf(
+                                        "Default (Free Tier Gemini AI)",
+                                        "Google Gemini (Custom Key)",
+                                        "OpenAI ChatGPT",
+                                        "Anthropic Claude",
+                                        "Custom REST API Endpoint"
+                                    ).forEach { provider ->
+                                        DropdownMenuItem(
+                                            text = { Text(provider) },
+                                            onClick = {
+                                                customPlatform = provider
+                                                expandedAiPlatform = false
+                                            }
+                                        )
+                                    }
                                 }
+                            }
+
+                            OutlinedTextField(
+                                value = customKey,
+                                onValueChange = { customKey = it },
+                                label = { Text("Custom API Key (Optional)") },
+                                placeholder = { Text("Leave blank to use default free Gemini AI") },
+                                singleLine = true,
+                                visualTransformation = if (showCustomKey) VisualTransformation.None else PasswordVisualTransformation(),
+                                trailingIcon = {
+                                    IconButton(onClick = { showCustomKey = !showCustomKey }) {
+                                        Icon(
+                                            imageVector = if (showCustomKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = "Toggle Key Visibility"
+                                        )
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("custom_ai_key_input")
+                            )
+
+                            Text(
+                                "An API key is NOT required. NeuroPath includes free tier Gemini intelligence out of the box for all learning and voice features. Use this optional section only if you prefer to connect your own external provider quota.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
+
+                // Analytics & Progress Metrics
+                item {
+                    ElevatedCard(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Timeline, contentDescription = "Analytics", tint = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "Learning & Sensory Metrics",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            Spacer(Modifier.height(14.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                MetricBox("⏱️ Focus Time", "$totalFocusMinutes min", MaterialTheme.colorScheme.primaryContainer, Modifier.weight(1f))
+                                MetricBox("🎯 Accuracy", "$overallAccuracy%", Color(0xFFD4EDDA), Modifier.weight(1f))
+                                MetricBox("🫧 Breaks Logged", "$totalSensoryBreaks", Color(0xFFD1ECF1), Modifier.weight(1f))
+                            }
+
+                            Spacer(Modifier.height(14.dp))
+
+                            Text("Subject Mastery Progress:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Spacer(Modifier.height(8.dp))
+
+                            EducationalSubject.values().forEach { subject ->
+                                val record = lessonRecords.find { it.subjectId == subject.id }
+                                val score = record?.scorePercent ?: 0
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(subject.emoji, fontSize = 16.sp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(subject.title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(110.dp))
+                                    LinearProgressIndicator(
+                                        progress = { score / 100f },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp)),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("$score%", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // TAB 2: EDUCATIONAL STANDARDS & LOCALE VERIFICATION
+            ParentDashboardTab.STANDARDS -> {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(imageVector = Icons.Default.Public, contentDescription = "Locale", tint = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "🏛️ ${AppLanguageDictionary.getString("educational_locale", selectedLanguageCode)}",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Text(
+                                "Pulls and strictly locks educational curriculum requirements tailored to your child's home country, province/state, city, and district. Ensures the child cannot access foreign curricula or knowledge meant for other countries.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            // Auto-Detect Location Button
+                            Button(
+                                onClick = {
+                                    viewModel.detectLocationCompliance(context)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                if (isVerifyingLocation) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Verifying Home Country Standards...", fontSize = 13.sp)
+                                } else {
+                                    Icon(imageVector = Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("📍 Auto-Detect & Lock Home Country Locale", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            locationComplianceResult?.let { res ->
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFFE8F5E9),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Text("✅ Verified Locale: ${res.detectedCountry} (${res.detectedState})", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF1B5E20))
+                                        Text("Academic Framework: ${res.educationalStandard}", fontSize = 11.sp, color = Color(0xFF2E7D32))
+                                        Text("Source: ${res.verificationSource}", fontSize = 10.sp, color = Color(0xFF388E3C))
+                                    }
+                                }
+                            }
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                            // Quick Presets
+                            Text("Quick-Select Global District Presets:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(GLOBAL_EDUCATIONAL_LOCALES) { loc ->
+                                    val isSelected = schoolDistrict.contains(loc.schoolDistrict, ignoreCase = true)
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier.clickable {
+                                            country = loc.country
+                                            stateOrProvince = loc.stateOrProvince
+                                            city = loc.city
+                                            schoolDistrict = loc.schoolDistrict
+                                        }
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(loc.flagEmoji, fontSize = 14.sp)
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(
+                                                "${loc.city} - ${loc.schoolDistrict.take(18)}...",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Granular Dropdowns
+                            var expandedCountryList by remember { mutableStateOf(false) }
+                            var expandedStateList by remember { mutableStateOf(false) }
+                            var expandedCityList by remember { mutableStateOf(false) }
+                            var expandedDistrictList by remember { mutableStateOf(false) }
+
+                            ExposedDropdownMenuBox(
+                                expanded = expandedCountryList,
+                                onExpandedChange = { expandedCountryList = !expandedCountryList }
+                            ) {
+                                OutlinedTextField(
+                                    value = country,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Country") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCountryList) },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expandedCountryList,
+                                    onDismissRequest = { expandedCountryList = false }
+                                ) {
+                                    EducationalLocaleManager.getCountries().forEach { c ->
+                                        DropdownMenuItem(
+                                            text = { Text(c) },
+                                            onClick = {
+                                                country = c
+                                                stateOrProvince = ""
+                                                city = ""
+                                                schoolDistrict = ""
+                                                expandedCountryList = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            ExposedDropdownMenuBox(
+                                expanded = expandedStateList,
+                                onExpandedChange = { expandedStateList = !expandedStateList }
+                            ) {
+                                OutlinedTextField(
+                                    value = stateOrProvince,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("State / Province / Region") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedStateList) },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expandedStateList,
+                                    onDismissRequest = { expandedStateList = false }
+                                ) {
+                                    EducationalLocaleManager.getStatesForCountry(country).forEach { s ->
+                                        DropdownMenuItem(
+                                            text = { Text(s) },
+                                            onClick = {
+                                                stateOrProvince = s
+                                                city = ""
+                                                schoolDistrict = ""
+                                                expandedStateList = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            ExposedDropdownMenuBox(
+                                expanded = expandedCityList,
+                                onExpandedChange = { expandedCityList = !expandedCityList }
+                            ) {
+                                OutlinedTextField(
+                                    value = city,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("City") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCityList) },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expandedCityList,
+                                    onDismissRequest = { expandedCityList = false }
+                                ) {
+                                    EducationalLocaleManager.getCitiesForState(country, stateOrProvince).forEach { c ->
+                                        DropdownMenuItem(
+                                            text = { Text(c) },
+                                            onClick = {
+                                                city = c
+                                                schoolDistrict = ""
+                                                expandedCityList = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            ExposedDropdownMenuBox(
+                                expanded = expandedDistrictList,
+                                onExpandedChange = { expandedDistrictList = !expandedDistrictList }
+                            ) {
+                                OutlinedTextField(
+                                    value = schoolDistrict,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("School District / Local Education Authority") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDistrictList) },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = expandedDistrictList,
+                                    onDismissRequest = { expandedDistrictList = false }
+                                ) {
+                                    EducationalLocaleManager.getDistrictsForCity(country, stateOrProvince, city).forEach { d ->
+                                        DropdownMenuItem(
+                                            text = { Text(d.schoolDistrict) },
+                                            onClick = {
+                                                schoolDistrict = d.schoolDistrict
+                                                expandedDistrictList = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Active District Framework Badge
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Active District", tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            "Locked Curriculum Standard:",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            "$schoolDistrict ($city, $stateOrProvince, $country)",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(
+                                            "🔒 Foreign Curriculum Restricted: Only educational content aligned with $country standards is active.",
+                                            fontSize = 10.5.sp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // TAB 3: DISCLAIMERS & LEGAL COMPLIANCE
+            ParentDashboardTab.DISCLAIMERS -> {
+                // Section: AI Mistakes Warning
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3CD))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.WarningAmber,
+                                    contentDescription = "AI Disclaimer",
+                                    tint = Color(0xFF856404)
+                                )
+                                Text(
+                                    "⚠️ AI Accuracy & Fallibility Warning",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF856404)
+                                )
+                            }
+                            Text(
+                                legalNotice.aiMistakesWarning,
+                                fontSize = 12.sp,
+                                lineHeight = 18.sp,
+                                color = Color(0xFF856404)
+                            )
+                        }
+                    }
+                }
+
+                // Section: Internet & Cloud AI Connection Notice
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Wifi,
+                                    contentDescription = "Internet Notice",
+                                    tint = Color(0xFF0D47A1)
+                                )
+                                Text(
+                                    "🌐 Internet Access & Cloud AI Disclaimer",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0D47A1)
+                                )
+                            }
+                            Text(
+                                legalNotice.internetAccessNotice,
+                                fontSize = 12.sp,
+                                lineHeight = 18.sp,
+                                color = Color(0xFF0D47A1)
+                            )
+                        }
+                    }
+                }
+
+                // Section: Location & Strict Curriculum Restriction Notice
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Security,
+                                    contentDescription = "Location Compliance",
+                                    tint = Color(0xFF1B5E20)
+                                )
+                                Text(
+                                    "📍 Location Data & Localized Standards Assurance",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1B5E20)
+                                )
+                            }
+                            Text(
+                                legalNotice.locationCurriculumNotice,
+                                fontSize = 12.sp,
+                                lineHeight = 18.sp,
+                                color = Color(0xFF1B5E20)
+                            )
+                        }
+                    }
+                }
+
+                // Section: Dynamic Locale Regulatory Framework
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(imageVector = Icons.Default.Description, contentDescription = "Legal", tint = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "📜 ${legalNotice.countryName} Terms & Conditions",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Text(
+                                "Governing Legal Framework: ${legalNotice.governingLaw}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            Text(
+                                "Review the localized Terms of Service, Educational AI Disclaimer, COPPA/GDPR compliance, and student data protection policies at any time.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            OutlinedButton(
+                                onClick = { showTermsDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("view_terms_btn"),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("View Full ${legalNotice.countryName} Terms & Conditions", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        // Section 5: Text-To-Speech & Sensory Settings
+        // About FourgeAI LABS Section
         item {
             Card(
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(imageVector = Icons.Default.Info, contentDescription = "About", tint = MaterialTheme.colorScheme.primary)
+                        Text(
+                            "About NeuroPath",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Text("App Version: v1.02.00 • Locale: $country", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+
                     Text(
-                        "🔊 Speech & Reading Accessibility",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        "Audio Soundscapes: Audio sample arrangements provided via Epidemic Sound (https://www.epidemicsound.com/sound-effects/)",
+                        fontSize = 11.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Read Questions & Answers Aloud", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Automatic natural voice with karaoke word highlighting", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Switch(checked = readAloud, onCheckedChange = { readAloud = it })
-                    }
+                    Text(
+                        "AI Pedagogical Guidance Rule: AI Learning Buddy adheres to strict Socratic scaffolding (never gives direct answers immediately) and cites the official curriculum framework reference document used.",
+                        fontSize = 11.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("OpenDyslexic Typography", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Enhanced letter-spacing and weighted base forms", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Switch(checked = dyslexiaEnabled, onCheckedChange = { dyslexiaEnabled = it })
-                    }
-
-                    Column {
-                        Text("Speech Rate: ${String.format("%.2f", ttsSpeed)}x", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Slider(
-                            value = ttsSpeed,
-                            onValueChange = { ttsSpeed = it },
-                            valueRange = 0.6f..1.4f,
-                            steps = 8
-                        )
-                    }
+                    Text(
+                        "Created by FourgeAI LABS",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clickable {
+                                uriHandler.openUri("https://github.com/fourgeailabs")
+                            }
+                            .padding(vertical = 2.dp)
+                    )
                 }
             }
         }
 
-        // Section 6: COPPA & Privacy Compliance Notice
-        item {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFFD4EDDA)
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(imageVector = Icons.Default.CheckCircle, contentDescription = "Protected", tint = Color(0xFF155724))
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text("COPPA & GDPR Data Privacy Certified", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFF155724))
-                        Text(
-                            "NeuroPath stores all child progress securely on-device. Zero advertising tracking, no external data brokers, and 100% kid-safe offline resilience.",
-                            fontSize = 11.sp,
-                            color = Color(0xFF155724)
-                        )
-                    }
-                }
-            }
-        }
-
-        // Save Button
+        // Save & Apply Button
         item {
             Button(
                 onClick = {
-                    viewModel.updateProfileSettings(
+                    viewModel.updateProfileSettingsWithLocale(
                         name = childName,
                         gradeLevel = selectedGrade,
-                        stateStandard = selectedState,
+                        stateStandard = "DISTRICT",
+                        country = country,
+                        stateOrProvince = stateOrProvince,
+                        city = city,
+                        schoolDistrict = schoolDistrict,
+                        appLanguageCode = selectedLanguageCode,
                         themeId = selectedThemeId,
                         neuroTypes = neuroTypesState.joinToString(","),
                         dyslexiaFont = dyslexiaEnabled,
                         contrastMode = contrastMode,
                         ttsSpeed = ttsSpeed,
                         readAloud = readAloud,
-                        dailyMinutes = dailyMinutes
+                        dailyMinutes = dailyMinutes,
+                        customAiPlatform = customPlatform,
+                        customApiKey = customKey
                     )
                     viewModel.navigateTo(AppScreen.HOME)
                 },
@@ -509,6 +1455,123 @@ fun ParentDashboardScreen(
             }
         }
     }
+
+    if (showTermsDialog) {
+        TermsAndConditionsDialog(
+            country = country,
+            onDismiss = { showTermsDialog = false }
+        )
+    }
+
+    if (showDeleteConfirmForProfile != null) {
+        val target = showDeleteConfirmForProfile!!
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmForProfile = null },
+            title = {
+                Text("Delete Profile?", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text("Are you sure you want to permanently delete the profile for \"${target.name.ifBlank { "this learner" }}\"? All local progress and stars for this child will be erased.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteChildProfile(target.id)
+                        showDeleteConfirmForProfile = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete Permanently")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmForProfile = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun TermsAndConditionsDialog(
+    country: String,
+    onDismiss: () -> Unit
+) {
+    val legalNotice = remember(country) {
+        LocaleLegalComplianceManager.getComplianceNotice(country)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(imageVector = Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("${legalNotice.countryName} Terms & Conditions", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // AI Disclaimer Banner
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3CD)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
+                        Icon(imageVector = Icons.Default.WarningAmber, contentDescription = null, tint = Color(0xFF856404), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(legalNotice.aiMistakesWarning, fontSize = 11.sp, color = Color(0xFF856404), lineHeight = 15.sp)
+                    }
+                }
+
+                // Internet Access Banner
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
+                        Icon(imageVector = Icons.Default.Wifi, contentDescription = null, tint = Color(0xFF0D47A1), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(legalNotice.internetAccessNotice, fontSize = 11.sp, color = Color(0xFF0D47A1), lineHeight = 15.sp)
+                    }
+                }
+
+                // Location & Curriculum Restriction
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
+                        Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = Color(0xFF1B5E20), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(legalNotice.locationCurriculumNotice, fontSize = 11.sp, color = Color(0xFF1B5E20), lineHeight = 15.sp)
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                legalNotice.termsSections.forEach { sec ->
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(sec.sectionTitle, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.primary)
+                        Text(sec.content, fontSize = 11.sp, lineHeight = 15.sp)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }
 
 @Composable

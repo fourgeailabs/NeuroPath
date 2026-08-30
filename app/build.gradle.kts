@@ -15,11 +15,11 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.neuropath.vxpzk"
+    applicationId = "com.fourgeailabs.neuropath"
     minSdk = 24
     targetSdk = 36
-    versionCode = 9
-    versionName = "1.7.1"
+    versionCode = 10
+    versionName = "1.02.00"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
