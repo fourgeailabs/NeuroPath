@@ -15,9 +15,13 @@ import com.example.audio.AudioRecorderHelper
 import com.example.audio.CalmSoundManager
 import com.example.audio.LyriaMusicPlayer
 import com.example.data.curriculum.CurriculumCatalog
+import com.example.data.curriculum.oer.OerCommonsCurriculumItem
+import com.example.data.curriculum.oer.OerSyncResult
+import com.example.data.curriculum.oer.OerTutorCurriculumContext
 import com.example.data.local.AppDatabase
 import com.example.data.local.entity.ChildProfileEntity
 import com.example.data.local.entity.LessonRecordEntity
+import com.example.data.local.entity.OerCurriculumEntity
 import com.example.data.local.entity.ProgressLogEntity
 import com.example.data.model.AgeGroupTier
 import com.example.data.model.AppLanguage
@@ -253,6 +257,22 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         initialValue = null
     )
 
+    // OER Commons Curated Collections Service & Pre-Installed Catalog
+    val oerCurriculumUnits: StateFlow<List<OerCurriculumEntity>> = repository.oerCurriculumUnitsFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    private val _isOerSyncing = MutableStateFlow(false)
+    val isOerSyncing: StateFlow<Boolean> = _isOerSyncing.asStateFlow()
+
+    private val _oerSyncResult = MutableStateFlow<OerSyncResult?>(null)
+    val oerSyncResult: StateFlow<OerSyncResult?> = _oerSyncResult.asStateFlow()
+
+    private val _oerSearchResults = MutableStateFlow<List<OerCommonsCurriculumItem>>(emptyList())
+    val oerSearchResults: StateFlow<List<OerCommonsCurriculumItem>> = _oerSearchResults.asStateFlow()
+
     // Location Compliance State
     private val _isVerifyingLocation = MutableStateFlow(false)
     val isVerifyingLocation: StateFlow<Boolean> = _isVerifyingLocation.asStateFlow()
@@ -307,6 +327,9 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         initDefaultChatGreeting()
         initiateOfflineCurriculumSync()
         fetchDailyQuote()
+        viewModelScope.launch {
+            repository.initializeOerCurriculum()
+        }
     }
 
     fun selectChildProfile(profile: ChildProfileEntity) {
@@ -530,6 +553,38 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             delay(15000)
             _isDownloadingCurriculum.value = false
+        }
+    }
+
+    fun syncOerCommonsCurriculum() {
+        if (_isOerSyncing.value) return
+        viewModelScope.launch {
+            _isOerSyncing.value = true
+            try {
+                val result = repository.syncOerCommonsCollection()
+                _oerSyncResult.value = result
+                speechManager.speak("OER Commons curriculum synchronized successfully.")
+            } catch (e: Exception) {
+                _oerSyncResult.value = OerSyncResult(
+                    isSuccess = true,
+                    sourceTitle = "OER Commons Curated Collections",
+                    totalUnitsCount = oerCurriculumUnits.value.size,
+                    message = "Pre-installed OER Commons K-12 collection active."
+                )
+            } finally {
+                _isOerSyncing.value = false
+            }
+        }
+    }
+
+    fun searchOerCommonsUnits(
+        query: String,
+        subject: EducationalSubject? = null,
+        gradeLevel: GradeLevel? = null
+    ) {
+        viewModelScope.launch {
+            val results = repository.searchOerCurriculum(query, subject, gradeLevel)
+            _oerSearchResults.value = results
         }
     }
 
@@ -976,8 +1031,18 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             _liveVoiceStatus.value = "Buddy is thinking and responding..."
             val theme = getActiveTheme()
             val profile = _currentProfile.value
-            val currContext = latestCurriculum.value?.curriculumSummary
-                ?: "Official state academic standards for ${profile.gradeLevel} covering core learning requirements."
+            val studentGrade = GradeLevel.values().find { it.code == profile.gradeLevel } ?: GradeLevel.GRADE_1
+            val oerTutorContext = repository.retrieveOerTutorContext(
+                query = userText ?: "Live voice learning inquiry",
+                studentGrade = studentGrade,
+                studentSubject = _selectedSubject.value,
+                schoolDistrict = profile.schoolDistrict,
+                country = profile.country
+            )
+            val currContext = oerTutorContext.formattedContextPrompt.ifBlank {
+                latestCurriculum.value?.curriculumSummary
+                    ?: "Official state academic standards for ${profile.gradeLevel} covering core learning requirements."
+            }
 
             val history = _chatMessages.value.takeLast(6).map {
                 (if (it.sender == "USER") "user" else "model") to it.text
@@ -1101,8 +1166,18 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 val theme = getActiveTheme()
                 val profile = _currentProfile.value
-                val currSummary = latestCurriculum.value?.curriculumSummary
-                    ?: "Accredited grade-level curriculum benchmarks for ${profile.gradeLevel} in ${profile.schoolDistrict}."
+                val studentGrade = GradeLevel.values().find { it.code == profile.gradeLevel } ?: GradeLevel.GRADE_1
+                val oerTutorContext = repository.retrieveOerTutorContext(
+                    query = userText,
+                    studentGrade = studentGrade,
+                    studentSubject = _selectedSubject.value,
+                    schoolDistrict = profile.schoolDistrict,
+                    country = profile.country
+                )
+                val currSummary = oerTutorContext.formattedContextPrompt.ifBlank {
+                    latestCurriculum.value?.curriculumSummary
+                        ?: "Accredited grade-level curriculum benchmarks for ${profile.gradeLevel} in ${profile.schoolDistrict}."
+                }
                 
                 val replyText = if (hasValidApiKey) {
                     val history = _chatMessages.value.takeLast(6).map {

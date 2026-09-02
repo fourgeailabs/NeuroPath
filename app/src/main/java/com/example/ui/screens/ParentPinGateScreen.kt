@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppLanguageDictionary
 import com.example.ui.AppScreen
 import com.example.ui.NeuroPathViewModel
 
@@ -47,6 +48,8 @@ fun ParentPinGateScreen(
 ) {
     val pinInput by viewModel.pinInput.collectAsState()
     val pinError by viewModel.pinError.collectAsState()
+    val currentProfile by viewModel.currentProfile.collectAsState()
+    val langCode = currentProfile.appLanguageCode
 
     Column(
         modifier = modifier
@@ -88,14 +91,14 @@ fun ParentPinGateScreen(
             Spacer(Modifier.height(14.dp))
 
             Text(
-                "Parent & Educator Gate",
+                AppLanguageDictionary.getString("parent_gate_title", langCode),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Enter 4-digit PIN code to access settings & analytics",
+                AppLanguageDictionary.getString("parent_gate_sub", langCode),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -121,7 +124,7 @@ fun ParentPinGateScreen(
             if (pinError) {
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Incorrect PIN. Default is 1234",
+                    AppLanguageDictionary.getString("incorrect_pin", langCode),
                     color = Color(0xFFE53935),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
@@ -129,7 +132,7 @@ fun ParentPinGateScreen(
             } else {
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "(Default PIN: 1234)",
+                    AppLanguageDictionary.getString("enter_pin", langCode),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 11.sp
                 )

@@ -1,9 +1,14 @@
 package com.example.data.repository
 
 import com.example.data.curriculum.CurriculumCatalog
+import com.example.data.curriculum.oer.OerCommonsCurriculumItem
+import com.example.data.curriculum.oer.OerCommonsCurriculumService
+import com.example.data.curriculum.oer.OerSyncResult
+import com.example.data.curriculum.oer.OerTutorCurriculumContext
 import com.example.data.local.AppDatabase
 import com.example.data.local.entity.ChildProfileEntity
 import com.example.data.local.entity.LessonRecordEntity
+import com.example.data.local.entity.OerCurriculumEntity
 import com.example.data.local.entity.ProgressLogEntity
 import com.example.data.local.entity.SensorySessionEntity
 import com.example.data.model.EducationalSubject
@@ -13,11 +18,46 @@ import kotlinx.coroutines.flow.Flow
 
 class NeuroPathRepository(private val db: AppDatabase) {
 
+    val oerCurriculumService: OerCommonsCurriculumService = OerCommonsCurriculumService(db)
+
     val allProfilesFlow: Flow<List<ChildProfileEntity>> = db.childProfileDao().getAllProfilesFlow()
     val allProgressLogs: Flow<List<ProgressLogEntity>> = db.progressLogDao().getAllProgressLogs()
     val allSensorySessions: Flow<List<SensorySessionEntity>> = db.sensorySessionDao().getAllSensorySessions()
     val lessonRecords: Flow<List<LessonRecordEntity>> = db.lessonRecordDao().getAllLessonRecords()
     val latestCurriculumFlow: Flow<com.example.data.local.entity.DownloadedCurriculumEntity?> = db.curriculumDao().getLatestCurriculumFlow()
+    val oerCurriculumUnitsFlow: Flow<List<OerCurriculumEntity>> = db.oerCurriculumDao().getAllCurriculumUnitsFlow()
+
+    suspend fun initializeOerCurriculum(): List<OerCommonsCurriculumItem> {
+        return oerCurriculumService.initializeAndSeed()
+    }
+
+    suspend fun syncOerCommonsCollection(): OerSyncResult {
+        return oerCurriculumService.fetchAndParseOnlineCollection()
+    }
+
+    suspend fun searchOerCurriculum(
+        query: String,
+        subject: EducationalSubject? = null,
+        gradeLevel: GradeLevel? = null
+    ): List<OerCommonsCurriculumItem> {
+        return oerCurriculumService.searchCurriculum(query, subject, gradeLevel)
+    }
+
+    suspend fun retrieveOerTutorContext(
+        query: String,
+        studentGrade: GradeLevel,
+        studentSubject: EducationalSubject? = null,
+        schoolDistrict: String = "",
+        country: String = ""
+    ): OerTutorCurriculumContext {
+        return oerCurriculumService.retrieveCurriculumContextForTutor(
+            query = query,
+            studentGrade = studentGrade,
+            studentSubject = studentSubject,
+            schoolDistrict = schoolDistrict,
+            country = country
+        )
+    }
 
     suspend fun getLatestCurriculum(): com.example.data.local.entity.DownloadedCurriculumEntity? {
         return db.curriculumDao().getLatestCurriculumDirect()

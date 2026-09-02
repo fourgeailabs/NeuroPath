@@ -10,9 +10,40 @@ import androidx.room.Update
 import com.example.data.local.entity.ChildProfileEntity
 import com.example.data.local.entity.DownloadedCurriculumEntity
 import com.example.data.local.entity.LessonRecordEntity
+import com.example.data.local.entity.OerCurriculumEntity
 import com.example.data.local.entity.ProgressLogEntity
 import com.example.data.local.entity.SensorySessionEntity
 import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface OerCurriculumDao {
+    @Query("SELECT * FROM oer_curriculum_units ORDER BY id ASC")
+    fun getAllCurriculumUnitsFlow(): Flow<List<OerCurriculumEntity>>
+
+    @Query("SELECT * FROM oer_curriculum_units ORDER BY id ASC")
+    suspend fun getAllCurriculumUnitsDirect(): List<OerCurriculumEntity>
+
+    @Query("SELECT * FROM oer_curriculum_units WHERE subjectName = :subjectName")
+    suspend fun getUnitsBySubject(subjectName: String): List<OerCurriculumEntity>
+
+    @Query("SELECT * FROM oer_curriculum_units WHERE gradeLevelCode = :gradeCode")
+    suspend fun getUnitsByGrade(gradeCode: String): List<OerCurriculumEntity>
+
+    @Query("SELECT * FROM oer_curriculum_units WHERE id = :id LIMIT 1")
+    suspend fun getUnitById(id: String): OerCurriculumEntity?
+
+    @Query("SELECT COUNT(*) FROM oer_curriculum_units")
+    suspend fun getCurriculumCount(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUnits(units: List<OerCurriculumEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUnit(unit: OerCurriculumEntity)
+
+    @Query("DELETE FROM oer_curriculum_units")
+    suspend fun deleteAllUnits()
+}
 
 @Dao
 interface CurriculumDao {
@@ -107,9 +138,10 @@ interface SensorySessionDao {
         DownloadedCurriculumEntity::class,
         LessonRecordEntity::class,
         ProgressLogEntity::class,
-        SensorySessionEntity::class
+        SensorySessionEntity::class,
+        OerCurriculumEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -118,4 +150,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun lessonRecordDao(): LessonRecordDao
     abstract fun progressLogDao(): ProgressLogDao
     abstract fun sensorySessionDao(): SensorySessionDao
+    abstract fun oerCurriculumDao(): OerCurriculumDao
 }

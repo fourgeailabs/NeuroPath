@@ -18,8 +18,8 @@ android {
     applicationId = "com.fourgeailabs.neuropath"
     minSdk = 24
     targetSdk = 36
-    versionCode = 11
-    versionName = "1.03.00"
+    versionCode = 14
+    versionName = "1.06.00"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

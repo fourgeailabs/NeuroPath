@@ -14,7 +14,7 @@ enum class AppLanguage(
     SPANISH("es", "Spanish", "Español", "🇪🇸", Locale("es", "ES")),
     FRENCH("fr", "French", "Français", "🇫🇷", Locale.FRANCE),
     GERMAN("de", "German", "Deutsch", "🇩🇪", Locale.GERMANY),
-    MANDARIN("zh", "Chinese", "中文 (Mandarin)", "🇨🇳", Locale.CHINA),
+    MANDARIN("zh", "Chinese (Mandarin)", "中文 (普通话)", "🇨🇳", Locale.CHINA),
     JAPANESE("ja", "Japanese", "日本語", "🇯🇵", Locale.JAPAN),
     PORTUGUESE("pt", "Portuguese", "Português", "🇧🇷", Locale("pt", "BR")),
     HINDI("hi", "Hindi", "हिंदी", "🇮🇳", Locale("hi", "IN")),
@@ -43,324 +43,70 @@ enum class AppLanguage(
     }
 }
 
+fun tr(key: String, languageCode: String): String = AppLanguageDictionary.getString(key, languageCode)
+
 object AppLanguageDictionary {
-    private val translations = mapOf(
-        // American English
-        "en-us" to mapOf(
-            "welcome" to "Welcome to NeuroPath",
-            "select_language" to "Please select your language & region",
-            "language_label" to "Language & Variant",
-            "continue_btn" to "Continue",
-            "app_title" to "NeuroPath",
-            "parent_console" to "Parent & Educator Console",
-            "child_name" to "Child's First Name",
-            "grade_level" to "Grade Level",
-            "app_language" to "App Language",
-            "country" to "Country",
-            "state_province" to "State / Province",
-            "city" to "City",
-            "school_district" to "School District",
-            "educational_locale" to "Educational Locale & District Standards",
-            "special_interest_theme" to "Special Interest World Theme",
-            "speech_reading" to "Speech & Reading Accessibility",
-            "read_aloud" to "Read Questions & Answers Aloud (TTS)",
-            "tts_off_note" to "Text-to-Speech is off by default for independent reading. Enable here anytime.",
-            "speech_rate" to "Speech Rate",
-            "save_config" to "Save Configuration & Exit",
-            "talk_to_buddy" to "Talk to Learning Buddy",
-            "speech_to_text" to "Voice Assist (Speech to Text)",
-            "listening" to "Listening... Speak now!",
-            "ai_help_prompt" to "I'm confused, Learning Buddy help!",
-            "daily_inspiration" to "Daily Inspiration",
-            "curriculum_sync" to "Downloading District Curriculum...",
-            "curriculum_sync_sub" to "Caching lessons & exercises for offline resilient use.",
-            "about_app" to "About NeuroPath",
-            "created_by" to "Created by FourgeAI LABS",
-            "github_repo" to "App GitHub Repository",
-            "soundscape" to "Calm Sensory Soundscape",
-            "epidemic_source" to "Audio samples powered by Epidemic Sound",
-            "socratic_guidance_rule" to "Socratic Guidance Active: The AI tutor will never give direct answers. It cites educational documents to teach step-by-step.",
-            "disclaimers_tab" to "Disclaimers & Legal Compliance",
-            "math" to "Math",
-            "reading" to "Reading & Phonics",
-            "science" to "Science & Nature",
-            "social_studies" to "Social Studies",
-            "emotional_skills" to "Emotional Regulation"
-        ),
+    private val enUs = AppLanguageDictionariesPart1.enUs
+    private val enGb = AppLanguageDictionariesPart1.enGb
+    private val es = AppLanguageDictionariesPart1.es
+    private val fr = AppLanguageDictionariesPart1.fr
+    private val de = AppLanguageDictionariesPart1.de
+    private val itMap = AppLanguageDictionariesPart1.it
+    private val pt = AppLanguageDictionariesPart1.pt
+    private val nl = AppLanguageDictionariesPart1.nl
+    private val sv = AppLanguageDictionariesPart1.sv
 
-        // British English (UK)
-        "en-gb" to mapOf(
-            "welcome" to "Welcome to NeuroPath",
-            "select_language" to "Please select your language & region",
-            "language_label" to "Language & Variant",
-            "continue_btn" to "Continue",
-            "app_title" to "NeuroPath",
-            "parent_console" to "Parent & Educator Console",
-            "child_name" to "Child's Forename",
-            "grade_level" to "Year Group / Key Stage",
-            "app_language" to "App Language",
-            "country" to "Country",
-            "state_province" to "Region / County",
-            "city" to "City / Town",
-            "school_district" to "Local Education Authority (LEA)",
-            "educational_locale" to "Educational Locale & DfE Curriculum Standards",
-            "special_interest_theme" to "Special Interest World Theme & Colour",
-            "speech_reading" to "Speech & Reading Accessibility",
-            "read_aloud" to "Read Questions & Answers Aloud (TTS)",
-            "tts_off_note" to "Text-to-Speech is switched off by default for independent reading. Enable here anytime.",
-            "speech_rate" to "Speech Rate",
-            "save_config" to "Save Programme Configuration & Exit",
-            "talk_to_buddy" to "Speak with Learning Buddy",
-            "speech_to_text" to "Voice Assist (Speech to Text)",
-            "listening" to "Listening... Speak now!",
-            "ai_help_prompt" to "I need assistance, Learning Buddy please help!",
-            "daily_inspiration" to "Daily Inspiration",
-            "curriculum_sync" to "Synchronising UK National Curriculum...",
-            "curriculum_sync_sub" to "Caching lessons & exercises for offline resilient use.",
-            "about_app" to "About NeuroPath",
-            "created_by" to "Created by FourgeAI LABS",
-            "github_repo" to "App GitHub Repository",
-            "soundscape" to "Calm Sensory Soundscape",
-            "epidemic_source" to "Audio samples powered by Epidemic Sound",
-            "socratic_guidance_rule" to "Socratic Guidance Active: The AI tutor will never give direct answers. It cites educational documents to teach step-by-step.",
-            "disclaimers_tab" to "Disclaimers & Legal Compliance",
-            "math" to "Maths",
-            "reading" to "Reading & Phonics",
-            "science" to "Science & Nature",
-            "social_studies" to "Social Studies & History",
-            "emotional_skills" to "Emotional Regulation"
-        ),
+    private val zh = AppLanguageDictionariesPart2.zh
+    private val ja = AppLanguageDictionariesPart2.ja
+    private val ko = AppLanguageDictionariesPart2.ko
+    private val vi = AppLanguageDictionariesPart2.vi
+    private val th = AppLanguageDictionariesPart2.th
+    private val id = AppLanguageDictionariesPart2.id
+    private val hi = AppLanguageDictionariesPart2.hi
+    private val ar = AppLanguageDictionariesPart2.ar
 
-        // Spanish
-        "es" to mapOf(
-            "welcome" to "Bienvenido a NeuroPath",
-            "select_language" to "Por favor, seleccione su idioma y región",
-            "language_label" to "Idioma",
-            "continue_btn" to "Continuar",
-            "app_title" to "NeuroPath",
-            "parent_console" to "Consola de Padres y Educadores",
-            "child_name" to "Nombre del Estudiante",
-            "grade_level" to "Nivel de Grado / Curso",
-            "app_language" to "Idioma de la Aplicación",
-            "country" to "País",
-            "state_province" to "Estado / Provincia / Comunidad",
-            "city" to "Ciudad",
-            "school_district" to "Distrito Escolar / Delegación",
-            "educational_locale" to "Requisitos del Distrito Educativo Local",
-            "special_interest_theme" to "Tema de Interés Especial",
-            "speech_reading" to "Accesibilidad de Voz y Lectura",
-            "read_aloud" to "Leer Preguntas y Respuestas en Voz Alta (TTS)",
-            "tts_off_note" to "La lectura por voz está desactivada por defecto para fomentar la lectura independiente.",
-            "speech_rate" to "Velocidad de Voz",
-            "save_config" to "Guardar Configuración y Salir",
-            "talk_to_buddy" to "Hablar con Learning Buddy",
-            "speech_to_text" to "Asistente de Voz (Voz a Texto)",
-            "listening" to "Escuchando... ¡Habla ahora!",
-            "ai_help_prompt" to "¡Estoy confundido, ayuda Learning Buddy!",
-            "daily_inspiration" to "Inspiración Diaria",
-            "curriculum_sync" to "Descargando Plan de Estudios del Distrito...",
-            "curriculum_sync_sub" to "Guardando lecciones para uso sin conexión.",
-            "about_app" to "Acerca de NeuroPath",
-            "created_by" to "Creado por FourgeAI LABS",
-            "github_repo" to "Repositorio GitHub de la App",
-            "soundscape" to "Ambiente Sensorial Relajante",
-            "epidemic_source" to "Efectos de audio proporcionados por Epidemic Sound",
-            "socratic_guidance_rule" to "Método Socrático Activo: La IA nunca dará respuestas directas. Cita documentos del plan de estudios y guía paso a paso.",
-            "disclaimers_tab" to "Avisos Legales y Cumplimiento",
-            "math" to "Matemáticas",
-            "reading" to "Lectura y Fonética",
-            "science" to "Ciencias y Naturaleza",
-            "social_studies" to "Ciencias Sociales",
-            "emotional_skills" to "Regulación Emocional"
-        ),
+    private val ru = AppLanguageDictionariesPart3.ru
+    private val trMap = AppLanguageDictionariesPart3.tr
+    private val pl = AppLanguageDictionariesPart3.pl
+    private val el = AppLanguageDictionariesPart3.el
 
-        // French
-        "fr" to mapOf(
-            "welcome" to "Bienvenue sur NeuroPath",
-            "select_language" to "Veuillez sélectionner votre langue",
-            "language_label" to "Langue",
-            "continue_btn" to "Continuer",
-            "app_title" to "NeuroPath",
-            "parent_console" to "Console Parents & Éducateurs",
-            "child_name" to "Prénom de l'enfant",
-            "grade_level" to "Niveau Scolaire",
-            "app_language" to "Langue de l'Application",
-            "country" to "Pays",
-            "state_province" to "Région / Département",
-            "city" to "Ville",
-            "school_district" to "Académie / District Scolaire",
-            "educational_locale" to "Exigences du District Éducatif",
-            "special_interest_theme" to "Thème d'Intérêt Spécial",
-            "speech_reading" to "Accessibilité Vocale et Lecture",
-            "read_aloud" to "Lecture Vocale des Questions (TTS)",
-            "tts_off_note" to "La synthèse vocale est désactivée par défaut pour favoriser la lecture autonome.",
-            "speech_rate" to "Vitesse de Lecture",
-            "save_config" to "Enregistrer et Quitter",
-            "talk_to_buddy" to "Parler avec Learning Buddy",
-            "speech_to_text" to "Assistance Vocale (Vocal en Texte)",
-            "listening" to "Écoute en cours... Parlez!",
-            "ai_help_prompt" to "Je suis confus, aide-moi IA!",
-            "daily_inspiration" to "Inspiration du Jour",
-            "curriculum_sync" to "Téléchargement du Programme du District...",
-            "curriculum_sync_sub" to "Enregistrement des leçons pour utilisation hors ligne.",
-            "about_app" to "À propos de NeuroPath",
-            "created_by" to "Créé par FourgeAI LABS",
-            "github_repo" to "Dépôt GitHub de l'application",
-            "soundscape" to "Paysage Sonore Apaisant",
-            "epidemic_source" to "Échantillons sonores fournis par Epidemic Sound",
-            "socratic_guidance_rule" to "Guidage Socratique Actif: L'IA ne donne jamais la réponse directe. Elle cite le programme officiel pour guider l'enfant pas à pas.",
-            "disclaimers_tab" to "Mentions Légales & Conformité",
-            "math" to "Mathématiques",
-            "reading" to "Lecture et Phonie",
-            "science" to "Sciences et Nature",
-            "social_studies" to "Histoire & Géographie",
-            "emotional_skills" to "Régulation Émotionnelle"
-        ),
-
-        // German
-        "de" to mapOf(
-            "welcome" to "Willkommen bei NeuroPath",
-            "select_language" to "Bitte wählen Sie Ihre Sprache",
-            "language_label" to "Sprache",
-            "continue_btn" to "Weiter",
-            "app_title" to "NeuroPath KI",
-            "parent_console" to "Eltern & Pädagogen Konsole",
-            "child_name" to "Vorname des Kindes",
-            "grade_level" to "Klassenstufe",
-            "app_language" to "App-Sprache",
-            "country" to "Land",
-            "state_province" to "Bundesland / Kanton",
-            "city" to "Stadt",
-            "school_district" to "Schulamt / Schulbezirk",
-            "educational_locale" to "Regionale Bildungsanforderungen",
-            "special_interest_theme" to "Spezialinteresse Thema",
-            "speech_reading" to "Sprach- & Lesehilfe",
-            "read_aloud" to "Fragen & Antworten vorlesen (TTS)",
-            "tts_off_note" to "Text-to-Speech ist standardmäßig deaktiviert, um das selbstständige Lesen zu fördern.",
-            "speech_rate" to "Sprechgeschwindigkeit",
-            "save_config" to "Konfiguration speichern & Beenden",
-            "talk_to_buddy" to "Mit Learning Buddy sprechen",
-            "speech_to_text" to "Sprachassistent (Sprache zu Text)",
-            "listening" to "Zuhören... Jetzt sprechen!",
-            "ai_help_prompt" to "Ich bin verwirrt, KI-Hilfe!",
-            "daily_inspiration" to "Tägliche Inspiration",
-            "curriculum_sync" to "Lehrplan des Schulbezirks wird heruntergeladen...",
-            "curriculum_sync_sub" to "Lektionen für die Offline-Nutzung speichern.",
-            "about_app" to "Über NeuroPath",
-            "created_by" to "Erstellt von FourgeAI LABS",
-            "github_repo" to "App GitHub-Repository",
-            "soundscape" to "Beruhigende Klanglandschaft",
-            "epidemic_source" to "Audiomuster bereitgestellt von Epidemic Sound",
-            "socratic_guidance_rule" to "Sokratische Führung aktiv: Die KI gibt niemals direkte Antworten. Sie zitiert Bildungsdokumente und leitet Schritt für Schritt an.",
-            "disclaimers_tab" to "Haftungsausschluss & Rechtliches",
-            "math" to "Mathematik",
-            "reading" to "Lesen & Phonik",
-            "science" to "Naturwissenschaften",
-            "social_studies" to "Sachunterricht",
-            "emotional_skills" to "Emotionale Selbstregulation"
-        ),
-
-        // Mandarin
-        "zh" to mapOf(
-            "welcome" to "欢迎来到 NeuroPath",
-            "select_language" to "请选择您的语言与地区",
-            "language_label" to "语言",
-            "continue_btn" to "继续",
-            "app_title" to "NeuroPath 智学",
-            "parent_console" to "家长与教师控制台",
-            "child_name" to "学生姓名",
-            "grade_level" to "年级",
-            "app_language" to "应用语言",
-            "country" to "国家",
-            "state_province" to "省份 / 州 / 直辖市",
-            "city" to "城市",
-            "school_district" to "教育局 / 学区",
-            "educational_locale" to "当地学区教育标准与课程要求",
-            "special_interest_theme" to "特别兴趣主题",
-            "speech_reading" to "语音与朗读辅助",
-            "read_aloud" to "自动朗读问题与答案 (TTS)",
-            "tts_off_note" to "语音朗读默认关闭以鼓励自主阅读，可在此随时开启。",
-            "speech_rate" to "语速调节",
-            "save_config" to "保存配置并退出",
-            "talk_to_buddy" to "与 Learning Buddy 对话",
-            "speech_to_text" to "语音转文字助手",
-            "listening" to "正在聆听... 请说话！",
-            "ai_help_prompt" to "我不太明白，AI小助手帮帮我！",
-            "daily_inspiration" to "每日灵感",
-            "curriculum_sync" to "正在同步本学区课程标准...",
-            "curriculum_sync_sub" to "正在离线缓存课程与练习题。",
-            "about_app" to "关于 NeuroPath",
-            "created_by" to "由 FourgeAI LABS 开发",
-            "github_repo" to "GitHub 开源仓库",
-            "soundscape" to "宁静感官白噪音与音效",
-            "epidemic_source" to "音效样本来源于 Epidemic Sound",
-            "socratic_guidance_rule" to "苏格拉底式启发教学：AI 从不直接提供答案，而是援引课程标准文献，循循善诱引导孩子自主解题。",
-            "disclaimers_tab" to "免责声明与合规说明",
-            "math" to "数学",
-            "reading" to "阅读与拼音/语音",
-            "science" to "科学与自然",
-            "social_studies" to "社会与常识",
-            "emotional_skills" to "情绪调节与专注力"
-        ),
-
-        // Japanese
-        "ja" to mapOf(
-            "welcome" to "NeuroPathへようこそ",
-            "select_language" to "言語と地域を選択してください",
-            "language_label" to "言語",
-            "continue_btn" to "次へ進む",
-            "app_title" to "NeuroPath",
-            "parent_console" to "保護者＆教育者コンソール",
-            "child_name" to "お子様のお名前",
-            "grade_level" to "学年",
-            "app_language" to "アプリの言語",
-            "country" to "国",
-            "state_province" to "都道府県",
-            "city" to "市区町村",
-            "school_district" to "教育委員会・学区",
-            "educational_locale" to "地域・学区の教育指導要領要件",
-            "special_interest_theme" to "興味・関心テーマ",
-            "speech_reading" to "音声＆読み上げサポート",
-            "read_aloud" to "問題と回答の自動音声読み上げ (TTS)",
-            "tts_off_note" to "自主的な読解力を育むため、音声読み上げは初期設定でオフになっています。",
-            "speech_rate" to "読み上げ速度",
-            "save_config" to "設定を保存して終了",
-            "talk_to_buddy" to "Learning Buddyと話す",
-            "speech_to_text" to "音声入力アシスト",
-            "listening" to "聴き取り中... お話しください！",
-            "ai_help_prompt" to "わからないよ、AIバディ助けて！",
-            "daily_inspiration" to "今日のひらめき",
-            "curriculum_sync" to "学区のカリキュラムをダウンロード中...",
-            "curriculum_sync_sub" to "オフライン学習用にレッスンを保存中。",
-            "about_app" to "NeuroPath について",
-            "created_by" to "FourgeAI LABS 開発",
-            "github_repo" to "GitHub リポジトリ",
-            "soundscape" to "安心サウンドスケープ",
-            "epidemic_source" to "Epidemic Sound より提供されたサウンド効果",
-            "socratic_guidance_rule" to "ソクラテス式対話指導：AIは決して直接の答えを教えません。指導要領の文献を引用し、子どもが自分で答えに辿り着けるよう優しく導きます。",
-            "disclaimers_tab" to "免責事項と法的コンプライアンス",
-            "math" to "さんすう・数学",
-            "reading" to "こくご・読解",
-            "science" to "りか・科学",
-            "social_studies" to "しゃかい・生活",
-            "emotional_skills" to "気持ちのコントロール"
-        )
+    private val translations: Map<String, Map<String, String>> = mapOf(
+        "en-us" to enUs,
+        "en" to enUs,
+        "en-gb" to enGb,
+        "es" to es,
+        "fr" to fr,
+        "de" to de,
+        "it" to itMap,
+        "pt" to pt,
+        "nl" to nl,
+        "sv" to sv,
+        "zh" to zh,
+        "ja" to ja,
+        "ko" to ko,
+        "vi" to vi,
+        "th" to th,
+        "id" to id,
+        "hi" to hi,
+        "ar" to ar,
+        "ru" to ru,
+        "tr" to trMap,
+        "pl" to pl,
+        "el" to el
     )
 
     fun getString(key: String, languageCode: String): String {
-        val clean = languageCode.trim().lowercase()
-        val normalizedCode = when {
-            clean == "en-gb" || clean == "gb" || clean == "uk" -> "en-gb"
-            clean.startsWith("en") -> "en-us"
-            clean.startsWith("es") -> "es"
-            clean.startsWith("fr") -> "fr"
-            clean.startsWith("de") -> "de"
-            clean.startsWith("zh") -> "zh"
-            clean.startsWith("ja") -> "ja"
-            else -> clean
-        }
-
-        val langMap = translations[normalizedCode] ?: translations["en-us"]!!
-        return langMap[key] ?: translations["en-us"]?.get(key) ?: key
+        val cleanLang = languageCode.trim().lowercase()
+        val langMap = translations[cleanLang] 
+            ?: translations[cleanLang.take(2)] 
+            ?: enUs
+        return langMap[key] ?: enUs[key] ?: key
     }
+
+    fun getLanguageMap(languageCode: String): Map<String, String> {
+        val cleanLang = languageCode.trim().lowercase()
+        return translations[cleanLang] ?: translations[cleanLang.take(2)] ?: enUs
+    }
+
+    fun getAllKeys(): Set<String> = enUs.keys
 }

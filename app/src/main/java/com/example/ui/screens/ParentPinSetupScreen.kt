@@ -74,7 +74,7 @@ fun ParentPinSetupScreen(viewModel: NeuroPathViewModel, modifier: Modifier = Mod
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "Set Parental Passcode",
+                text = AppLanguageDictionary.getString("set_parental_pin", langCode),
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -83,7 +83,7 @@ fun ParentPinSetupScreen(viewModel: NeuroPathViewModel, modifier: Modifier = Mod
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Create a 4-digit PIN to lock parent controls & analytics.",
+                text = AppLanguageDictionary.getString("pin_subtitle", langCode),
                 fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -106,7 +106,7 @@ fun ParentPinSetupScreen(viewModel: NeuroPathViewModel, modifier: Modifier = Mod
                         modifier = Modifier.padding(end = 12.dp)
                     )
                     Text(
-                        text = "🔒 Security Note: There are no default passcodes. You must set a unique passcode to protect parent controls.",
+                        text = "🔒 ${AppLanguageDictionary.getString("pin_security_note", langCode)}",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -124,7 +124,7 @@ fun ParentPinSetupScreen(viewModel: NeuroPathViewModel, modifier: Modifier = Mod
                         errorMessage = null
                     }
                 },
-                label = { Text("4-Digit Passcode / PIN") },
+                label = { Text(AppLanguageDictionary.getString("enter_pin", langCode)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 visualTransformation = if (showPin) VisualTransformation.None else PasswordVisualTransformation(),
@@ -151,7 +151,7 @@ fun ParentPinSetupScreen(viewModel: NeuroPathViewModel, modifier: Modifier = Mod
                         errorMessage = null
                     }
                 },
-                label = { Text("Confirm Passcode / PIN") },
+                label = { Text(AppLanguageDictionary.getString("confirm_pin", langCode)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 visualTransformation = if (showPin) VisualTransformation.None else PasswordVisualTransformation(),

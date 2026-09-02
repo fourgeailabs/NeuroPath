@@ -109,14 +109,14 @@ fun ProfileSelectionScreen(
                 }
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    text = "NeuroPath Learning",
+                    text = AppLanguageDictionary.getString("app_title", langCode),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Who is exploring and learning today?",
+                    text = AppLanguageDictionary.getString("profile_selection_sub", langCode),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -284,7 +284,7 @@ fun ProfileSelectionScreen(
                             shape = RoundedCornerShape(12.dp),
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                         ) {
-                            Text("Start", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(AppLanguageDictionary.getString("start_lesson", langCode), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             Spacer(Modifier.width(4.dp))
                             Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                         }
@@ -307,7 +307,7 @@ fun ProfileSelectionScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Add Another Learner Profile", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text(AppLanguageDictionary.getString("add_learner_profile", langCode), fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -334,7 +334,7 @@ fun ProfileSelectionScreen(
                 Icon(Icons.Default.Lock, contentDescription = null)
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = "Parent Dashboard & Controls (PIN Required)",
+                    text = AppLanguageDictionary.getString("parent_console", langCode),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -354,7 +354,7 @@ fun ProfileSelectionScreen(
                     Icon(Icons.Default.Language, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "Language: ${AppLanguage.fromCode(langCode).displayName}",
+                        "${AppLanguageDictionary.getString("app_language", langCode)}: ${AppLanguage.fromCode(langCode).displayName}",
                         fontSize = 12.sp
                     )
                 }

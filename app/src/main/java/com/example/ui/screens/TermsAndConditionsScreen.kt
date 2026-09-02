@@ -121,7 +121,7 @@ fun TermsAndConditionsScreen(
             Spacer(Modifier.height(6.dp))
 
             Text(
-                text = "Terms & Conditions",
+                text = AppLanguageDictionary.getString("terms_title", langCode),
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -145,7 +145,7 @@ fun TermsAndConditionsScreen(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Jurisdiction: ${legalNotice.countryName} • ${legalNotice.governingLaw}",
+                        text = "${AppLanguageDictionary.getString("compliance_verified", langCode)}: ${legalNotice.countryName} • ${legalNotice.governingLaw}",
                         fontSize = 11.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -252,7 +252,7 @@ fun TermsAndConditionsScreen(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "I accept the Terms & Conditions, AI Disclaimers, and ${legalNotice.governingLaw} Privacy Policies for ${legalNotice.countryName}.",
+                    text = AppLanguageDictionary.getString("terms_agree_checkbox", langCode),
                     fontSize = 11.5.sp,
                     fontWeight = FontWeight.Medium,
                     color = if (hasScrolledToBottom) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -280,7 +280,7 @@ fun TermsAndConditionsScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = if (!hasScrolledToBottom) "Scroll Down to Read All Terms" else if (!userAcknowledgedCheck) "Please Check Agree Box" else AppLanguageDictionary.getString("continue_btn", langCode),
+                    text = if (!hasScrolledToBottom) AppLanguageDictionary.getString("terms_scroll_prompt", langCode) else if (!userAcknowledgedCheck) AppLanguageDictionary.getString("terms_check_agree_prompt", langCode) else AppLanguageDictionary.getString("continue_btn", langCode),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )

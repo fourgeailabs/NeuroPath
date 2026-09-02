@@ -106,6 +106,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Pin
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Refresh
 
 enum class ParentDashboardTab(val title: String, val iconEmoji: String) {
     PROFILES("Child Profiles", "👥"),
@@ -127,6 +130,9 @@ fun ParentDashboardScreen(
     val lessonRecords by viewModel.lessonRecords.collectAsState()
     val isVerifyingLocation by viewModel.isVerifyingLocation.collectAsState()
     val locationComplianceResult by viewModel.locationComplianceResult.collectAsState()
+    val oerUnits by viewModel.oerCurriculumUnits.collectAsState()
+    val isOerSyncing by viewModel.isOerSyncing.collectAsState()
+    val oerSyncResult by viewModel.oerSyncResult.collectAsState()
     val uriHandler = LocalUriHandler.current
 
     var selectedTab by remember { mutableStateOf(ParentDashboardTab.PROFILES) }
@@ -168,6 +174,9 @@ fun ParentDashboardScreen(
     var expandedGrade by remember { mutableStateOf(false) }
     var expandedLanguage by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
+    var showWhatsNewDialog by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateStatusMessage by remember { mutableStateOf<String?>(null) }
 
     val activeNeuroTypes = remember(profile.neurodivergentTypesCsv) {
         profile.neurodivergentTypesCsv.split(",").filter { it.isNotBlank() }.toMutableSet()
@@ -237,12 +246,18 @@ fun ParentDashboardScreen(
                     .clip(RoundedCornerShape(14.dp))
             ) {
                 ParentDashboardTab.values().forEach { tab ->
+                    val tabTitle = when (tab) {
+                        ParentDashboardTab.PROFILES -> AppLanguageDictionary.getString("tab_profiles", selectedLanguageCode)
+                        ParentDashboardTab.SETTINGS -> AppLanguageDictionary.getString("tab_settings", selectedLanguageCode)
+                        ParentDashboardTab.STANDARDS -> AppLanguageDictionary.getString("tab_standards", selectedLanguageCode)
+                        ParentDashboardTab.DISCLAIMERS -> AppLanguageDictionary.getString("tab_disclaimers", selectedLanguageCode)
+                    }
                     Tab(
                         selected = selectedTab == tab,
                         onClick = { selectedTab = tab },
                         text = {
                             Text(
-                                "${tab.iconEmoji} ${tab.title}",
+                                "${tab.iconEmoji} $tabTitle",
                                 fontSize = 12.sp,
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
                             )
@@ -1151,6 +1166,132 @@ fun ParentDashboardScreen(
                         }
                     }
                 }
+
+                // Section: Pre-Installed OER Commons Curated Collection
+                item {
+                    ElevatedCard(
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.fillMaxWidth().testTag("oer_commons_card")
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text("📚", fontSize = 18.sp)
+                                        }
+                                    }
+                                    Column {
+                                        Text(
+                                            "OER Commons Curated Collection",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            "Pre-installed K-12 Open Educational Resources",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                ) {
+                                    Text(
+                                        "${oerUnits.size} Units Cached",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            Text(
+                                "All K-12 core curriculum benchmarks (Mathematics, English Language Arts, Sciences, Social Studies & Civics) are pre-installed offline and accessible to the AI tutor. Sourced from the curated collection at oercommons.org/curated-collections.",
+                                fontSize = 12.sp,
+                                lineHeight = 17.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            if (oerSyncResult != null) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (oerSyncResult!!.isSuccess) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = if (oerSyncResult!!.isSuccess) Icons.Default.CheckCircle else Icons.Default.WarningAmber,
+                                            contentDescription = "Sync Status",
+                                            tint = if (oerSyncResult!!.isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            oerSyncResult!!.message,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                    }
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = { viewModel.syncOerCommonsCurriculum() },
+                                    enabled = !isOerSyncing,
+                                    modifier = Modifier.weight(1f).testTag("sync_oer_btn")
+                                ) {
+                                    if (isOerSyncing) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Syncing OER...", fontSize = 12.sp)
+                                    } else {
+                                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Sync", modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Sync OER Collection", fontSize = 12.sp)
+                                    }
+                                }
+
+                                OutlinedButton(
+                                    onClick = { uriHandler.openUri("https://oercommons.org/curated-collections") },
+                                    modifier = Modifier.testTag("open_oer_commons_url_btn")
+                                ) {
+                                    Icon(imageVector = Icons.Default.Public, contentDescription = "Website", modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("OER Hub", fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // TAB 3: DISCLAIMERS & LEGAL COMPLIANCE
@@ -1316,18 +1457,43 @@ fun ParentDashboardScreen(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(imageVector = Icons.Default.Info, contentDescription = "About", tint = MaterialTheme.colorScheme.primary)
                         Text(
-                            "About NeuroPath",
+                            AppLanguageDictionary.getString("about_app", selectedLanguageCode),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
 
-                    Text("App Version: v1.02.00 • Locale: $country", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("App Version: v1.05.00 • Locale: $country", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { showWhatsNewDialog = true },
+                            modifier = Modifier.weight(1f).testTag("whats_new_btn"),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(AppLanguageDictionary.getString("whats_new", selectedLanguageCode), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                updateStatusMessage = "Checking GitHub Releases..."
+                                showUpdateDialog = true
+                            },
+                            modifier = Modifier.weight(1f).testTag("check_updates_btn"),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text(AppLanguageDictionary.getString("check_updates", selectedLanguageCode), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                        }
+                    }
 
                     Text(
                         "Audio Soundscapes: Audio sample arrangements provided via Epidemic Sound (https://www.epidemicsound.com/sound-effects/)",
@@ -1341,6 +1507,8 @@ fun ParentDashboardScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
+                    HorizontalDivider()
+
                     Text(
                         "Created by FourgeAI LABS",
                         fontSize = 13.sp,
@@ -1349,6 +1517,18 @@ fun ParentDashboardScreen(
                         modifier = Modifier
                             .clickable {
                                 uriHandler.openUri("https://github.com/fourgeailabs")
+                            }
+                            .padding(vertical = 2.dp)
+                    )
+
+                    Text(
+                        "App Repository: https://github.com/fourgeailabs/neuropath",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier
+                            .clickable {
+                                uriHandler.openUri("https://github.com/fourgeailabs/neuropath")
                             }
                             .padding(vertical = 2.dp)
                     )
@@ -1388,7 +1568,7 @@ fun ParentDashboardScreen(
                     .height(52.dp)
                     .testTag("save_parent_settings_btn")
             ) {
-                Text("Save Configuration & Exit", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(AppLanguageDictionary.getString("save_config", selectedLanguageCode), fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         }
     }
@@ -1397,6 +1577,26 @@ fun ParentDashboardScreen(
         TermsAndConditionsDialog(
             country = country,
             onDismiss = { showTermsDialog = false }
+        )
+    }
+
+    if (showWhatsNewDialog) {
+        WhatsNewDialog(
+            onDismiss = { showWhatsNewDialog = false }
+        )
+    }
+
+    if (showUpdateDialog) {
+        UpdateCheckDialog(
+            currentVersion = "1.06.00",
+            statusMessage = updateStatusMessage,
+            onDismiss = { showUpdateDialog = false },
+            onRemindLater = {
+                showUpdateDialog = false
+            },
+            onSkipVersion = {
+                showUpdateDialog = false
+            }
         )
     }
 
@@ -1527,4 +1727,232 @@ private fun MetricBox(title: String, value: String, bg: Color, modifier: Modifie
             Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
         }
     }
+}
+
+data class ReleaseUpdateNote(
+    val version: String,
+    val date: String,
+    val highlights: List<String>
+)
+
+@Composable
+fun WhatsNewDialog(
+    onDismiss: () -> Unit
+) {
+    val updates = remember {
+        listOf(
+            ReleaseUpdateNote(
+                version = "v1.06.00 (Current)",
+                date = "Latest Update",
+                highlights = listOf(
+                    "📚 Pre-Installed OER Commons K-12 Collection: Integrated curated open educational resources pre-installed and cached locally in Room Database covering Kindergarten through Grade 12 (Math, ELA, Sciences, Social Studies & Civics).",
+                    "🔍 Online & Offline OER Service: Real-time synchronization and offline fallback parser for oercommons.org curated collections.",
+                    "🧠 Curriculum-Aware AI Tutor: Gemini AI tutor and Voice Assist automatically query OER Commons materials to tailor explanations and practice to exact grade benchmarks in all 21 supported languages."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.05.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "🌐 21-Language Global Localization: Complete end-to-end multi-language dictionary across English (US/UK), Spanish, French, German, Mandarin, Japanese, Korean, Portuguese, Italian, Dutch, Swedish, Russian, Turkish, Polish, Greek, Vietnamese, Thai, Indonesian, Hindi, and Arabic.",
+                    "⚡ Instant Reactive Switching: Switching languages in Setup, Parent Settings, or Dashboard immediately adapts every UI screen, dialog, button, and educational instruction.",
+                    "🎯 Full Coverage: All menus, dialogs, 'What's New', 'Check for Updates', fidgets, sensory suites, and Socratic tutoring components are seamlessly translated."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.04.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "🌐 Global Language Change: Instant reactive localization for all screens, settings, setup flows, sensory tools, and lessons across initial languages.",
+                    "🧠 Socratic AI Research Assistant: Deep curriculum retrieval engine grounded in official localized standards and downloaded offline materials.",
+                    "📚 OER Commons K-12 Curated Collections: Integrated curated open educational resources across elementary, middle, and high school grades."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.03.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "🔬 Socratic AI Scaffolding Engine: AI Learning Buddy guides students step-by-step through inquiry rather than providing direct answers.",
+                    "🏫 Full K-12 Grade Tier Routing: Dynamic UI modes for Elementary Explorer, Middle School Command Center, and High School Academic Studio."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.02.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "📍 Granular Location & Educational Standards: Country, state/province, city, and school district alignment.",
+                    "⚖️ Multi-Jurisdiction Compliance: Dedicated legal frameworks for US COPPA/FERPA, EU GDPR-K, UK Children's Code, Australia Privacy Act, and more."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.01.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "🎵 Google Lyria AI Music Generation: Real-time procedural ambient soundscapes tailored to student sensory needs.",
+                    "📖 Dyslexia-friendly typography & high contrast sensory modes."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.00.00",
+                date = "Initial Launch",
+                highlights = listOf(
+                    "🎉 Initial NeuroPath Learning Release: Multi-profile neurodivergent education suite with local on-device database.",
+                    "🫧 Sensory Fidget Suite: Pop-It, 4-7-8 Breathing, Ocean Explorer, and Creative Studio."
+                )
+            )
+        )
+    }
+
+    var openedIndex by remember { mutableStateOf<Int?>(null) } // starts closed
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("What's New in NeuroPath", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    "Explore the latest enhancements and version history below. Tap any version to view its release notes.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                updates.forEachIndexed { index, item ->
+                    val isExpanded = openedIndex == index
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (index == 0) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                openedIndex = if (isExpanded) null else index
+                            }
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        item.version,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(item.date, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Icon(
+                                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            if (isExpanded) {
+                                Spacer(Modifier.height(8.dp))
+                                HorizontalDivider()
+                                Spacer(Modifier.height(8.dp))
+                                item.highlights.forEach { highlight ->
+                                    Text(
+                                        highlight,
+                                        fontSize = 12.sp,
+                                        lineHeight = 16.sp,
+                                        modifier = Modifier.padding(vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
+fun UpdateCheckDialog(
+    currentVersion: String,
+    statusMessage: String?,
+    onDismiss: () -> Unit,
+    onRemindLater: () -> Unit,
+    onSkipVersion: () -> Unit
+) {
+    val uriHandler = LocalUriHandler.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text("App Update Status", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Current Installed Version: v$currentVersion",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFD4EDDA),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF155724), modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "You are running the latest build available from GitHub Actions & Releases.",
+                            fontSize = 12.sp,
+                            color = Color(0xFF155724)
+                        )
+                    }
+                }
+                Text(
+                    "GitHub Releases & Actions automatically build APK releases on repository push.",
+                    fontSize = 11.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    uriHandler.openUri("https://github.com/fourgeailabs/neuropath/releases")
+                    onDismiss()
+                }
+            ) {
+                Text("View Releases")
+            }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(onClick = onRemindLater) {
+                    Text("Remind Later")
+                }
+                TextButton(onClick = onSkipVersion) {
+                    Text("Skip Version")
+                }
+            }
+        }
+    )
 }

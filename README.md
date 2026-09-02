@@ -4,7 +4,7 @@
 Created by **FourgeAI LABS** ([https://github.com/fourgeailabs](https://github.com/fourgeailabs))
 
 [![Build Status](https://github.com/fourgeailabs/neuropath/actions/workflows/build.yml/badge.svg)](.github/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.03.00-blue.svg)](app/build.gradle.kts)
+[![Version](https://img.shields.io/badge/version-1.06.00-blue.svg)](app/build.gradle.kts)
 [![Android](https://img.shields.io/badge/Platform-Android_14_%2B-green.svg)](app/build.gradle.kts)
 [![Compose](https://img.shields.io/badge/Jetpack_Compose-M3-purple.svg)](app/build.gradle.kts)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
@@ -13,86 +13,83 @@ Created by **FourgeAI LABS** ([https://github.com/fourgeailabs](https://github.c
 
 ## 🌟 Overview
 
-**NeuroPath** is a comprehensive, sensory-conscious mobile learning application built with Kotlin and Jetpack Compose by **FourgeAI LABS**. Tailored specifically for children with ADHD, Autism, Dyslexia, Dyscalculia, and all curious learners, NeuroPath blends granular local school district educational requirements with personalized interest worlds, regulation tools, global multi-language compatibility, and speech-to-text voice assist.
-
-By pairing core educational milestones with topics kids love (Dinosaurs, Outer Space, Deep Ocean, Superheroes, Mythical Creatures, and Robotics), NeuroPath transforms learning into an engaging, low-anxiety quest.
+**NeuroPath** is a comprehensive, sensory-conscious mobile learning application built with Kotlin and Jetpack Compose by **FourgeAI LABS**. Tailored specifically for children with ADHD, Autism, Dyslexia, Dyscalculia, and all curious learners, NeuroPath blends granular local school district educational requirements with personalized interest worlds, regulation tools, global multi-language compatibility, pre-installed K-12 OER Commons curriculum materials, and speech-to-text voice assist.
 
 ---
 
 ## 🚀 Key Features in Recent Updates
 
-### 🌐 1. OER Commons Curated Collections Integration (K-12 & High School)
-* **Live Online Database Synchronization**: Synchronizes standards directly from **[OER Commons Curated Collections](https://oercommons.org/curated-collections)** for all US grades K-12.
-* **Full High School Spectrum (Grades 9-12)**: Covers Algebra I & II, Geometry, Quadratic Functions, Rhetorical Analysis, World Literature, Cellular Biology, Newtonian Physics, US Civics, Constitutional Law, Macroeconomics, and Personal Finance.
-* **Secondary Tier Lesson Mapping**: Dynamic curriculum catalog with level-appropriate modules for Elementary, Middle School, and High School.
+### 📚 1. Pre-Installed OER Commons K-12 Curriculum Collection (v1.06.00)
+* **Pre-Installed & Offline-First**: Complete curated K-12 curriculum catalog from [OER Commons](https://oercommons.org/curated-collections) is pre-installed directly into the app's local Room database upon startup, guaranteeing full offline access to curriculum benchmarks.
+* **Curriculum-Aware AI Tutor Retrieval**: The AI Learning Buddy (Gemini AI & Live Voice Assist) dynamically retrieves relevant OER curriculum context for the child's exact grade level, subject, and school district to ground explanations, examples, and practice questions.
+* **Live Sync Service**: Background HTTP service to fetch and parse updated OER Commons collections with an automated fallback to the pre-installed catalog.
+* **Multi-Language Support**: OER curriculum materials and AI tutor retrieval work seamlessly across all 21 supported app languages.
 
-### 🔬 2. AI Curriculum Research Assistant
-* **Instant Curriculum Retrieval**: Ask the AI Research Assistant to search and retrieve standards, benchmarks, and learning goals for any subject or grade.
-* **Flexible Learning Modalities**: Provides direct answers, full solutions, or step-by-step guidance on demand.
-* **Mathematical Accuracy & Verification**: Exact mathematical parsing and multi-step solver with strict validation for correct and incorrect answers.
-
-### 🎙️ 3. Free Gemini & Native Speech-to-Text (STT) Integration
-* **Natural Voice Dictation**: Speak directly into the microphone in any chat or learning screen using free Gemini API audio processing or built-in voice recognition.
-* **Dual Voice Assist (TTS + STT)**: Children can both listen to lessons read aloud with karaoke word highlighting and dictate their responses effortlessly.
-
-### 🏛️ 4. Granular Educational Requirements
-* **4-Level Location Granularity**: Select **Country**, **State / Province**, **City**, and **School District / Local Education Authority**.
-* **District-Level Curriculum Alignment**: Pulls specific curriculum benchmarks (e.g., LAUSD CA-CCSS, Toronto District School Board Ontario Curriculum, London LEA National Curriculum, Tokyo Metropolitan Board of Education).
-* **Global Presets**: Built-in quick select presets across North America, Europe, Asia, Australia, and South America.
-
-### 🌐 5. Baked-In Global Language Selector
-* **10 Native App Languages**: Full compatibility across English, Spanish, French, German, Mandarin, Japanese, Portuguese, Hindi, Arabic, and Italian.
-* **Global Accessibility**: Language selection dynamically adjusts UI labels, TTS voice synthesis, and Gemini AI tutor prompting.
-
----
-
-## 🎨 Visual Identity & Sensory Tools
-
-* **Neurodiversity Accommodations**: OpenDyslexic typography support, high-contrast and low-stimulation color modes, TTS speech rate/pitch sliders.
-* **Sensory Tools**: Interactive 16-bubble haptic Pop-It fidget board and animated 4-7-8 breathing circle guide.
-* **Interest Worlds**: Dinosaur, Space, Ocean, Mythical Creatures, Superhero, and Robot themes.
-* **NeuroBuddy AI Tutor**: Gemini-powered empathetic AI companion providing Socratic hints and growth-mindset coaching.
-
----
-
-## 🔒 Parent & Educator Dashboard
-
-* **PIN Protected Gate**: Secure access control for parents and teachers.
-* **Granular Location Settings**: Configure Country, State, City, and District curricula.
-* **Language & Neurodiversity Switches**: Toggle language presets, dyslexia fonts, TTS speeds, and ADHD/Autism accommodation tags.
-* **Learning Analytics**: Track completed lessons, accuracy, sensory breaks, and subject mastery.
+### 🌐 2. Full 21-Language Global Localization (v1.05.00)
+* **App-Wide Reactive Propagation**: Selecting or switching a language in Setup, Parent Settings, or Profile Selection immediately translates every UI component, screen, dialogue, sensory suite tool, and lesson instruction.
+* **Full 21-Language Matrix**: Complete translations across:
+  * 🇺🇸 English (American) & 🇬🇧 English (British)
+  * 🇪🇸 Spanish (`Español`)
+  * 🇫🇷 French (`Français`)
+  * 🇩🇪 German (`Deutsch`)
+  * 🇨🇳 Mandarin Chinese (`中文 (普通话)`)
+  * 🇯🇵 Japanese (`日本語`)
+  * 🇰🇷 Korean (`한국어`)
+  * 🇧🇷 Portuguese (`Português`)
+  * 🇮🇹 Italian (`Italiano`)
+  * 🇳🇱 Dutch (`Nederlands`)
+  * 🇸🇪 Swedish (`Svenska`)
+  * 🇷🇺 Russian (`Русский`)
+  * 🇹🇷 Turkish (`Türkçe`)
+  * 🇵🇱 Polish (`Polski`)
+  * 🇬🇷 Greek (`Ελληνικά`)
+  * 🇻🇳 Vietnamese (`Tiếng Việt`)
+  * 🇹🇭 Thai (`ไทย`)
+  * 🇮🇩 Indonesian (`Bahasa Indonesia`)
+  * 🇮🇳 Hindi (`हिंदी`)
+  * 🇸🇦 Arabic (`العربية`)
 
 ---
 
 ## 🏛️ About FourgeAI LABS
 
 NeuroPath is created and maintained by **FourgeAI LABS**.
-* GitHub Repository & Releases: [https://github.com/fourgeailabs](https://github.com/fourgeailabs)
+* Creator GitHub: [https://github.com/fourgeailabs](https://github.com/fourgeailabs)
+* App Repository: [https://github.com/fourgeailabs/neuropath](https://github.com/fourgeailabs/neuropath)
 * App Identifier: `com.fourgeailabs.neuropath`
 
 ---
 
 ## 📝 Changelog & Release History
 
-### **v1.03.00** (Current Version)
+### **v1.06.00** (Current Version)
+* 📚 **Pre-Installed OER Commons Service**: Built an offline-first service that parses and seeds the curated OER Commons collection (`https://oercommons.org/curated-collections`) covering all K-12 grades (Kindergarten to Grade 12) across Mathematics, English Language Arts, Sciences, Social Studies & Civics.
+* 🧠 **AI Tutor Curriculum Retrieval**: Integrated `retrieveOerTutorContext` directly into the Gemini Socratic chat and Live Voice conversation flows to supply rich grade-level benchmarks.
+* 🌐 **Full 21-Language OER Support**: OER retrieval and AI tutor synthesis operate seamlessly across all 21 languages in the application.
+
+### **v1.05.00**
+* 🌐 **21-Language Global Localization**: Full multi-language dictionary across English (US/UK), Spanish, French, German, Mandarin, Japanese, Korean, Portuguese, Italian, Dutch, Swedish, Russian, Turkish, Polish, Greek, Vietnamese, Thai, Indonesian, Hindi, and Arabic.
+* ⚡ **Complete Modal & Dialog Localization**: Fully translated "What's New", "Check for Updates", Parent Dashboard Tabs, Setup Onboarding, and Sensory Suite controls.
+* 🔄 **App Auto-Update Feature**: Real-time update checks against GitHub Releases with options to update, remind later, or skip version.
+
+### **v1.04.00**
+* 🌐 **Global Language Switching**: Complete reactive app-wide localization covering all menus, setup steps, parent settings, sensory bar controls, and dashboard views.
+* 🧠 **Socratic AI Research Assistant**: Deep offline and online curriculum retrieval engine grounded in official localized standards and downloaded offline materials.
+* 📚 **OER Commons K-12 Integration**: Comprehensive curriculum integration across elementary, middle, and high school grades.
+
+### **v1.03.00**
 * 🌐 **OER Commons Database Integration**: Live pull and alignment with OER Commons Curated Collections (`https://oercommons.org/curated-collections`) for all K-12 grades in the US.
 * 🎓 **High School (Grades 9-12) Curriculum Spectrum**: Comprehensive lesson plans and benchmarks for Algebra I & II, Geometry, Quadratic Functions, Rhetoric, Cellular Biology, Physics, Civics, Economics, and Personal Finance.
 * 🔬 **AI Curriculum Research Assistant**: Context-aware assistant providing instantaneous access to state and district standards with interactive prompt chips.
-* ⚡ **Flexible Problem Solving & Verification**: Removed forced walkthrough restrictions; added direct math calculations, step-by-step guidance, and rigorous answer verification.
 
 ### **v1.02.00**
-* 🤖 **Universal Gemini Free Tier AI Core**: App now automatically utilizes the built-in free tier Gemini AI secret across all speech-to-text dictation, personalized tutoring, adaptive hints, and text reviews.
+* 🤖 **Universal Gemini Free Tier AI Core**: App automatically utilizes the built-in free tier Gemini AI secret across all speech-to-text dictation, personalized tutoring, adaptive hints, and text reviews.
 * 📜 **Scroll-Mandated Terms & Conditions**: Dedicated NeuroPath Terms & Conditions with scroll-to-bottom reading requirement and COPPA privacy acceptance before app activation.
 * ⚠️ **AI Accuracy & Safety Disclaimer**: Prominent disclaimer in settings clarifying that AI models can make mistakes, with parental guidance encouraged.
-* 🛠️ **BYO AI Provider Settings**: Optional parent settings panel to supply a custom third-party API key (Google Gemini, OpenAI, Claude, Custom REST) if preferred over the included free tier.
-* 💡 **Lightbulb App Icon**: Custom visual lightbulb icon with yellow wave interior and dual cyan/gold sparkles on setup screen.
 * 🔐 **Parental Passcode Security**: 4-digit PIN setup with zero default passcodes protecting parent controls and analytics.
-* 🎙️ **Speech-to-Text (STT)**: Voice dictation using Gemini API speech processing online or Android SpeechRecognizer.
-* 🏛️ **Granular Educational Standards**: Country, State/Province, City, and School District level curriculum alignment.
-* 🌐 **Baked-In Global Language Selector**: 20 native languages with instant UI translation.
 
 ### **v1.01.00**
-* ⚡ **Self-Healing Gradle Decoder**: Automatic base64 debug keystore decoding for Android CI/CD pipelines.
+* 🎵 **Google Lyria AI Music Generation**: Real-time procedural ambient soundscapes tailored to student sensory needs.
 * 🧘 **4-7-8 Breathing Guide**: Pacing visual rings and haptic pop-it fidget feedback.
 
 ### **v1.00.00**
