@@ -167,13 +167,6 @@ fun ParentDashboardScreen(
 
     var expandedGrade by remember { mutableStateOf(false) }
     var expandedLanguage by remember { mutableStateOf(false) }
-    var expandedAiPlatform by remember { mutableStateOf(false) }
-
-    var customPlatform by remember(profile) {
-        mutableStateOf(if (profile.customAiPlatform.isBlank()) "Default (Free Tier Gemini AI)" else profile.customAiPlatform)
-    }
-    var customKey by remember(profile) { mutableStateOf(profile.customApiKey) }
-    var showCustomKey by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
 
     val activeNeuroTypes = remember(profile.neurodivergentTypesCsv) {
@@ -782,7 +775,7 @@ fun ParentDashboardScreen(
                     }
                 }
 
-                // AI Provider & Custom API Key (BYO Provider)
+                // AI Engine Service Info (Google AI Studio Gemini)
                 item {
                     Card(
                         shape = RoundedCornerShape(20.dp),
@@ -792,7 +785,7 @@ fun ParentDashboardScreen(
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = "AI Settings", tint = MaterialTheme.colorScheme.primary)
                                 Text(
-                                    "🤖 AI Engine & Provider Keys (Advanced)",
+                                    "🤖 AI Engine Service",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -816,7 +809,7 @@ fun ParentDashboardScreen(
                                     )
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        text = if (customKey.isBlank()) "Default Free Tier Gemini AI is currently active across all voice, tutoring, text reviews, and learning tools." else "Custom Provider API Key is configured and active.",
+                                        text = "Google AI Studio Gemini Integration Active",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -824,65 +817,9 @@ fun ParentDashboardScreen(
                                 }
                             }
 
-                            Text("AI Platform Provider:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            ExposedDropdownMenuBox(
-                                expanded = expandedAiPlatform,
-                                onExpandedChange = { expandedAiPlatform = !expandedAiPlatform }
-                            ) {
-                                OutlinedTextField(
-                                    value = customPlatform,
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAiPlatform) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .menuAnchor()
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = expandedAiPlatform,
-                                    onDismissRequest = { expandedAiPlatform = false }
-                                ) {
-                                    listOf(
-                                        "Default (Free Tier Gemini AI)",
-                                        "Google Gemini (Custom Key)",
-                                        "OpenAI ChatGPT",
-                                        "Anthropic Claude",
-                                        "Custom REST API Endpoint"
-                                    ).forEach { provider ->
-                                        DropdownMenuItem(
-                                            text = { Text(provider) },
-                                            onClick = {
-                                                customPlatform = provider
-                                                expandedAiPlatform = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-
-                            OutlinedTextField(
-                                value = customKey,
-                                onValueChange = { customKey = it },
-                                label = { Text("Custom API Key (Optional)") },
-                                placeholder = { Text("Leave blank to use default free Gemini AI") },
-                                singleLine = true,
-                                visualTransformation = if (showCustomKey) VisualTransformation.None else PasswordVisualTransformation(),
-                                trailingIcon = {
-                                    IconButton(onClick = { showCustomKey = !showCustomKey }) {
-                                        Icon(
-                                            imageVector = if (showCustomKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                            contentDescription = "Toggle Key Visibility"
-                                        )
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("custom_ai_key_input")
-                            )
-
                             Text(
-                                "An API key is NOT required. NeuroPath includes free tier Gemini intelligence out of the box for all learning and voice features. Use this optional section only if you prefer to connect your own external provider quota.",
-                                fontSize = 11.sp,
+                                "NeuroPath is powered directly by Google AI Studio Gemini API offerings (gemini-3.5-flash, gemini-3.1-pro-preview, and gemini-3.1-flash-lite-preview) provided natively by the AI Studio environment.",
+                                fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1439,8 +1376,8 @@ fun ParentDashboardScreen(
                         ttsSpeed = ttsSpeed,
                         readAloud = readAloud,
                         dailyMinutes = dailyMinutes,
-                        customAiPlatform = customPlatform,
-                        customApiKey = customKey
+                        customAiPlatform = "Google Gemini AI",
+                        customApiKey = ""
                     )
                     viewModel.navigateTo(AppScreen.HOME)
                 },

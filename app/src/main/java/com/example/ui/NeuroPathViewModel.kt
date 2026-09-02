@@ -79,8 +79,6 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     val activeApiKey: String
         get() {
-            val userKey = _currentProfile.value.customApiKey.trim()
-            if (userKey.isNotBlank() && userKey != "MY_GEMINI_API_KEY") return userKey
             val configKey = com.example.BuildConfig.GEMINI_API_KEY
             if (configKey.isNotBlank() && configKey != "MY_GEMINI_API_KEY") return configKey
             val envKey = System.getenv("GEMINI_API_KEY") ?: ""
@@ -1112,12 +1110,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     }
         
                     val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
-                    val isHighSchool = profile.ageGroupTier == AgeGroupTier.HIGH_SCHOOL.id
-                    val socraticDirective = if (isHighSchool) {
-                        "1. NEVER give direct answers to homework or questions. Guide the student Socratically with probing questions, concept breakdowns, and scaffolded analytical steps."
-                    } else {
-                        "1. NEVER give direct answers to homework or questions. Guide the student Socratically with clues, questions, and scaffolded steps."
-                    }
+                    val socraticDirective = "1. Provide direct, accurate answers and solutions with clear, friendly, step-by-step explanations. When evaluating a student's answer, state clearly whether it is correct or incorrect: praise correct answers, and gently point out mistakes with the correct solution if incorrect."
 
                     val systemPrompt = """
                         $basePrompt
@@ -1126,7 +1119,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         Learner profile accommodation considerations: ${profile.neurodivergentTypesCsv}.
                         Pedagogical Guidance Mandate:
                         $socraticDirective
-                        2. Ground and align all explanations in the active curriculum standard document: [Curriculum Source: ${profile.stateStandard} Standard Framework / ${profile.schoolDistrict}].
+                        2. Ground explanations in the active curriculum standard framework (${profile.stateStandard} / ${profile.schoolDistrict}), but DO NOT append any citation tags, reference notes, or footnotes to your messages.
                         3. Always be patient, encouraging, and use positive reinforcement.
                         4. Explain concepts in clear, structured steps with relatable real-world and ${theme.title} metaphors.
                     """.trimIndent()
@@ -1151,7 +1144,9 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         stateOrProvince = profile.stateOrProvince,
                         country = profile.country,
                         standardTitle = profile.stateStandard,
-                        languageCode = profile.appLanguageCode
+                        languageCode = profile.appLanguageCode,
+                        conversationHistory = _chatMessages.value.map { it.sender to it.text },
+                        curriculumContext = currSummary
                     )
                 }
 
@@ -1172,7 +1167,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     stateOrProvince = _currentProfile.value.stateOrProvince,
                     country = _currentProfile.value.country,
                     standardTitle = _currentProfile.value.stateStandard,
-                    languageCode = _currentProfile.value.appLanguageCode
+                    languageCode = _currentProfile.value.appLanguageCode,
+                    conversationHistory = _chatMessages.value.map { it.sender to it.text }
                 )
                 val replyMsg = ChatMessage(
                     id = (System.currentTimeMillis() + 1).toString(),

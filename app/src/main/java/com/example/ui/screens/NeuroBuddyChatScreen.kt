@@ -27,6 +27,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -66,6 +68,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -259,7 +262,7 @@ fun NeuroBuddyChatScreen(
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "Gemini API Key missing — Using Local Socratic Mode. Tap to add key in Settings.",
+                            "Gemini AI Offline — Using Local Socratic Mode.",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onErrorContainer
@@ -354,11 +357,12 @@ fun NeuroBuddyChatScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     val quickPrompts = listOf(
+                        "🔬 Research my downloaded curriculum",
+                        "📊 What math standards am I learning?",
+                        "📖 Research reading & phonics goals",
+                        "🧪 Research science benchmarks for my grade",
                         "🦖 Tell me a fun learning clue!",
-                        "➕ Guide me step-by-step through math",
-                        "📖 Give me a reading strategy",
-                        "🧠 Why does my brain feel tired?",
-                        "🌟 Encourage me!"
+                        "➕ Guide me step-by-step through math"
                     )
 
                     quickPrompts.forEach { prompt ->
@@ -505,6 +509,18 @@ fun NeuroBuddyChatScreen(
                         .weight(1f)
                         .testTag("chat_input_field"),
                     shape = RoundedCornerShape(24.dp),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Send
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSend = {
+                            if (inputText.isNotBlank()) {
+                                viewModel.sendChatMessage(inputText)
+                                inputText = ""
+                            }
+                        }
+                    ),
+                    singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)

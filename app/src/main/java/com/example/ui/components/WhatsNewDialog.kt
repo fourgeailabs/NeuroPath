@@ -48,8 +48,20 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v1.02.00",
+        version = "v1.03.00",
         date = "Current Update",
+        title = "OER Commons Curated Collections K-12 & High School Research Assistant",
+        highlights = listOf(
+            "🌐 OER Commons Curated Collections Integration: Full US K-12 curriculum pulling directly from https://oercommons.org/curated-collections.",
+            "🎓 Complete High School (Grades 9-12) Spectrum: Added Algebra I & II, Geometry, Trigonometry, Rhetorical Analysis, Molecular Biology, Newtonian Physics, US Civics, Macroeconomics, and Personal Finance.",
+            "🔬 AI Research Assistant: Instant query access to all downloaded curriculum standards, benchmarks, and pedagogical scaffolding.",
+            "⚡ Flexible Problem Solving & Smart Verification: Direct answer calculation alongside optional step-by-step guidance with strict mathematical verification."
+        ),
+        isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v1.02.00",
+        date = "Previous Update",
         title = "Speech-to-Text & Granular Global School District Alignment",
         highlights = listOf(
             "🎙️ Speech-to-Text (STT) Integration: Speak naturally into your microphone using free Gemini API online speech processing.",
@@ -57,7 +69,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
             "🌐 Baked-In Global Language Selector: Full native language support across 10 global languages (English, Spanish, French, German, Mandarin, Japanese, Portuguese, Hindi, Arabic, Italian).",
             "🔊 Dual TTS & STT Voice Assist: Seamless voice interactions for speech synthesis and voice input across all learning modules."
         ),
-        isCurrentVersion = true
+        isCurrentVersion = false
     ),
     ReleaseNote(
         version = "v1.01.00",
