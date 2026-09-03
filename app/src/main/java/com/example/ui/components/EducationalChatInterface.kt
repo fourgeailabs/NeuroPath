@@ -196,7 +196,7 @@ fun EducationalChatInterface(
             shadowElevation = 2.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -205,7 +205,7 @@ fun EducationalChatInterface(
                     // Back button & Buddy Avatar Info
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f, fill = false)
                     ) {
                         IconButton(
                             onClick = onBack,
@@ -220,15 +220,15 @@ fun EducationalChatInterface(
                             )
                         }
 
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(4.dp))
 
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(38.dp)
+                            modifier = Modifier.size(36.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(theme.emoji, fontSize = 20.sp)
+                                Text(theme.emoji, fontSize = 18.sp)
                             }
                         }
 
@@ -251,7 +251,7 @@ fun EducationalChatInterface(
                                 ) {
                                     Text(
                                         text = if (activeChatMode.isFreeTier) "FREE" else "PRO",
-                                        fontSize = 9.sp,
+                                        fontSize = 8.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (activeChatMode.isFreeTier) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSecondaryContainer,
                                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
@@ -268,27 +268,36 @@ fun EducationalChatInterface(
                         }
                     }
 
+                    Spacer(Modifier.width(6.dp))
+
                     // Action Controls: Model Selector, New Topic, and Message History
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // Free Model / Model Mode Dropdown Pill
                         Box {
+                            val modelLabel = when (activeChatMode) {
+                                ChatModelMode.FAST -> "Flash Lite"
+                                ChatModelMode.GENERAL -> "3.5 Flash"
+                                ChatModelMode.COMPLEX -> "3.1 Pro"
+                                ChatModelMode.OFFLINE -> "Offline"
+                            }
+
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
                                 modifier = Modifier
                                     .clickable { showModelMenu = true }
                                     .testTag("chat_model_selector_btn")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(activeChatMode.icon, fontSize = 12.sp)
-                                    Spacer(Modifier.width(4.dp))
+                                    Spacer(Modifier.width(3.dp))
                                     Text(
-                                        activeChatMode.displayName.take(14),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
+                                        modelLabel,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }
@@ -338,7 +347,7 @@ fun EducationalChatInterface(
                             }
                         }
 
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(4.dp))
 
                         // New Session Button
                         IconButton(
@@ -354,7 +363,7 @@ fun EducationalChatInterface(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Start New Topic",
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(19.dp)
                             )
                         }
 
@@ -369,7 +378,7 @@ fun EducationalChatInterface(
                                 imageVector = Icons.Default.History,
                                 contentDescription = "Message History",
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -681,7 +690,7 @@ fun EducationalChatInterface(
             shadowElevation = 4.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -692,17 +701,19 @@ fun EducationalChatInterface(
                         placeholder = {
                             Text(
                                 when {
-                                    isRecordingAudio -> "Recording voice... release to transcribe"
-                                    isTranscribing -> "Transcribing voice with Gemini..."
-                                    else -> "Ask ${theme.buddyName} about any lesson or problem..."
+                                    isRecordingAudio -> "Recording... tap stop to send"
+                                    isTranscribing -> "Transcribing with Gemini..."
+                                    else -> "Ask ${theme.buddyName} anything..."
                                 },
-                                fontSize = 13.sp
+                                fontSize = 12.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         },
                         modifier = Modifier
                             .weight(1f)
                             .testTag("chat_input_field"),
-                        shape = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(22.dp),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                         keyboardActions = KeyboardActions(
                             onSend = {
@@ -713,7 +724,8 @@ fun EducationalChatInterface(
                             }
                         ),
                         singleLine = false,
-                        maxLines = 3,
+                        minLines = 1,
+                        maxLines = 4,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
@@ -731,7 +743,7 @@ fun EducationalChatInterface(
                             else -> MaterialTheme.colorScheme.secondaryContainer
                         },
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(42.dp)
                             .clickable {
                                 if (isRecordingAudio) {
                                     viewModel.stopAudioRecordingAndTranscribe { transcribedText ->
@@ -746,7 +758,7 @@ fun EducationalChatInterface(
                         Box(contentAlignment = Alignment.Center) {
                             if (isTranscribing) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(18.dp),
                                     strokeWidth = 2.dp,
                                     color = Color.White
                                 )
@@ -755,7 +767,7 @@ fun EducationalChatInterface(
                                     imageVector = if (isRecordingAudio) Icons.Default.Stop else Icons.Default.Mic,
                                     contentDescription = "Transcribe Audio",
                                     tint = if (isRecordingAudio) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(22.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
@@ -766,9 +778,9 @@ fun EducationalChatInterface(
                     // Send Button
                     Surface(
                         shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (inputText.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(42.dp)
                             .clickable {
                                 if (inputText.isNotBlank()) {
                                     viewModel.sendChatMessage(inputText)
@@ -782,7 +794,7 @@ fun EducationalChatInterface(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Send",
                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }

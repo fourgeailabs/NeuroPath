@@ -4,7 +4,7 @@
 Created by **FourgeAI LABS** ([https://github.com/fourgeailabs](https://github.com/fourgeailabs))
 
 [![Build Status](https://github.com/fourgeailabs/neuropath/actions/workflows/build.yml/badge.svg)](.github/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.11.00-blue.svg)](app/build.gradle.kts)
+[![Version](https://img.shields.io/badge/version-1.14.00-blue.svg)](app/build.gradle.kts)
 [![Android](https://img.shields.io/badge/Platform-Android_14_%2B-green.svg)](app/build.gradle.kts)
 [![Compose](https://img.shields.io/badge/Jetpack_Compose-M3-purple.svg)](app/build.gradle.kts)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
@@ -13,13 +13,46 @@ Created by **FourgeAI LABS** ([https://github.com/fourgeailabs](https://github.c
 
 ## 🌟 Overview
 
-**NeuroPath** is a comprehensive, sensory-conscious mobile learning application built with Kotlin and Jetpack Compose by **FourgeAI LABS**. Tailored specifically for children with ADHD, Autism, Dyslexia, Dyscalculia, and all curious learners, NeuroPath blends granular local school district educational requirements with personalized interest worlds, regulation tools, global multi-language compatibility, pre-installed K-12 OER Commons curriculum materials with **Interactive Video and Audio Playback Modules**, an interactive **4-7-8 Breathing Exercise Visualizer**, a library of **100 Adaptive Neuro-Themes with Automated Periodic Rotation**, a rebuilt **Gemini Educational Chat Interface with Persistent Message History**, and speech-to-text voice assist.
+**NeuroPath** is a comprehensive, sensory-conscious mobile learning application built with Kotlin and Jetpack Compose by **FourgeAI LABS**. Tailored specifically for children with ADHD, Autism, Dyslexia, Dyscalculia, and all curious learners, NeuroPath blends granular local school district educational requirements with personalized interest worlds, regulation tools, global multi-language compatibility, pre-installed K-12 OER Commons curriculum materials with **Interactive Video and Audio Playback Modules**, an interactive **4-7-8 Breathing Exercise Visualizer**, an **Interactive Theme Preview Modal & Atmospheric Visualizer**, a library of **100 Adaptive Neuro-Themes with Automated Periodic Rotation**, a robust **Gemini Educational Chat Architecture with Multi-Tier Models (gemini-3.5-flash, gemini-3.1-flash-lite-preview, gemini-3.1-pro-preview)**, clean standardized UI chip/pill layouts, and speech-to-text voice assist.
 
 ---
 
 ## 🚀 Key Features in Recent Updates
 
-### 🎨 1. 100 Adaptive Neuro-Themes & Periodic Rotation Engine (v1.11.00)
+### 📐 1. Standardized Sizing, Chip & Pill Formatting Polish (v1.14.00)
+* **Eliminated Theme Category Pill Squeezing**: Redesigned the Active Theme Spotlight Card in the Child Profile Setup and Catalog items with stacked header rows and distinct badges, preventing vertical letter-by-letter wrapping when rendering long theme titles.
+* **Streamlined Chat Header & Action Controls**: Re-architected the NeuroBuddy chat header with clean, unclipped Gemini model pills (`⚡ 3.5 Flash`, `🚀 Flash Lite`, `🧠 3.1 Pro`, `🔌 Offline`), balanced touch targets, and balanced session subtitles.
+* **Ergonomic Educational Input Bar**: Optimized the bottom input field with adaptive single-to-multi-line height expansion, balanced 42dp action buttons, and concise placeholder prompts.
+* **Enhanced Chip Padding & Font Metrics**: Standardized corner radii, text sizes, and padding across all follow-up question chips, starter suggestions, and cross-curricular subject badges.
+* **WCAG Contrast Reinforcement**: Applied high-contrast dark typography and theme-accented metadata badges across all vibrant light cards.
+
+### 🧠 2. Fixed Gemini AI Architecture & camelCase REST API Serialization (v1.13.00)
+* **REST API camelCase Serialization**: Fixed Gemini API request/response serialization by aligning data classes (`generationConfig`, `systemInstruction`, `inlineData`, `topP`, `topK`, `thinkingConfig`, `speechConfig`, `voiceConfig`, `finishReason`) with the Google Generative Language v1beta API schema, eliminating HTTP 400 rejection errors.
+* **Modern Multi-Tier Model Fleet**:
+  * `gemini-3.5-flash`: Primary high-speed reasoning model for educational chat, adaptive hints, voice conversation turns, and curriculum downloads.
+  * `gemini-3.1-flash-lite-preview`: Low-latency, quota-efficient free-tier fallback model.
+  * `gemini-3.1-pro-preview`: Advanced multi-step STEM breakdown and deep concept tutor.
+* **Multi-Source API Key Resolution**: Intelligently resolves credentials across AI Studio runtime secrets, profile configurations, and custom keys with seamless offline Socratic fallback.
+* **Voice & Transcription Endpoints**: Restored real-time audio transcription and interactive live voice study sessions with proper model endpoint routing.
+
+### 🎨 2. Interactive Theme Preview Modal & Palette Inspector (v1.12.00)
+* **Theme Preview Modal**: In-depth modal dialog accessible directly from the Settings menu and Profile setup, allowing parents and learners to visualize how a selected theme's color palette, companion buddy, and background assets look before applying it globally.
+* **Live Screen Simulation View**:
+  * Real-time simulated Android screen frame with animated `Canvas` atmospheric mesh gradients and category-specific sensory background motifs (circuits, celestial rings, acoustic spectrums, ancient geometry).
+  * Simulated Top Sensory Header Bar with dynamic XP and streak badges.
+  * Companion Buddy speech bubble with authentic welcome dialogue and character badge.
+  * Themed Active Quest / Lesson Card with subject-specific math/science challenges and themed action buttons.
+* **WCAG & Dyslexia Color Palette Inspector**:
+  * Visual color swatches for Primary Accent, Secondary Accent, Surface Background, and Card Container tokens with exact hex codes.
+  * Contrast Readability scorecard (AAA certified) ensuring reduced blue-light eye strain during hyperfocus sessions.
+  * Live interactive button, outlined action, and chip components rendered directly in the selected theme palette.
+* **Curriculum & Companion Buddy Deep Dive**:
+  * Cross-disciplinary subject connections (Math, Reading, Science, Social Studies) and sensory tactile interaction ideas.
+  * Neurodivergent alignment badges (ADHD, Autism, Dyslexia, Sensory Processing).
+* **Carousel & 100-Theme Browser**:
+  * Smooth `< Previous` and `Next >` carousel buttons, full 100-theme search bar, category filter chips, rotation schedule configuration, and instant one-tap global application.
+
+### 🎨 2. 100 Adaptive Neuro-Themes & Periodic Rotation Engine (v1.11.00)
 * **100 Dynamic Neuro-Themes**: A vast library of 100 curated, multi-disciplinary theme worlds covering Pre-K through 12th Grade:
   * Ancient Civilizations (Ancient Egypt, Rome, Greece, Maya, Aztec, Mesopotamia, etc.)
   * Robotics & AI (Humanoid Robotics, Autonomous Rovers, Neural Networks, Cybernetics)

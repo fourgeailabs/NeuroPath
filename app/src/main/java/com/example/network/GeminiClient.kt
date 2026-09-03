@@ -85,12 +85,20 @@ object GeminiClient {
     var customApiKeyOverride: String = ""
 
     fun getApiKey(customKey: String = ""): String {
+        val trimmedCustom = customKey.trim()
+        if (trimmedCustom.isNotBlank() && trimmedCustom != "MY_GEMINI_API_KEY") {
+            return trimmedCustom
+        }
+        val trimmedOverride = customApiKeyOverride.trim()
+        if (trimmedOverride.isNotBlank() && trimmedOverride != "MY_GEMINI_API_KEY") {
+            return trimmedOverride
+        }
         return try {
-            val configKey = BuildConfig.GEMINI_API_KEY
+            val configKey = BuildConfig.GEMINI_API_KEY.trim()
             if (configKey.isNotBlank() && configKey != "MY_GEMINI_API_KEY") {
                 configKey
             } else {
-                val envKey = System.getenv("GEMINI_API_KEY") ?: ""
+                val envKey = (System.getenv("GEMINI_API_KEY") ?: "").trim()
                 if (envKey.isNotBlank() && envKey != "MY_GEMINI_API_KEY") envKey else ""
             }
         } catch (_: Exception) {
@@ -99,7 +107,7 @@ object GeminiClient {
     }
 
     fun hasValidApiKey(customKey: String = ""): Boolean {
-        val key = getApiKey()
+        val key = getApiKey(customKey)
         return key.isNotBlank() && key != "MY_GEMINI_API_KEY"
     }
 
@@ -193,7 +201,7 @@ object GeminiClient {
         }
 
         try {
-            val response = service.generateContent("gemini-3.1-flash-lite", apiKey, request)
+            val response = service.generateContent("gemini-3.1-flash-lite-preview", apiKey, request)
             response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim() ?: ""
         } catch (e: Exception) {
             Log.e("GeminiClient", "transcribeAudio fallback model failed", e)
@@ -438,7 +446,7 @@ object GeminiClient {
         } catch (e: Exception) {
             Log.e("GeminiClient", "generateLiveVoiceConversationTurn primary failed", e)
             try {
-                val fallbackResponse = service.generateContent("gemini-3.1-flash-lite", apiKey, request)
+                val fallbackResponse = service.generateContent("gemini-3.1-flash-lite-preview", apiKey, request)
                 val text = fallbackResponse.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: ""
                 LiveVoiceTurnResult(
                     transcriptText = if (text.isNotBlank()) text else "I am right here with you! Let's take it one step at a time.",
@@ -570,7 +578,7 @@ object GeminiClient {
                 ?: "Mistakes are how our brains make new connections! Take another look at the clues."
         } catch (e: Exception) {
             try {
-                val response = service.generateContent("gemini-3.1-flash-lite", apiKey, request)
+                val response = service.generateContent("gemini-3.1-flash-lite-preview", apiKey, request)
                 response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
                     ?: "Mistakes are how our brains make new connections! Take another look at the clues."
             } catch (_: Exception) {

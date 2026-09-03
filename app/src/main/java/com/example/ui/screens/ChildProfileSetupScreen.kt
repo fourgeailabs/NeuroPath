@@ -87,7 +87,9 @@ import com.example.data.model.ThemeRotationSchedule
 import com.example.data.model.WorldTheme
 import com.example.ui.AppScreen
 import com.example.ui.NeuroPathViewModel
+import com.example.ui.components.ThemePreviewModal
 import com.example.util.LocationComplianceHelper
+import androidx.compose.material.icons.filled.Visibility
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -142,6 +144,8 @@ fun ChildProfileSetupScreen(
         mutableStateOf(ThemeRotationSchedule.fromId(targetProfile.themeRotationSchedule))
     }
     var showAllThemesDialog by remember { mutableStateOf(false) }
+    var showThemePreviewModal by remember { mutableStateOf(false) }
+    var previewModalThemeId by remember { mutableStateOf(activeThemeId) }
     var selectedCategoryFilter by remember { mutableStateOf<NeuroThemeCategory?>(null) }
     var themeSearchQuery by remember { mutableStateOf("") }
     var inspectingThemeData by remember { mutableStateOf<NeuroThemeData?>(null) }
@@ -693,83 +697,144 @@ fun ChildProfileSetupScreen(
 
                     // Active Theme Spotlight Card
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(18.dp),
                         color = Color(currentActiveThemeData.cardHex),
                         border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(currentActiveThemeData.primaryHex)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(currentActiveThemeData.emoji, fontSize = 34.sp)
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            currentActiveThemeData.title,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            fontSize = 15.sp,
-                                            color = Color(currentActiveThemeData.primaryHex)
-                                        )
-                                        Spacer(Modifier.width(6.dp))
-                                        Surface(
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = Color(currentActiveThemeData.primaryHex)
-                                        ) {
-                                            Text(
-                                                currentActiveThemeData.category.title,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    }
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Category Tag & Theme Mode Indicator Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(currentActiveThemeData.primaryHex)
+                                ) {
                                     Text(
-                                        "Companion Buddy: ${currentActiveThemeData.buddyName} (${currentActiveThemeData.buddyRole})",
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color(currentActiveThemeData.primaryHex).copy(alpha = 0.85f)
+                                        currentActiveThemeData.category.title,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color.White.copy(alpha = 0.8f)
+                                ) {
+                                    Text(
+                                        "ACTIVE THEME",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1E212B),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
                             }
 
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "\"${currentActiveThemeData.greeting}\"",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color(0xFF1E212B)
-                            )
-
                             Spacer(Modifier.height(10.dp))
+
+                            // Theme Header: Avatar + Title & Companion Buddy
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    shadowElevation = 1.dp,
+                                    modifier = Modifier.size(46.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(currentActiveThemeData.emoji, fontSize = 24.sp)
+                                    }
+                                }
+                                Spacer(Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        currentActiveThemeData.title,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 16.sp,
+                                        color = Color(0xFF1E212B),
+                                        lineHeight = 20.sp
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        "Companion Buddy: ${currentActiveThemeData.buddyName} (${currentActiveThemeData.buddyRole})",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF374151)
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
+                            // Greeting Quote Banner
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color.White.copy(alpha = 0.85f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("💬", fontSize = 14.sp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "\"${currentActiveThemeData.greeting}\"",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF1E212B),
+                                        lineHeight = 16.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(12.dp))
+
                             // Subject Integration Badges
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color.White.copy(alpha = 0.7f))
-                                    .padding(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.85f))
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
+                                    "CROSS-CURRICULAR INTEGRATION:",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF4B5563)
+                                )
+                                Text(
                                     "🔢 Math: ${currentActiveThemeData.mathIntegration}",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF1E212B)
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF1E212B),
+                                    lineHeight = 16.sp
                                 )
                                 Text(
                                     "📖 Reading: ${currentActiveThemeData.readingIntegration}",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF1E212B)
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF1E212B),
+                                    lineHeight = 16.sp
                                 )
                                 Text(
                                     "🔬 Science: ${currentActiveThemeData.scienceIntegration}",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF1E212B)
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF1E212B),
+                                    lineHeight = 16.sp
                                 )
                                 Text(
                                     "🏛️ Social Studies: ${currentActiveThemeData.socialStudiesIntegration}",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF1E212B)
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF1E212B),
+                                    lineHeight = 16.sp
                                 )
                             }
                         }
@@ -846,15 +911,34 @@ fun ChildProfileSetupScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    // Button to open full 100-Theme Catalog Browser
-                    OutlinedButton(
-                        onClick = { showAllThemesDialog = true },
+                    // Actions: Browse Catalog & Preview Palette
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Browse Full Catalog (100 Themes)", fontWeight = FontWeight.Bold)
+                        OutlinedButton(
+                            onClick = { showAllThemesDialog = true },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("100 Themes", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                previewModalThemeId = activeThemeId
+                                showThemePreviewModal = true
+                            },
+                            modifier = Modifier.weight(1.3f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Preview Palette & Assets", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -1291,27 +1375,25 @@ fun ChildProfileSetupScreen(
                                     Text(theme.emoji, fontSize = 28.sp)
                                     Spacer(Modifier.width(10.dp))
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(theme.primaryHex).copy(alpha = 0.85f)
+                                        ) {
                                             Text(
-                                                theme.title,
+                                                theme.category.title,
+                                                fontSize = 8.5.sp,
+                                                color = Color.White,
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp,
-                                                color = Color(theme.primaryHex)
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                             )
-                                            Spacer(Modifier.width(6.dp))
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = Color(theme.primaryHex).copy(alpha = 0.8f)
-                                            ) {
-                                                Text(
-                                                    theme.category.title,
-                                                    fontSize = 8.5.sp,
-                                                    color = Color.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                                )
-                                            }
                                         }
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(
+                                            theme.title,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.5.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
                                         Text(
                                             "Buddy: ${theme.buddyName} (${theme.buddyRole})",
                                             fontSize = 11.sp,
@@ -1337,6 +1419,21 @@ fun ChildProfileSetupScreen(
                                             tint = Color(theme.primaryHex),
                                             modifier = Modifier.size(22.dp)
                                         )
+                                    } else {
+                                        IconButton(
+                                            onClick = {
+                                                previewModalThemeId = theme.id
+                                                showThemePreviewModal = true
+                                            },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Visibility,
+                                                contentDescription = "Preview Theme",
+                                                tint = Color(theme.primaryHex),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1348,6 +1445,20 @@ fun ChildProfileSetupScreen(
                 TextButton(onClick = { showAllThemesDialog = false }) {
                     Text("Close", fontWeight = FontWeight.Bold)
                 }
+            }
+        )
+    }
+
+    if (showThemePreviewModal) {
+        ThemePreviewModal(
+            initialThemeId = previewModalThemeId,
+            currentActiveThemeId = activeThemeId,
+            initialRotationSchedule = themeRotationSchedule,
+            onDismiss = { showThemePreviewModal = false },
+            onApplyTheme = { themeId, sched ->
+                activeThemeId = themeId
+                themeRotationSchedule = sched
+                showThemePreviewModal = false
             }
         )
     }

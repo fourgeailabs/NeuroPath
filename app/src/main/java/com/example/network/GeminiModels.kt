@@ -6,8 +6,8 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class GeminiGenerateRequest(
     val contents: List<GeminiContent>,
-    @Json(name = "generation_config") val generationConfig: GeminiGenerationConfig? = null,
-    @Json(name = "system_instruction") val systemInstruction: GeminiContent? = null
+    @Json(name = "generationConfig") val generationConfig: GeminiGenerationConfig? = null,
+    @Json(name = "systemInstruction") val systemInstruction: GeminiContent? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -19,43 +19,43 @@ data class GeminiContent(
 @JsonClass(generateAdapter = true)
 data class GeminiPart(
     val text: String? = null,
-    @Json(name = "inline_data") val inlineData: GeminiInlineData? = null
+    @Json(name = "inlineData") val inlineData: GeminiInlineData? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class GeminiInlineData(
-    @Json(name = "mime_type") val mimeType: String,
+    @Json(name = "mimeType") val mimeType: String,
     val data: String
 )
 
 @JsonClass(generateAdapter = true)
 data class GeminiGenerationConfig(
     val temperature: Float? = null,
-    @Json(name = "top_p") val topP: Float? = null,
-    @Json(name = "top_k") val topK: Int? = null,
-    @Json(name = "thinking_config") val thinkingConfig: GeminiThinkingConfig? = null,
-    @Json(name = "response_modalities") val responseModalities: List<String>? = null,
-    @Json(name = "speech_config") val speechConfig: GeminiSpeechConfig? = null
+    @Json(name = "topP") val topP: Float? = null,
+    @Json(name = "topK") val topK: Int? = null,
+    @Json(name = "thinkingConfig") val thinkingConfig: GeminiThinkingConfig? = null,
+    @Json(name = "responseModalities") val responseModalities: List<String>? = null,
+    @Json(name = "speechConfig") val speechConfig: GeminiSpeechConfig? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class GeminiSpeechConfig(
-    @Json(name = "voice_config") val voiceConfig: GeminiVoiceConfig? = null
+    @Json(name = "voiceConfig") val voiceConfig: GeminiVoiceConfig? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class GeminiVoiceConfig(
-    @Json(name = "prebuilt_voice_config") val prebuiltVoiceConfig: GeminiPrebuiltVoiceConfig? = null
+    @Json(name = "prebuiltVoiceConfig") val prebuiltVoiceConfig: GeminiPrebuiltVoiceConfig? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class GeminiPrebuiltVoiceConfig(
-    @Json(name = "voice_name") val voiceName: String
+    @Json(name = "voiceName") val voiceName: String
 )
 
 @JsonClass(generateAdapter = true)
 data class GeminiThinkingConfig(
-    @Json(name = "thinking_level") val thinkingLevel: String
+    @Json(name = "thinkingLevel") val thinkingLevel: String
 )
 
 @JsonClass(generateAdapter = true)
@@ -66,7 +66,7 @@ data class GeminiGenerateResponse(
 @JsonClass(generateAdapter = true)
 data class GeminiCandidate(
     val content: GeminiContent? = null,
-    @Json(name = "finish_reason") val finishReason: String? = null
+    @Json(name = "finishReason") val finishReason: String? = null
 )
 
 data class DownloadedCurriculumResult(
@@ -76,3 +76,4 @@ data class DownloadedCurriculumResult(
     val curriculumSummary: String,
     val isOnlineSynced: Boolean = true
 )
+

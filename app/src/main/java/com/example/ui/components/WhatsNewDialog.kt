@@ -48,8 +48,47 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v1.11.00",
+        version = "v1.14.00",
         date = "Current Update",
+        title = "Clean Sizing, Chip & Pill Formatting Standardization and UI Alignment Polish",
+        highlights = listOf(
+            "📐 Fixed Theme Card Category Pill Squeezing: Redesigned the Active Theme Spotlight Card and Theme Catalog items with dedicated header rows, preventing vertical text squishing and text wrapping on longer theme titles.",
+            "🎨 Standardized Top Header & Action Controls: Re-architected the NeuroBuddy chat header with clean, unclipped Gemini model pills (Flash Lite, 3.5 Flash, 3.1 Pro, Offline), balanced touch targets, and balanced buddy subtitle layouts.",
+            "💬 Refined Chat Input Controls: Streamlined the bottom educational input bar with single-to-multi-line adaptive sizing, balanced 42dp action buttons, and concise placeholder prompts for optimal ergonomics.",
+            "✨ Enhanced Follow-up & Suggestion Chips: Balanced font metrics, corner radii, and padding across all educational suggestion pills and cross-curricular subject badges.",
+            "🛡️ High-Contrast Theme Card Contrast: Enhanced text contrast across all light and vibrant theme palette cards with dark, readable typography paired with theme-accented metadata badges."
+        ),
+        isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v1.13.00",
+        date = "Previous Update",
+        title = "Fixed Gemini AI Architecture, camelCase REST Serialization & API Key Resolution",
+        highlights = listOf(
+            "🧠 Fixed Gemini REST API Serialization: Resolved JSON payload formatting by aligning all request/response models with Google Generative Language API camelCase specifications (generationConfig, systemInstruction, inlineData, etc.).",
+            "⚡ Restored Multi-Tier AI Models: Seamlessly connected gemini-3.5-flash, gemini-3.1-flash-lite-preview, and gemini-3.1-pro-preview for lightning-fast educational explanations, adaptive hints, voice interactions, and deep reasoning.",
+            "🔑 Enhanced Multi-Source API Key Resolution: Intelligently resolves API credentials across AI Studio runtime secrets, profile configurations, and custom keys with seamless offline Socratic fallback.",
+            "🎙️ Restored Audio Transcription & Live Buddy Voice: Fixed endpoint model routing for voice transcription and interactive live voice study sessions.",
+            "🛡️ Resilient Network Error Diagnostics: Added enhanced HTTP status handling and diagnostic feedback across all learning modules and parental controls."
+        ),
+        isCurrentVersion = false
+    ),
+    ReleaseNote(
+        version = "v1.12.00",
+        date = "Previous Update",
+        title = "Interactive Theme Preview Modal, Palette Inspector & Background Atmosphere Simulation",
+        highlights = listOf(
+            "🎨 Interactive Theme Preview Modal: Inspect and visualize any selected theme world's vibrant color palette, companion buddy, and ambient background atmosphere before applying globally.",
+            "📱 Live Screen Simulation View: Real-time interactive simulation showing how the child will experience the theme's ambient canvas gradient mesh, sensory header bar, buddy greeting card, and themed quest missions.",
+            "🔬 Color Palette & WCAG Contrast Inspector: In-depth token breakdown of Primary, Secondary, Surface, and Card container hex colors with AAA accessibility contrast ratings and sample live UI buttons.",
+            "📚 Companion Buddy & Subject Integration: Preview the companion character's role, dialogue, and tailored Mathematics, Reading, Science, and Social Studies cross-disciplinary connections.",
+            "🔄 Quick Carousel & 100-Theme Switcher: Effortlessly cycle through all 100 theme worlds or search by topic within the preview modal, with one-tap global application and rotation scheduling."
+        ),
+        isCurrentVersion = false
+    ),
+    ReleaseNote(
+        version = "v1.11.00",
+        date = "Previous Update",
         title = "100 Adaptive Neuro-Themes, Rotation Schedule Engine & OER Video/Audio Modules",
         highlights = listOf(
             "🎨 100 Adaptive Neuro-Themes: Comprehensive library of 100 immersive theme worlds covering Pre-K through 12th Grade (Ancient Civilizations, Robotics & AI, Mythological Creatures, Culinary Adventures, Musical Journeys, Sports Superstars, Environmental Explorers, Artistic Expression, Transportation Tycoons, Spy Academy, Deep Space, Medical Science, Architecture, Gaming, etc.).",
@@ -58,7 +97,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
             "🎬 OER Commons Video & Audio Playback: Full-featured multimedia playback modules with interactive checkpoints, live synchronized transcripts, playback speed control (0.75x - 1.5x), and full accessibility accommodations.",
             "🛠️ Seamless Profile Integration: Theme worlds grow dynamically with the child's age tier and curriculum milestones."
         ),
-        isCurrentVersion = true
+        isCurrentVersion = false
     ),
     ReleaseNote(
         version = "v1.08.00",

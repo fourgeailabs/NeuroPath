@@ -104,9 +104,12 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     val activeApiKey: String
         get() {
-            val configKey = com.example.BuildConfig.GEMINI_API_KEY
+            val custom = _currentProfile.value.customApiKey.trim()
+            if (custom.isNotBlank() && custom != "MY_GEMINI_API_KEY") return custom
+            if (GeminiClient.customApiKeyOverride.isNotBlank() && GeminiClient.customApiKeyOverride != "MY_GEMINI_API_KEY") return GeminiClient.customApiKeyOverride.trim()
+            val configKey = com.example.BuildConfig.GEMINI_API_KEY.trim()
             if (configKey.isNotBlank() && configKey != "MY_GEMINI_API_KEY") return configKey
-            val envKey = System.getenv("GEMINI_API_KEY") ?: ""
+            val envKey = (System.getenv("GEMINI_API_KEY") ?: "").trim()
             if (envKey.isNotBlank() && envKey != "MY_GEMINI_API_KEY") return envKey
             return ""
         }

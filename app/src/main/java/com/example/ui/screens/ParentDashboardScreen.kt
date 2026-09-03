@@ -97,13 +97,19 @@ import com.example.data.local.entity.ChildProfileEntity
 import com.example.data.model.AgeGroupTier
 import com.example.data.model.GradeLevel
 import com.example.data.model.LocaleLegalComplianceManager
+import com.example.data.model.NeuroThemeCatalog
+import com.example.data.model.NeuroThemeData
 import com.example.data.model.NeurodivergentType
+import com.example.data.model.ThemeRotationSchedule
 import com.example.data.model.WorldTheme
 import com.example.ui.AppScreen
 import com.example.ui.NeuroPathViewModel
+import com.example.ui.components.ThemePreviewModal
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -177,6 +183,8 @@ fun ParentDashboardScreen(
     var showWhatsNewDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var updateStatusMessage by remember { mutableStateOf<String?>(null) }
+    var showThemePreviewModal by remember { mutableStateOf(false) }
+    var previewTargetThemeId by remember { mutableStateOf(selectedThemeId) }
 
     val activeNeuroTypes = remember(profile.neurodivergentTypesCsv) {
         profile.neurodivergentTypesCsv.split(",").filter { it.isNotBlank() }.toMutableSet()
@@ -634,24 +642,119 @@ fun ParentDashboardScreen(
                     }
                 }
 
-                // Special Interest Theme Selector
+                // Special Interest Theme Selector & Live Palette Visualizer
                 item {
+                    val activeThemeData = remember(selectedThemeId) { NeuroThemeCatalog.findThemeById(selectedThemeId) }
+                    val themePrimaryColor = Color(activeThemeData.primaryHex)
+                    val themeSecondaryColor = Color(activeThemeData.secondaryHex)
+
                     Card(
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(
-                                "🌟 Special Interest World Theme",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Icon(imageVector = Icons.Default.Palette, contentDescription = "Theme Palette", tint = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        "🌟 Special Interest Neuro-Theme",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                ) {
+                                    Text(
+                                        "100 Themes Library",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
                             Text(
                                 "Personalizing lessons around a child's passionate interest increases dopamine engagement and retention for neurodivergent learners.",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+
+                            // Active Theme Showcase Card with Color Swatches & Preview Action
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(activeThemeData.cardHex),
+                                border = androidx.compose.foundation.BorderStroke(2.dp, themePrimaryColor),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(activeThemeData.emoji, fontSize = 28.sp)
+                                            Spacer(Modifier.width(10.dp))
+                                            Column {
+                                                Text(
+                                                    activeThemeData.title,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    fontSize = 14.sp,
+                                                    color = themePrimaryColor
+                                                )
+                                                Text(
+                                                    "${activeThemeData.buddyName} • ${activeThemeData.category.title}",
+                                                    fontSize = 11.sp,
+                                                    color = themePrimaryColor.copy(alpha = 0.85f),
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
+
+                                        // Mini Palette Swatches
+                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Surface(shape = CircleShape, color = themePrimaryColor, modifier = Modifier.size(16.dp)) {}
+                                            Surface(shape = CircleShape, color = themeSecondaryColor, modifier = Modifier.size(16.dp)) {}
+                                            Surface(shape = CircleShape, color = Color(activeThemeData.surfaceHex), border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray), modifier = Modifier.size(16.dp)) {}
+                                        }
+                                    }
+
+                                    Text(
+                                        "\"${activeThemeData.greeting}\"",
+                                        fontSize = 11.5.sp,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                        color = Color(0xFF1E212B)
+                                    )
+
+                                    // Main Preview Action Button
+                                    Button(
+                                        onClick = {
+                                            previewTargetThemeId = selectedThemeId
+                                            showThemePreviewModal = true
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = themePrimaryColor),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("open_theme_preview_modal_btn")
+                                    ) {
+                                        Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Preview Palette, Atmosphere & Assets", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                }
+                            }
+
+                            Text("Quick Switch or Preview Popular Theme Worlds:", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
 
                             Row(
                                 modifier = Modifier
@@ -659,12 +762,18 @@ fun ParentDashboardScreen(
                                     .horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                WorldTheme.values().forEach { themeObj ->
+                                val topThemes = remember { NeuroThemeCatalog.getRecommendedThemesForProfile(profile, limit = 12) }
+                                topThemes.forEach { themeObj ->
                                     val isSelected = selectedThemeId == themeObj.id
+                                    val itemColor = Color(themeObj.primaryHex)
                                     Surface(
                                         shape = RoundedCornerShape(14.dp),
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                        modifier = Modifier.clickable { selectedThemeId = themeObj.id }
+                                        color = if (isSelected) itemColor else MaterialTheme.colorScheme.surfaceVariant,
+                                        border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, itemColor) else null,
+                                        modifier = Modifier.clickable {
+                                            selectedThemeId = themeObj.id
+                                            previewTargetThemeId = themeObj.id
+                                        }
                                     ) {
                                         Row(
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
@@ -673,11 +782,31 @@ fun ParentDashboardScreen(
                                             Text(themeObj.emoji, fontSize = 16.sp)
                                             Spacer(Modifier.width(6.dp))
                                             Text(
-                                                themeObj.title,
+                                                themeObj.title.substringBefore(":"),
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                                             )
+                                            Spacer(Modifier.width(6.dp))
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = if (isSelected) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surface,
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .clickable {
+                                                        previewTargetThemeId = themeObj.id
+                                                        showThemePreviewModal = true
+                                                    }
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        Icons.Default.Visibility,
+                                                        contentDescription = "Preview Theme",
+                                                        tint = if (isSelected) Color.White else MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(14.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1588,7 +1717,7 @@ fun ParentDashboardScreen(
 
     if (showUpdateDialog) {
         UpdateCheckDialog(
-            currentVersion = "1.10.00",
+            currentVersion = "1.12.00",
             statusMessage = updateStatusMessage,
             onDismiss = { showUpdateDialog = false },
             onRemindLater = {
@@ -1596,6 +1725,21 @@ fun ParentDashboardScreen(
             },
             onSkipVersion = {
                 showUpdateDialog = false
+            }
+        )
+    }
+
+    if (showThemePreviewModal) {
+        ThemePreviewModal(
+            initialThemeId = previewTargetThemeId,
+            currentActiveThemeId = selectedThemeId,
+            initialRotationSchedule = ThemeRotationSchedule.fromId(profile.themeRotationSchedule),
+            onDismiss = { showThemePreviewModal = false },
+            onApplyTheme = { themeId, schedule ->
+                selectedThemeId = themeId
+                viewModel.setActiveNeuroTheme(themeId)
+                viewModel.setThemeRotationSchedule(schedule)
+                showThemePreviewModal = false
             }
         )
     }
