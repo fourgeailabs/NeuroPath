@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val profile by viewModel.currentProfile.collectAsState()
-            val theme = viewModel.getActiveTheme()
+            val neuroTheme = viewModel.getActiveNeuroTheme()
             val currentScreen by viewModel.currentScreen.collectAsState()
 
             // System Back Button Behavior: Navigate back one page instead of closing the app
@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
             }
 
             val colorScheme = getThemeColorScheme(
-                worldTheme = theme,
+                neuroTheme = neuroTheme,
                 contrastMode = profile.highContrastMode
             )
             val typography = getDyslexiaTypography(profile.dyslexiaFontEnabled)

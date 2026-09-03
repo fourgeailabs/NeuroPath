@@ -1468,7 +1468,7 @@ fun ParentDashboardScreen(
                         )
                     }
 
-                    Text("App Version: v1.05.00 • Locale: $country", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("App Version: v${com.example.BuildConfig.VERSION_NAME} • Locale: $country", fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1588,7 +1588,7 @@ fun ParentDashboardScreen(
 
     if (showUpdateDialog) {
         UpdateCheckDialog(
-            currentVersion = "1.06.00",
+            currentVersion = "1.10.00",
             statusMessage = updateStatusMessage,
             onDismiss = { showUpdateDialog = false },
             onRemindLater = {
@@ -1742,8 +1742,46 @@ fun WhatsNewDialog(
     val updates = remember {
         listOf(
             ReleaseUpdateNote(
-                version = "v1.06.00 (Current)",
+                version = "v1.10.00 (Current)",
                 date = "Latest Update",
+                highlights = listOf(
+                    "🎬 OER Commons Video Player & Animated Visualizer: Interactive educational video player with animated Canvas visual simulations, speed toggles (0.5x - 2.0x), and scrub bar.",
+                    "🎧 OER Auditory Curriculum & Story Podcast: Audio lecture player with real-time audio waveform spectrum visualizer and synchronized Karaoke TTS read-aloud.",
+                    "💡 In-Video Socratic Checkpoints: Video and audio playback automatically pauses at key timestamps for interactive conceptual check-ins and explanations.",
+                    "🚀 K-12 Course Integration: 1-tap direct launch from TeachLessonScreen and the OER Curated Collections Browser Sheet across all K-12 subjects."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.09.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "💬 Rebuilt Educational Chat Interface: Powered by the Gemini API with full Free Model Gemini Chatbot support (gemini-3.5-flash & gemini-3.1-flash-lite).",
+                    "🌐 Full OER Commons Curated Access: Interactive browser modal with direct links to https://oercommons.org/curated-collections, standard code alignment, and one-tap Socratic practice problem solving.",
+                    "📜 Persistent Message History: Room-backed session management, keyword searching, bookmarks, and topic branching.",
+                    "🎯 Personalized Explanation Modes: Instant switching between Step-by-Step (Socratic), Simpler Analogy (ELI5), Visual Breakdown, Deep Concept, and Direct Answer styles."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.08.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "🧘 4-7-8 Breathing Exercise Visualizer: Built an interactive animated breathing component on Jetpack Compose Canvas featuring blooming lotus petals, fluid concentric waves, and cosmic orbital spheres.",
+                    "⏱️ Rhythmic Real-Time Pacing: Guided feedback HUD with dynamic color shifts (Teal Inhale 4s, Golden Hold 7s, Violet Exhale 8s) and continuous smooth circular progress arc.",
+                    "📊 Segmented Phase Timeline: Horizontal rhythm timeline tracking exact elapsed progress across 4s, 7s, and 8s intervals.",
+                    "🎶 Ambient Soundscapes & Vagus Calm Meter: Background soothing audio with live Vagus Nerve Calm Index tracking."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.07.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "🧘 4-7-8 Breathing Exercise Visualizer: Built an interactive animated breathing component on Jetpack Compose Canvas.",
+                    "⏱️ Rhythmic Real-Time Pacing: Guided feedback HUD with dynamic color shifts."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.06.00",
+                date = "Previous Update",
                 highlights = listOf(
                     "📚 Pre-Installed OER Commons K-12 Collection: Integrated curated open educational resources pre-installed and cached locally in Room Database covering Kindergarten through Grade 12 (Math, ELA, Sciences, Social Studies & Civics).",
                     "🔍 Online & Offline OER Service: Real-time synchronization and offline fallback parser for oercommons.org curated collections.",

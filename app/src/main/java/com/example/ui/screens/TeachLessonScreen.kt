@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,9 +52,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.curriculum.oer.OerMediaResource
+import com.example.data.curriculum.oer.OerMediaType
+import com.example.data.curriculum.oer.PreinstalledOerCurriculumCatalog
+import com.example.data.curriculum.oer.PreinstalledOerMediaCatalog
 import com.example.ui.AppScreen
 import com.example.ui.NeuroPathViewModel
 import com.example.ui.components.HighlightedSpeechText
+import com.example.ui.components.OerMultimediaPlayerBottomSheet
 
 @Composable
 fun TeachLessonScreen(
@@ -64,6 +70,8 @@ fun TeachLessonScreen(
     val currentStepIndex by viewModel.currentTeachStep.collectAsState()
     val profile by viewModel.currentProfile.collectAsState()
     val theme = viewModel.getActiveTheme()
+
+    var activeMediaResource by remember { mutableStateOf<OerMediaResource?>(null) }
 
     if (activeLesson == null) {
         viewModel.navigateTo(AppScreen.HOME)
@@ -76,6 +84,59 @@ fun TeachLessonScreen(
 
     var interactiveSelectedChoice by remember(currentStepIndex) { mutableStateOf<Int?>(null) }
     var interactiveSubmitted by remember(currentStepIndex) { mutableStateOf(false) }
+
+    val oerMediaList = remember(lesson) {
+        val direct = PreinstalledOerMediaCatalog.getMediaForUnit(lesson.id, lesson.subject)
+        if (direct.isNotEmpty()) direct else {
+            // Generate contextual media resources for this lesson
+            listOf(
+                OerMediaResource(
+                    id = "oer_vid_${lesson.id}",
+                    title = "${lesson.title} - Video Lesson",
+                    mediaType = OerMediaType.VIDEO_LESSON,
+                    durationSeconds = 150,
+                    description = "Accredited OER Commons video walkthrough covering '${lesson.title}' (${lesson.stateStandardCode}).",
+                    creatorOrSource = "OER Commons Curated Video Lab",
+                    visualSceneKey = when (lesson.subject) {
+                        com.example.data.model.EducationalSubject.SCIENCE -> "PLATE_TECTONICS"
+                        com.example.data.model.EducationalSubject.MATH -> "QUADRATIC_PARABOLA"
+                        else -> "DEFAULT"
+                    },
+                    transcript = lesson.teachSteps.mapIndexed { idx, step ->
+                        com.example.data.curriculum.oer.OerTranscriptLine(
+                            timestampSeconds = idx * 30,
+                            speaker = "Instructor",
+                            text = "${step.title}: ${step.text}"
+                        )
+                    },
+                    keyTakeaways = listOf(
+                        "Standard: ${lesson.stateStandardCode}",
+                        lesson.standardDescription,
+                        "Apply interactive reasoning in everyday life."
+                    )
+                ),
+                OerMediaResource(
+                    id = "oer_audio_${lesson.id}",
+                    title = "${lesson.title} - Audio Lecture",
+                    mediaType = OerMediaType.AUDIO_LECTURE,
+                    durationSeconds = 120,
+                    description = "Auditory curriculum explainer for '${lesson.title}' with acoustic pacing and transcript.",
+                    creatorOrSource = "OER Commons Auditory Series",
+                    transcript = lesson.teachSteps.mapIndexed { idx, step ->
+                        com.example.data.curriculum.oer.OerTranscriptLine(
+                            timestampSeconds = idx * 25,
+                            speaker = "Audio Narrator",
+                            text = "${step.title}. ${step.text} Fun Fact: ${step.tipOrFunFact}"
+                        )
+                    },
+                    keyTakeaways = listOf(
+                        "Listen and follow along with closed captions.",
+                        "Neuro-affirming bite-sized conceptual chunks."
+                    )
+                )
+            )
+        }
+    }
 
     Column(
         modifier = modifier
@@ -175,6 +236,59 @@ fun TeachLessonScreen(
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
                 )
+
+                // OER Commons Curated Video & Audio Media Lab Row
+                if (oerMediaList.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🎬", fontSize = 14.sp)
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "OER Multimedia Learning Lab",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                val videoItem = oerMediaList.find { it.mediaType == OerMediaType.VIDEO_LESSON }
+                                val audioItem = oerMediaList.find { it.mediaType == OerMediaType.AUDIO_LECTURE }
+
+                                if (videoItem != null) {
+                                    Button(
+                                        onClick = { activeMediaResource = videoItem },
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                        modifier = Modifier.weight(1f).testTag("watch_video_lesson_btn")
+                                    ) {
+                                        Text("Watch Video 🎬", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+
+                                if (audioItem != null) {
+                                    OutlinedButton(
+                                        onClick = { activeMediaResource = audioItem },
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                        modifier = Modifier.weight(1f).testTag("listen_audio_lecture_btn")
+                                    ) {
+                                        Text("Audio Lecture 🎧", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -384,6 +498,14 @@ fun TeachLessonScreen(
                     contentDescription = "Next"
                 )
             }
+        }
+
+        if (activeMediaResource != null) {
+            OerMultimediaPlayerBottomSheet(
+                resource = activeMediaResource!!,
+                onDismiss = { activeMediaResource = null },
+                viewModel = viewModel
+            )
         }
     }
 }

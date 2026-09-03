@@ -302,3 +302,151 @@ val US_STATE_CURRICULA = listOf(
     StateCurriculum("MI", "Michigan", "Michigan Academic Standards", "MDE Grade Level Content Expectations"),
     StateCurriculum("COMMON_CORE", "National Common Core", "CCSS & NGSS National", "United States National Model Standards")
 )
+
+enum class EducationalExplanationMode(
+    val id: String,
+    val title: String,
+    val icon: String,
+    val shortBadge: String,
+    val description: String,
+    val promptDirective: String
+) {
+    STEP_BY_STEP(
+        id = "STEP_BY_STEP",
+        title = "Step-by-Step",
+        icon = "🪜",
+        shortBadge = "Socratic",
+        description = "Sequential scaffolding that guides through reasoning step-by-step",
+        promptDirective = "Provide a structured, step-by-step Socratic walkthrough. Break the problem or concept into numbered micro-steps. Praise progress and end with a gentle check-in question."
+    ),
+    SIMPLER_ANALOGY(
+        id = "SIMPLER_ANALOGY",
+        title = "Simple Analogy",
+        icon = "💡",
+        shortBadge = "ELI5 Analogy",
+        description = "Explain with relatable real-world and theme world metaphors",
+        promptDirective = "Explain this concept as simply, warmly, and intuitively as possible using an everyday relatable analogy and the child's theme world. Avoid heavy terminology."
+    ),
+    VISUAL_BREAKDOWN(
+        id = "VISUAL_BREAKDOWN",
+        title = "Visual Breakdown",
+        icon = "📊",
+        shortBadge = "Visual",
+        description = "Clean bullet chunks, tables, and scannable visual patterns",
+        promptDirective = "Format your explanation with rich visual structure: use clean bullet points, emoji tags, numbered lists, and bold headings to minimize reading cognitive load."
+    ),
+    DEEP_DIVE(
+        id = "DEEP_DIVE",
+        title = "Deep Concept",
+        icon = "🔬",
+        shortBadge = "Deep Dive",
+        description = "Scientific and mathematical background & curriculum context",
+        promptDirective = "Provide a deep conceptual explanation exploring the scientific or mathematical foundations of this concept, historical context, and how it connects to broader curriculum standards."
+    ),
+    DIRECT_SOLUTION(
+        id = "DIRECT_SOLUTION",
+        title = "Direct Answer",
+        icon = "⚡",
+        shortBadge = "Direct",
+        description = "Direct calculated solution with factual proof",
+        promptDirective = "Give the direct, exact answer and solution immediately with a concise 2-sentence verification proof."
+    );
+
+    companion object {
+        fun fromId(id: String): EducationalExplanationMode {
+            return values().find { it.id.equals(id, ignoreCase = true) } ?: STEP_BY_STEP
+        }
+    }
+}
+
+enum class EducationalSubjectTag(
+    val id: String,
+    val title: String,
+    val icon: String,
+    val samplePrompts: List<String>
+) {
+    ALL(
+        id = "ALL",
+        title = "All Topics",
+        icon = "🌟",
+        samplePrompts = listOf(
+            "🔬 Research my downloaded curriculum",
+            "✨ Explain what we're learning today!",
+            "❓ Ask me a fun quiz question",
+            "💡 Give me a smart study tip"
+        )
+    ),
+    MATH(
+        id = "MATH",
+        title = "Math",
+        icon = "📐",
+        samplePrompts = listOf(
+            "➕ Guide me step-by-step through a fraction problem",
+            "📐 How do I find the perimeter and area?",
+            "🔢 Explain negative numbers with an analogy",
+            "📊 Help me solve a two-step algebra equation"
+        )
+    ),
+    SCIENCE(
+        id = "SCIENCE",
+        title = "Science",
+        icon = "🧪",
+        samplePrompts = listOf(
+            "🌱 How does photosynthesis work in plants?",
+            "🪐 Why do planets orbit the sun in ellipses?",
+            "⚡ Explain electric circuits with water pipes",
+            "🧬 What are DNA, genes, and traits?"
+        )
+    ),
+    READING(
+        id = "READING",
+        title = "Reading & ELA",
+        icon = "📖",
+        samplePrompts = listOf(
+            "📚 Help me analyze the central theme of a story",
+            "🔤 Teach me 3 new vocabulary words with examples",
+            "✍️ How do I write a strong topic sentence?",
+            "🔍 How do prefixes and root words change meanings?"
+        )
+    ),
+    SOCIAL_STUDIES(
+        id = "SOCIAL_STUDIES",
+        title = "Social Studies",
+        icon = "🏛️",
+        samplePrompts = listOf(
+            "🗺️ Explain the three branches of government",
+            "⏳ What were the main causes of the American Revolution?",
+            "🌍 How do supply and demand work in economics?",
+            "📜 Why is the US Constitution so important?"
+        )
+    ),
+    CODING(
+        id = "CODING",
+        title = "Coding & Logic",
+        icon = "💻",
+        samplePrompts = listOf(
+            "💻 Explain if-else conditional statements",
+            "🔁 How does a for-loop work in programming?",
+            "🐞 What is debugging and how do programmers find bugs?",
+            "🤖 How do computers read binary 1s and 0s?"
+        )
+    ),
+    SENSORY(
+        id = "SENSORY",
+        title = "Calm & Focus",
+        icon = "🧘",
+        samplePrompts = listOf(
+            "🧘 Lead me through a 2-minute focus breathing reset",
+            "🧠 My brain feels overwhelmed, what can I do?",
+            "🎯 Give me a 3-step strategy to start my homework",
+            "✨ Give me an encouraging positive affirmation"
+        )
+    );
+
+    companion object {
+        fun fromId(id: String): EducationalSubjectTag {
+            return values().find { it.id.equals(id, ignoreCase = true) } ?: ALL
+        }
+    }
+}
+

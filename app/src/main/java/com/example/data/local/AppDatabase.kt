@@ -8,12 +8,51 @@ import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Update
 import com.example.data.local.entity.ChildProfileEntity
+import com.example.data.local.entity.ChatMessageEntity
 import com.example.data.local.entity.DownloadedCurriculumEntity
 import com.example.data.local.entity.LessonRecordEntity
 import com.example.data.local.entity.OerCurriculumEntity
 import com.example.data.local.entity.ProgressLogEntity
 import com.example.data.local.entity.SensorySessionEntity
 import kotlinx.coroutines.flow.Flow
+
+data class ChatSessionSummary(
+    val sessionId: String,
+    val sessionTitle: String,
+    val messageCount: Int,
+    val lastTimestamp: Long,
+    val subjectTag: String
+)
+
+@Dao
+interface ChatMessageDao {
+    @Query("SELECT * FROM chat_messages WHERE profileId = :profileId AND sessionId = :sessionId ORDER BY timestamp ASC")
+    fun getMessagesForSession(profileId: Long, sessionId: String): Flow<List<ChatMessageEntity>>
+
+    @Query("SELECT * FROM chat_messages WHERE profileId = :profileId ORDER BY timestamp DESC")
+    fun getAllMessagesForProfile(profileId: Long): Flow<List<ChatMessageEntity>>
+
+    @Query("SELECT * FROM chat_messages WHERE profileId = :profileId AND isBookmarked = 1 ORDER BY timestamp DESC")
+    fun getBookmarkedMessages(profileId: Long): Flow<List<ChatMessageEntity>>
+
+    @Query("SELECT * FROM chat_messages WHERE profileId = :profileId AND text LIKE '%' || :query || '%' ORDER BY timestamp DESC")
+    fun searchMessages(profileId: Long, query: String): Flow<List<ChatMessageEntity>>
+
+    @Query("SELECT sessionId, sessionTitle, COUNT(*) as messageCount, MAX(timestamp) as lastTimestamp, subjectTag FROM chat_messages WHERE profileId = :profileId GROUP BY sessionId ORDER BY lastTimestamp DESC")
+    fun getSessionSummaries(profileId: Long): Flow<List<ChatSessionSummary>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMessage(message: ChatMessageEntity): Long
+
+    @Query("UPDATE chat_messages SET isBookmarked = :isBookmarked WHERE id = :messageId")
+    suspend fun updateBookmark(messageId: Long, isBookmarked: Boolean)
+
+    @Query("DELETE FROM chat_messages WHERE profileId = :profileId AND sessionId = :sessionId")
+    suspend fun deleteSession(profileId: Long, sessionId: String)
+
+    @Query("DELETE FROM chat_messages WHERE profileId = :profileId")
+    suspend fun clearAllMessages(profileId: Long)
+}
 
 @Dao
 interface OerCurriculumDao {
@@ -139,9 +178,10 @@ interface SensorySessionDao {
         LessonRecordEntity::class,
         ProgressLogEntity::class,
         SensorySessionEntity::class,
-        OerCurriculumEntity::class
+        OerCurriculumEntity::class,
+        ChatMessageEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -151,4 +191,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun progressLogDao(): ProgressLogDao
     abstract fun sensorySessionDao(): SensorySessionDao
     abstract fun oerCurriculumDao(): OerCurriculumDao
+    abstract fun chatMessageDao(): ChatMessageDao
 }
+

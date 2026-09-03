@@ -34,6 +34,11 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -44,10 +49,12 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -71,8 +78,12 @@ import com.example.data.model.DIAGNOSIS_OPTIONS
 import com.example.data.model.GLOBAL_EDUCATIONAL_LOCALES
 import com.example.data.model.GradeLevel
 import com.example.data.model.HYPER_FIXATION_OPTIONS
+import com.example.data.model.NeuroThemeCatalog
+import com.example.data.model.NeuroThemeCategory
+import com.example.data.model.NeuroThemeData
 import com.example.data.model.STRENGTH_OPTIONS
 import com.example.data.model.STRUGGLE_OPTIONS
+import com.example.data.model.ThemeRotationSchedule
 import com.example.data.model.WorldTheme
 import com.example.ui.AppScreen
 import com.example.ui.NeuroPathViewModel
@@ -127,6 +138,14 @@ fun ChildProfileSetupScreen(
     var selectedHyperFixations by remember { mutableStateOf(initialHyperFixations) }
 
     var activeThemeId by remember { mutableStateOf(targetProfile.activeThemeId) }
+    var themeRotationSchedule by remember {
+        mutableStateOf(ThemeRotationSchedule.fromId(targetProfile.themeRotationSchedule))
+    }
+    var showAllThemesDialog by remember { mutableStateOf(false) }
+    var selectedCategoryFilter by remember { mutableStateOf<NeuroThemeCategory?>(null) }
+    var themeSearchQuery by remember { mutableStateOf("") }
+    var inspectingThemeData by remember { mutableStateOf<NeuroThemeData?>(null) }
+
     var postalCodeOverride by remember { mutableStateOf(targetProfile.zipOrPostalCodeOverride) }
     var configuredCountry by remember { mutableStateOf(targetProfile.country) }
     var configuredState by remember { mutableStateOf(targetProfile.stateOrProvince) }
@@ -141,15 +160,30 @@ fun ChildProfileSetupScreen(
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Dynamically synthesize theme when hyperfixations or age changes
-    val suggestedTheme = remember(selectedHyperFixations, selectedAgeTier) {
-        val firstFix = HYPER_FIXATION_OPTIONS.find { selectedHyperFixations.contains(it.title) }
-        val themeId = firstFix?.recommendedThemeId ?: when (selectedAgeTier) {
-            AgeGroupTier.HIGH_SCHOOL -> "science"
-            AgeGroupTier.MIDDLE_SCHOOL -> "games"
-            else -> "dino"
-        }
-        WorldTheme.values().find { it.id == themeId } ?: WorldTheme.DINOSAURS
+    val previewProfile = remember(
+        childName, childAgeText, selectedGrade, selectedAgeTier,
+        selectedDiagnoses, selectedStruggles, selectedStrengths, selectedHyperFixations
+    ) {
+        targetProfile.copy(
+            name = childName.ifBlank { "Student" },
+            age = childAgeText.toIntOrNull() ?: 7,
+            gradeLevel = selectedGrade.name,
+            ageGroupTier = selectedAgeTier.id,
+            neurodivergentTypesCsv = selectedDiagnoses.joinToString(","),
+            strugglesCsv = selectedStruggles.joinToString(", "),
+            strengthsCsv = selectedStrengths.joinToString(", "),
+            hyperFixationsCsv = selectedHyperFixations.joinToString(", ")
+        )
+    }
+
+    val recommendedThemes = remember(previewProfile) {
+        NeuroThemeCatalog.getRecommendedThemesForProfile(previewProfile, limit = 8)
+    }
+
+    val currentActiveThemeData = remember(activeThemeId, recommendedThemes) {
+        NeuroThemeCatalog.findThemeById(
+            if (activeThemeId.isNotBlank()) activeThemeId else (recommendedThemes.firstOrNull()?.id ?: "ancient_egypt")
+        )
     }
 
     LazyColumn(
@@ -619,43 +653,208 @@ fun ChildProfileSetupScreen(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        // Section 5B: 100-Theme Selection & Periodic Rotation Schedule
+        item {
+            ElevatedCard(
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("🎨", fontSize = 18.sp)
+                            }
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "5B. Theme World & Rotation Schedule",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "100 immersive themes tailored to their personality profile & growth",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
 
                     Spacer(Modifier.height(14.dp))
 
-                    // AI Theme Synthesis Live Card
+                    // Active Theme Spotlight Card
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        color = Color(currentActiveThemeData.cardHex),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(currentActiveThemeData.primaryHex)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(suggestedTheme.emoji, fontSize = 32.sp)
-                            Spacer(Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(currentActiveThemeData.emoji, fontSize = 34.sp)
+                                Spacer(Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            currentActiveThemeData.title,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 15.sp,
+                                            color = Color(currentActiveThemeData.primaryHex)
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = Color(currentActiveThemeData.primaryHex)
+                                        ) {
+                                            Text(
+                                                currentActiveThemeData.category.title,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
                                     Text(
-                                        "AI Synthesized World: ${suggestedTheme.title}",
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 13.sp,
-                                        color = MaterialTheme.colorScheme.primary
+                                        "Companion Buddy: ${currentActiveThemeData.buddyName} (${currentActiveThemeData.buddyRole})",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(currentActiveThemeData.primaryHex).copy(alpha = 0.85f)
                                     )
                                 }
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "\"${currentActiveThemeData.greeting}\"",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF1E212B)
+                            )
+
+                            Spacer(Modifier.height(10.dp))
+                            // Subject Integration Badges
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color.White.copy(alpha = 0.7f))
+                                    .padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
                                 Text(
-                                    "Companion Buddy: ${suggestedTheme.buddyName} (${suggestedTheme.buddyRole})",
-                                    fontSize = 11.5.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    "🔢 Math: ${currentActiveThemeData.mathIntegration}",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF1E212B)
                                 )
                                 Text(
-                                    "\"${suggestedTheme.greeting}\"",
+                                    "📖 Reading: ${currentActiveThemeData.readingIntegration}",
                                     fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = Color(0xFF1E212B)
+                                )
+                                Text(
+                                    "🔬 Science: ${currentActiveThemeData.scienceIntegration}",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF1E212B)
+                                )
+                                Text(
+                                    "🏛️ Social Studies: ${currentActiveThemeData.socialStudiesIntegration}",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF1E212B)
                                 )
                             }
                         }
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // Theme Rotation Frequency Configuration
+                    Text(
+                        "Theme Rotation Preference:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "Keep permanent or periodically rotate to fresh profile-matched worlds:",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ThemeRotationSchedule.values().forEach { schedule ->
+                            val isSelected = themeRotationSchedule == schedule
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { themeRotationSchedule = schedule },
+                                label = {
+                                    Column(modifier = Modifier.padding(vertical = 2.dp)) {
+                                        Text(schedule.title, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        Text(schedule.description, fontSize = 9.5.sp)
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // AI Recommended Themes for Profile
+                    Text(
+                        "AI Recommended Themes For This Profile:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        "Synthesized based on diagnoses, strengths, struggles & interests:",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        recommendedThemes.forEach { theme ->
+                            val isSelected = activeThemeId == theme.id || (activeThemeId.isBlank() && theme.id == recommendedThemes.firstOrNull()?.id)
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { activeThemeId = theme.id },
+                                label = { Text("${theme.emoji} ${theme.title}", fontSize = 12.sp) }
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Button to open full 100-Theme Catalog Browser
+                    OutlinedButton(
+                        onClick = { showAllThemesDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Browse Full Catalog (100 Themes)", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -947,7 +1146,9 @@ fun ChildProfileSetupScreen(
                         strugglesCsv = selectedStruggles.joinToString(", "),
                         strengthsCsv = selectedStrengths.joinToString(", "),
                         hyperFixationsCsv = selectedHyperFixations.joinToString(", "),
-                        activeThemeId = activeThemeId.ifBlank { suggestedTheme.id },
+                        activeThemeId = if (activeThemeId.isNotBlank()) activeThemeId else (recommendedThemes.firstOrNull()?.id ?: "ancient_egypt"),
+                        themeRotationSchedule = themeRotationSchedule.id,
+                        lastThemeRotationTimestamp = System.currentTimeMillis(),
                         country = configuredCountry,
                         stateOrProvince = configuredState,
                         schoolDistrict = configuredDistrict,
@@ -982,5 +1183,172 @@ fun ChildProfileSetupScreen(
                 )
             }
         }
+    }
+
+    // 100-Theme Catalog Browser Modal Dialog
+    if (showAllThemesDialog) {
+        val filteredThemes = remember(selectedCategoryFilter, themeSearchQuery) {
+            NeuroThemeCatalog.getAllThemes().filter { theme ->
+                val matchesCategory = selectedCategoryFilter == null || theme.category == selectedCategoryFilter
+                val matchesSearch = themeSearchQuery.isBlank() ||
+                        theme.title.contains(themeSearchQuery, ignoreCase = true) ||
+                        theme.buddyName.contains(themeSearchQuery, ignoreCase = true) ||
+                        theme.bestForDiagnoses.any { it.contains(themeSearchQuery, ignoreCase = true) } ||
+                        theme.bestForStrengths.any { it.contains(themeSearchQuery, ignoreCase = true) } ||
+                        theme.mathIntegration.contains(themeSearchQuery, ignoreCase = true) ||
+                        theme.scienceIntegration.contains(themeSearchQuery, ignoreCase = true)
+                matchesCategory && matchesSearch
+            }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showAllThemesDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🎨 100 Adaptive Neuro-Themes", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(480.dp)
+                ) {
+                    // Search Bar
+                    OutlinedTextField(
+                        value = themeSearchQuery,
+                        onValueChange = { themeSearchQuery = it },
+                        placeholder = { Text("Search 100 themes, topics, subjects...", fontSize = 12.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Category Filter Chips
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        FilterChip(
+                            selected = selectedCategoryFilter == null,
+                            onClick = { selectedCategoryFilter = null },
+                            label = { Text("All (100)", fontSize = 11.sp) }
+                        )
+                        NeuroThemeCategory.values().forEach { cat ->
+                            FilterChip(
+                                selected = selectedCategoryFilter == cat,
+                                onClick = {
+                                    selectedCategoryFilter = if (selectedCategoryFilter == cat) null else cat
+                                },
+                                label = { Text("${cat.emoji} ${cat.title}", fontSize = 11.sp) }
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Text(
+                        "Found ${filteredThemes.size} themes:",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(filteredThemes.size) { index ->
+                            val theme = filteredThemes[index]
+                            val isSelected = activeThemeId == theme.id
+
+                            Card(
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isSelected) Color(theme.primaryHex).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ),
+                                border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, Color(theme.primaryHex)) else null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        activeThemeId = theme.id
+                                        showAllThemesDialog = false
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(theme.emoji, fontSize = 28.sp)
+                                    Spacer(Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                theme.title,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = Color(theme.primaryHex)
+                                            )
+                                            Spacer(Modifier.width(6.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = Color(theme.primaryHex).copy(alpha = 0.8f)
+                                            ) {
+                                                Text(
+                                                    theme.category.title,
+                                                    fontSize = 8.5.sp,
+                                                    color = Color.White,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            "Buddy: ${theme.buddyName} (${theme.buddyRole})",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            "📐 Math: ${theme.mathIntegration}",
+                                            fontSize = 10.sp,
+                                            maxLines = 1,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                        )
+                                        Text(
+                                            "🔬 Science: ${theme.scienceIntegration}",
+                                            fontSize = 10.sp,
+                                            maxLines = 1,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                                        )
+                                    }
+                                    if (isSelected) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = "Selected",
+                                            tint = Color(theme.primaryHex),
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAllThemesDialog = false }) {
+                    Text("Close", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }

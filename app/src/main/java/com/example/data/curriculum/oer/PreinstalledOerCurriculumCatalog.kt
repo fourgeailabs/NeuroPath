@@ -8,6 +8,16 @@ object PreinstalledOerCurriculumCatalog {
     const val OER_COMMONS_BASE_URL = "https://oercommons.org/curated-collections"
 
     fun getAllPreinstalledCurriculum(): List<OerCommonsCurriculumItem> {
+        return getRawPreinstalledCurriculum().map { item ->
+            if (item.mediaResources.isEmpty()) {
+                item.copy(mediaResources = PreinstalledOerMediaCatalog.getMediaForUnit(item.id, item.subject))
+            } else {
+                item
+            }
+        }
+    }
+
+    private fun getRawPreinstalledCurriculum(): List<OerCommonsCurriculumItem> {
         return listOf(
             // ==========================================
             // 1. MATHEMATICS (K-12 FULL SPECTRUM)
@@ -606,6 +616,174 @@ object PreinstalledOerCurriculumCatalog {
                     )
                 ),
                 accessibilityAccommodations = listOf("Interactive budget sliders", "Sensory break reminders", "Bite-sized step calculators")
+            ),
+
+            // ==========================================
+            // 6. EXPANDED OER COMMONS CURATED COLLECTIONS (FULL ACCESS)
+            // ==========================================
+            OerCommonsCurriculumItem(
+                id = "oer_mid_ela_argumentative_writing",
+                subject = EducationalSubject.READING,
+                gradeLevel = GradeLevel.GRADE_8,
+                gradeBand = OerGradeBand.MIDDLE_SCHOOL,
+                collectionTitle = "OER Commons Middle School: Argumentative Writing & Evidence Synthesis",
+                unitTitle = "Claim, Evidence, Reasoning (CER) & Counter-Claim Refutation",
+                standardCode = "CCSS.ELA-LITERACY.WHST.6-8.1 / OER.8.ELA.02",
+                oerCommonsUrl = "$OER_COMMONS_BASE_URL/middle-school-writing-cer",
+                summary = "Construct well-reasoned argumentative essays using the CER framework, evaluate reliable source credibility, and formulate evidence-backed rebuttals.",
+                learningObjectives = listOf(
+                    "Introduce precise, knowledgeable claims and distinguish them from alternate or opposing claims.",
+                    "Support claims with logical reasoning and relevant, accurate evidence from credible primary/secondary sources.",
+                    "Write effective concluding statements that follow from and support the argument presented."
+                ),
+                keyConcepts = listOf("Claim", "Empirical Evidence", "Reasoning / Warrant", "Credible Source Evaluation", "Counterclaim Rebuttal"),
+                vocabulary = listOf("Claim", "Warrant", "Evidence", "Bias", "Credibility", "Rebuttal", "Counterargument", "Synthesis"),
+                essentialQuestions = listOf(
+                    "What distinguishes strong, verified evidence from personal opinion or unsubstantiated belief?",
+                    "How does addressing an opposing viewpoint strengthen an argument's persuasiveness?"
+                ),
+                socraticGuidingQuestions = listOf(
+                    "What specific data point or expert quote directly proves your claim?",
+                    "How does your reasoning connect the raw evidence back to your initial statement?"
+                ),
+                commonMisconceptions = listOf(
+                    "Listing quotes without explaining the reasoning (the 'Reasoning' bridge in CER).",
+                    "Assuming every website or search result is an objective, peer-reviewed source."
+                ),
+                practiceProblems = listOf(
+                    OerPracticeProblem(
+                        id = "p_mid_ela_cer_1",
+                        questionPrompt = "In a CER paragraph, which element explains *why* the data counts as proof of the thesis?",
+                        options = listOf("Claim", "Evidence", "Reasoning", "Citation"),
+                        correctAnswer = "Reasoning",
+                        stepByStepExplanation = "Reasoning provides the logical explanation of how the evidence supports the initial claim.",
+                        socraticClue = "Think: Which component connects the dots between what the data says and what you argued?"
+                    )
+                ),
+                accessibilityAccommodations = listOf("Sentence starter sentence frames", "Color-coded CER highlighting templates")
+            ),
+
+            OerCommonsCurriculumItem(
+                id = "oer_mid_sci_plate_tectonics",
+                subject = EducationalSubject.SCIENCE,
+                gradeLevel = GradeLevel.GRADE_8,
+                gradeBand = OerGradeBand.MIDDLE_SCHOOL,
+                collectionTitle = "OER Commons Earth & Space Science: Geosphere & Dynamics",
+                unitTitle = "Plate Tectonics, Convection Currents & Earth's Dynamic Crust",
+                standardCode = "NGSS.MS-ESS2-1 / NGSS.MS-ESS2-2 / OER.8.SCI.01",
+                oerCommonsUrl = "$OER_COMMONS_BASE_URL/ms-earth-plate-tectonics",
+                summary = "Explore continental drift, lithospheric plate boundaries (convergent, divergent, transform), mantle convection currents, earthquakes, and volcanism.",
+                learningObjectives = listOf(
+                    "Model how thermal convection currents in Earth's asthenosphere drive lithospheric plate movement.",
+                    "Distinguish between convergent (subduction/mountain building), divergent (seafloor spreading), and transform (strike-slip faults) boundaries.",
+                    "Analyze seismic and volcanic distribution data along the Pacific Ring of Fire."
+                ),
+                keyConcepts = listOf("Lithosphere & Asthenosphere", "Thermal Convection Currents", "Convergent Subduction", "Divergent Rifting", "Transform Faults"),
+                vocabulary = listOf("Tectonic Plate", "Mantle", "Convection", "Subduction", "Fault", "Seismic", "Magma", "Epicenter"),
+                essentialQuestions = listOf(
+                    "How does heat deep within Earth continuously reshape continents and ocean basins over millions of years?",
+                    "Why do earthquakes and volcanoes cluster along specific tectonic boundaries rather than random locations?"
+                ),
+                socraticGuidingQuestions = listOf(
+                    "When hot mantle rock rises, cools, and sinks back down, what physical cycle is created?",
+                    "What happens when a dense oceanic plate collides with a less dense continental plate?"
+                ),
+                commonMisconceptions = listOf(
+                    "Believing tectonic plates float on liquid ocean water instead of moving on the semi-solid upper mantle asthenosphere."
+                ),
+                practiceProblems = listOf(
+                    OerPracticeProblem(
+                        id = "p_mid_sci_tectonics_1",
+                        questionPrompt = "Which type of tectonic plate boundary occurs where two plates slide horizontally past one another (e.g., California's San Andreas Fault)?",
+                        options = listOf("Convergent boundary", "Divergent boundary", "Transform boundary", "Subduction zone"),
+                        correctAnswer = "Transform boundary",
+                        stepByStepExplanation = "Transform boundaries occur where plates slide past each other horizontally without creating or destroying crust.",
+                        socraticClue = "Think: Transform means sliding side-by-side."
+                    )
+                ),
+                accessibilityAccommodations = listOf("3D interactive tectonic boundary cross-sections", "Haptic earthquake rumble indicators")
+            ),
+
+            OerCommonsCurriculumItem(
+                id = "oer_hs_sci_chemistry_bonding",
+                subject = EducationalSubject.SCIENCE,
+                gradeLevel = GradeLevel.HIGH_SCHOOL,
+                gradeBand = OerGradeBand.HIGH_SCHOOL,
+                collectionTitle = "OER Commons High School Chemistry: Matter & Bonding",
+                unitTitle = "Periodic Trends, Valence Electrons, Ionic & Covalent Chemical Bonding",
+                standardCode = "NGSS.HS-PS1-1 / NGSS.HS-PS1-2 / OER.HS.CHEM.01",
+                oerCommonsUrl = "$OER_COMMONS_BASE_URL/hs-chemistry-bonding",
+                summary = "Understand valence electron octets, electronegativity trends, ionic lattice transfers, covalent molecular sharing, and Lewis dot structures.",
+                learningObjectives = listOf(
+                    "Predict chemical properties, ionization energy, and electronegativity trends based on periodic table group/period locations.",
+                    "Construct Lewis electron dot structures for ionic salts (e.g. NaCl) and covalent molecules (e.g. H₂O, CO₂, CH₄).",
+                    "Differentiate between nonpolar covalent, polar covalent (dipoles), and ionic bonds based on Δelectronegativity values."
+                ),
+                keyConcepts = listOf("Octet Rule", "Valence Shell", "Electronegativity", "Ionic Electron Transfer", "Covalent Electron Sharing", "Lewis Structures"),
+                vocabulary = listOf("Valence", "Electronegativity", "Cation", "Anion", "Covalent", "Ionic", "Dipole", "Lewis Dot"),
+                essentialQuestions = listOf(
+                    "Why do atoms interact and bond to achieve stable full valence electron configurations?",
+                    "How does the type of chemical bond determine the macroscopic physical properties (melting point, conductivity) of a material?"
+                ),
+                socraticGuidingQuestions = listOf(
+                    "How many valence electrons does Sodium (Group 1) have to lose to reach a stable octet? How many does Chlorine (Group 17) need to gain?",
+                    "If two oxygen atoms share 4 electrons total, what type of covalent bond do they form?"
+                ),
+                commonMisconceptions = listOf(
+                    "Thinking covalent bonds involve transferring electrons rather than sharing electron pairs."
+                ),
+                practiceProblems = listOf(
+                    OerPracticeProblem(
+                        id = "p_hs_chem_1",
+                        questionPrompt = "What type of chemical bond is formed when an electron is completely transferred from a metal atom to a nonmetal atom?",
+                        options = listOf("Nonpolar Covalent Bond", "Polar Covalent Bond", "Ionic Bond", "Hydrogen Bond"),
+                        correctAnswer = "Ionic Bond",
+                        stepByStepExplanation = "An ionic bond forms when one atom gives up valence electrons to another, creating oppositely charged ions (cations and anions) that attract electrostatically.",
+                        socraticClue = "Think: Transfer of electrons creates charged ions."
+                    )
+                ),
+                accessibilityAccommodations = listOf("Color-coded electron orbital rings", "Tactile valence dot builder")
+            ),
+
+            OerCommonsCurriculumItem(
+                id = "oer_mid_soc_world_geography",
+                subject = EducationalSubject.SOCIAL_STUDIES,
+                gradeLevel = GradeLevel.GRADE_7,
+                gradeBand = OerGradeBand.MIDDLE_SCHOOL,
+                collectionTitle = "OER Commons World Geography: Human & Physical Systems",
+                unitTitle = "Five Themes of Geography, Climate Zones & Global Trade Networks",
+                standardCode = "NCSS.D2.Geo.1.6-8 / NCSS.D2.Geo.6.6-8 / OER.7.SOC.01",
+                oerCommonsUrl = "$OER_COMMONS_BASE_URL/world-geography-systems",
+                summary = "Investigate the five themes of geography (Location, Place, Human-Environment Interaction, Movement, Region) and global trade dynamics.",
+                learningObjectives = listOf(
+                    "Distinguish between absolute location (latitude/longitude) and relative location.",
+                    "Analyze how physical geography (rivers, mountain barriers, climate zones) influences human settlement and economic development.",
+                    "Trace historic and modern global trade networks and cultural diffusion."
+                ),
+                keyConcepts = listOf("Five Themes of Geography", "Latitude & Longitude", "Human-Environment Adaptation", "Cultural Diffusion", "Global Trade"),
+                vocabulary = listOf("Latitude", "Longitude", "Equator", "Prime Meridian", "Biome", "Diffusion", "Interdependence", "Topography"),
+                essentialQuestions = listOf(
+                    "How does where we live shape how we live, work, and interact with the environment?",
+                    "How does global movement of goods, ideas, and people connect distant cultures?"
+                ),
+                socraticGuidingQuestions = listOf(
+                    "Why did the earliest human civilizations (Mesopotamia, Egypt, Indus Valley) all arise near major river valleys?",
+                    "What is the difference between adapting to an environment (wearing warm clothes) versus modifying it (building a dam)?"
+                ),
+                commonMisconceptions = listOf(
+                    "Confusing lines of latitude (parallels measuring North/South) with lines of longitude (meridians measuring East/West)."
+                ),
+                practiceProblems = listOf(
+                    OerPracticeProblem(
+                        id = "p_mid_geo_1",
+                        questionPrompt = "Which line of latitude is measured at 0 degrees and divides the Earth into the Northern and Southern Hemispheres?",
+                        options = listOf("Prime Meridian", "Equator", "Tropic of Cancer", "International Date Line"),
+                        correctAnswer = "Equator",
+                        stepByStepExplanation = "The Equator is the 0° parallel of latitude dividing Earth into the Northern and Southern Hemispheres.",
+                        socraticClue = "Think: It equals the distance between both poles."
+                    )
+                ),
+                accessibilityAccommodations = listOf("High-contrast map layers", "Audio compass directional cues")
             )
         )
     }

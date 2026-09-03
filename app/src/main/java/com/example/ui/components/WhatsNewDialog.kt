@@ -48,16 +48,66 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v1.03.00",
+        version = "v1.11.00",
         date = "Current Update",
-        title = "OER Commons Curated Collections K-12 & High School Research Assistant",
+        title = "100 Adaptive Neuro-Themes, Rotation Schedule Engine & OER Video/Audio Modules",
         highlights = listOf(
-            "🌐 OER Commons Curated Collections Integration: Full US K-12 curriculum pulling directly from https://oercommons.org/curated-collections.",
-            "🎓 Complete High School (Grades 9-12) Spectrum: Added Algebra I & II, Geometry, Trigonometry, Rhetorical Analysis, Molecular Biology, Newtonian Physics, US Civics, Macroeconomics, and Personal Finance.",
-            "🔬 AI Research Assistant: Instant query access to all downloaded curriculum standards, benchmarks, and pedagogical scaffolding.",
-            "⚡ Flexible Problem Solving & Smart Verification: Direct answer calculation alongside optional step-by-step guidance with strict mathematical verification."
+            "🎨 100 Adaptive Neuro-Themes: Comprehensive library of 100 immersive theme worlds covering Pre-K through 12th Grade (Ancient Civilizations, Robotics & AI, Mythological Creatures, Culinary Adventures, Musical Journeys, Sports Superstars, Environmental Explorers, Artistic Expression, Transportation Tycoons, Spy Academy, Deep Space, Medical Science, Architecture, Gaming, etc.).",
+            "🔄 Profile-Based Theme Rotation Engine: Configure permanent theme worlds or automatic periodic rotation (Daily, Every 3 Days, Weekly, Bi-Weekly, Monthly) tailored to child diagnoses, strengths, struggles, and hyper-fixations.",
+            "📚 Full 100-Theme Catalog Browser: In-depth browser with category filters, keyword search, companion buddy profiles, and cross-disciplinary subject mapping (Math, Reading, Science, Social Studies).",
+            "🎬 OER Commons Video & Audio Playback: Full-featured multimedia playback modules with interactive checkpoints, live synchronized transcripts, playback speed control (0.75x - 1.5x), and full accessibility accommodations.",
+            "🛠️ Seamless Profile Integration: Theme worlds grow dynamically with the child's age tier and curriculum milestones."
         ),
         isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v1.08.00",
+        date = "Previous Update",
+        title = "Rebuilt Gemini Chat Interface, Educational Personalization & Room Message History",
+        highlights = listOf(
+            "🤖 Free Model Gemini Integration: Fully leverages Gemini 3.5 Flash & Gemini 3.1 Flash Lite free-tier models with zero-cost educational tutoring and automatic offline Socratic fallback.",
+            "🎓 Personalized Explanation Modes: One-tap switching between Step-by-Step (Socratic), Simpler Analogy (ELI5), Visual Breakdown, Deep Concept, and Direct Solution.",
+            "🗄️ Persistent Room Message History: Full local database storage for multi-topic conversations, past session browsing, and topic management.",
+            "🔍 Keyword Search & Study Bookmarks: Instant search across past explanations and one-tap bookmarking for study notes.",
+            "💡 Message Transformation Actions: Instant 'Explain Simpler' and 'Step-by-Step' transformers, TTS speech playback, copy clipboard, and dynamic follow-up chips."
+        ),
+        isCurrentVersion = false
+    ),
+    ReleaseNote(
+        version = "v1.07.00",
+        date = "Previous Update",
+        title = "4-7-8 Breathing Exercise Visualizer & Dynamic Rhythmic Feedback",
+        highlights = listOf(
+            "🧘 Animated 4-7-8 Breathing Visualizer: Built a dedicated multi-phase visualizer component featuring expanding lotus blossom petals, concentric fluid wave ripples, and cosmic orbital spheres on Jetpack Compose Canvas.",
+            "⏱️ Guided Rhythmic Feedback: Real-time countdown HUD with color transitions (Teal Inhale 4s, Golden Amber Hold 7s, Violet Exhale 8s) and smooth circular progress arc.",
+            "📊 Segmented Phase Timeline: Dynamic horizontal rhythm timeline tracking exact elapsed progress per breath phase.",
+            "🎶 Ambient Soundscapes & Vagus Regulation: Built-in background soundscapes (Rain, Ocean Swells, Forest Breeze) with live Vagus Nerve Calm Index tracking and sensory affirmations.",
+            "⚙️ Interactive Session Controls: Customize target cycles (3, 4, 8), switch visual rendering modes, pause/resume, and reset with celebratory completion rewards."
+        ),
+        isCurrentVersion = false
+    ),
+
+    ReleaseNote(
+        version = "v1.06.00",
+        date = "Previous Update",
+        title = "Pre-Installed OER Commons K-12 Collection & AI Tutor Retrieval",
+        highlights = listOf(
+            "📚 Pre-Installed OER Commons K-12 Collection: Integrated curated open educational resources pre-installed and cached locally in Room Database covering Kindergarten through Grade 12 (Math, ELA, Sciences, Social Studies & Civics).",
+            "🔍 Online & Offline OER Service: Real-time synchronization and offline fallback parser for oercommons.org curated collections.",
+            "🧠 Curriculum-Aware AI Tutor: Gemini AI tutor and Voice Assist automatically query OER Commons materials to tailor explanations and practice to exact grade benchmarks in all 21 supported languages."
+        ),
+        isCurrentVersion = false
+    ),
+    ReleaseNote(
+        version = "v1.05.00",
+        date = "Previous Update",
+        title = "21-Language Global Localization & App Auto-Update",
+        highlights = listOf(
+            "🌐 21-Language Global Localization: Complete end-to-end multi-language dictionary across English (US/UK), Spanish, French, German, Mandarin, Japanese, Korean, Portuguese, Italian, Dutch, Swedish, Russian, Turkish, Polish, Greek, Vietnamese, Thai, Indonesian, Hindi, and Arabic.",
+            "⚡ Instant Reactive Switching: Switching languages in Setup, Parent Settings, or Dashboard immediately adapts every UI screen, dialog, button, and educational instruction.",
+            "🔄 GitHub Actions Auto-Updater: Real-time update checking with skip and remind-later capabilities."
+        ),
+        isCurrentVersion = false
     ),
     ReleaseNote(
         version = "v1.02.00",

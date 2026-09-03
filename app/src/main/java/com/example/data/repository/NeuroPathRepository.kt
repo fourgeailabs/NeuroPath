@@ -238,4 +238,42 @@ class NeuroPathRepository(private val db: AppDatabase) {
     fun getLessonsForSubject(subject: EducationalSubject, gradeLevel: GradeLevel, state: String, themeId: String): List<FullLesson> {
         return CurriculumCatalog.getLessonsForSubjectAndGrade(subject, gradeLevel, state, themeId)
     }
+
+    // Chat History Persistence & Session Management
+    fun getChatMessagesForSessionFlow(profileId: Long, sessionId: String): Flow<List<com.example.data.local.entity.ChatMessageEntity>> {
+        return db.chatMessageDao().getMessagesForSession(profileId, sessionId)
+    }
+
+    fun getAllChatMessagesFlow(profileId: Long): Flow<List<com.example.data.local.entity.ChatMessageEntity>> {
+        return db.chatMessageDao().getAllMessagesForProfile(profileId)
+    }
+
+    fun getBookmarkedChatMessagesFlow(profileId: Long): Flow<List<com.example.data.local.entity.ChatMessageEntity>> {
+        return db.chatMessageDao().getBookmarkedMessages(profileId)
+    }
+
+    fun searchChatMessagesFlow(profileId: Long, query: String): Flow<List<com.example.data.local.entity.ChatMessageEntity>> {
+        return db.chatMessageDao().searchMessages(profileId, query)
+    }
+
+    fun getChatSessionSummariesFlow(profileId: Long): Flow<List<com.example.data.local.ChatSessionSummary>> {
+        return db.chatMessageDao().getSessionSummaries(profileId)
+    }
+
+    suspend fun saveChatMessage(message: com.example.data.local.entity.ChatMessageEntity): Long {
+        return db.chatMessageDao().insertMessage(message)
+    }
+
+    suspend fun toggleChatBookmark(messageId: Long, isBookmarked: Boolean) {
+        db.chatMessageDao().updateBookmark(messageId, isBookmarked)
+    }
+
+    suspend fun deleteChatSession(profileId: Long, sessionId: String) {
+        db.chatMessageDao().deleteSession(profileId, sessionId)
+    }
+
+    suspend fun clearAllChatHistory(profileId: Long) {
+        db.chatMessageDao().clearAllMessages(profileId)
+    }
 }
+

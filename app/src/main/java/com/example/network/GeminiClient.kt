@@ -27,11 +27,21 @@ interface GeminiApiService {
     ): GeminiGenerateResponse
 }
 
-enum class ChatModelMode(val id: String, val modelName: String, val displayName: String, val icon: String, val description: String) {
-    GENERAL("GENERAL", "gemini-3.5-flash", "Standard (gemini-3.5-flash)", "⚡", "Balanced Socratic tutor for everyday learning"),
-    COMPLEX("COMPLEX", "gemini-3.1-pro-preview", "Deep Think (gemini-3.1-pro-preview)", "🧠", "Advanced multi-step reasoning for complex STEM & logic"),
-    FAST("FAST", "gemini-3.1-flash-lite-preview", "Fast Lite (gemini-3.1-flash-lite-preview)", "🚀", "Rapid instant-response buddy")
+enum class ChatModelMode(
+    val id: String,
+    val modelName: String,
+    val displayName: String,
+    val icon: String,
+    val description: String,
+    val isFreeTier: Boolean = true,
+    val tierLabel: String = "Free Model"
+) {
+    GENERAL("GENERAL", "gemini-3.5-flash", "Gemini 3.5 Flash", "⚡", "Free Model • High-speed personalized tutor for educational explanations", true, "Free Tier"),
+    FAST("FAST", "gemini-3.1-flash-lite-preview", "Gemini Flash Lite", "🚀", "Free Model • Ultra-low latency, quota-friendly chat", true, "Free Tier"),
+    COMPLEX("COMPLEX", "gemini-3.1-pro-preview", "Gemini 3.1 Pro", "🧠", "Deep Reasoning • Advanced multi-step STEM breakdown", false, "Pro Tier"),
+    OFFLINE("OFFLINE", "offline-socratic", "Offline Socratic", "🛡️", "Offline Local • Zero-network accredited curriculum engine", true, "Offline")
 }
+
 
 data class LiveVoiceTurnResult(
     val transcriptText: String,
@@ -209,7 +219,7 @@ object GeminiClient {
         val apiKey = getApiKey(customApiKey)
         val langName = AppLanguage.fromCode(languageCode).displayName
 
-        if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
+        if (modelMode == ChatModelMode.OFFLINE || apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             return@withContext generateLocalSocraticReply(
                 lastUserMessage = conversationHistory.lastOrNull { it.first == "user" }?.second ?: "",
                 schoolDistrict = schoolDistrict,
@@ -222,25 +232,28 @@ object GeminiClient {
             )
         }
 
+
         val enrichedSystemPrompt = """
             $systemPrompt
             
-            ROLE & PERSONALITY:
-            - You are an expert AI Educational Research Assistant, Learning Buddy, and Socratic Tutor with direct, real-time access to the officially downloaded curriculum standards and master educational benchmarks for this learner (${if (curriculumContext.isNotBlank()) curriculumContext else "$standardTitle ($schoolDistrict)"}).
-            - Respond naturally to greetings, casual chat, research inquiries, and learning tasks. Be warm, supportive, scholarly, and conversational!
+            ROLE & KNOWLEDGE BASE ACCESS:
+            - You are an expert AI Educational Research Assistant, Socratic Tutor, and Neuro-Affirming Learning Buddy with FULL, UNRESTRICTED ACCESS to OER Commons Curated Collections (https://oercommons.org/curated-collections) and local school jurisdiction standards (${if (curriculumContext.isNotBlank()) curriculumContext else "$standardTitle ($schoolDistrict)"}).
+            - Sourced from Open Educational Resources (OER) Curated Collections at https://oercommons.org/curated-collections spanning all K-12 subjects: Mathematics, English Language Arts/Reading, Science & Nature, Social Studies & Civics, and Life Skills/SEL.
+            - Respond naturally to greetings, casual chat, educational research inquiries, and learning tasks. Be warm, supportive, scholarly, and conversational!
             - Language: Output natively in $langName ($languageCode).
             
-            OFFICIALLY DOWNLOADED CURRICULUM ACCESSED:
-            - School District: $schoolDistrict ($stateOrProvince, $country)
-            - Framework: $standardTitle
-            - Downloaded Curriculum Knowledge Base:
-            ${if (curriculumContext.isNotBlank()) curriculumContext else "Master curriculum benchmarks downloaded across Mathematics, Reading & Phonics, Science & Nature, Social Studies & Civics, and Neuro-Affirming Executive Functioning."}
+            OFFICIAL OER COMMONS CURATED COLLECTIONS ACCESSED:
+            - Primary Open Repository: OER Commons Curated Collections (https://oercommons.org/curated-collections)
+            - School Jurisdiction: $schoolDistrict ($stateOrProvince, $country)
+            - Educational Framework: $standardTitle
+            - Active Curated Curriculum Knowledge Base:
+            ${if (curriculumContext.isNotBlank()) curriculumContext else "Full K-12 master curriculum benchmarks synchronized from OER Commons Curated Collections (https://oercommons.org/curated-collections) across Elementary, Middle School, and High School (Grades 9-12)."}
 
             AI RESEARCH ASSISTANT & TUTORING GUIDELINES:
-            1. Curriculum Research & Standards Retrieval: When asked to research, summarize, locate, or explain curriculum topics, standards, or benchmarks, act as a thorough AI Research Assistant. Search and present clean, structured research summaries of the downloaded curriculum standards for the relevant subject and grade level.
-            2. For greetings (e.g., "hello", "hi", "hey", "good morning"): Greet the student/parent enthusiastically in character, state that you are an AI Research Assistant connected to their downloaded $schoolDistrict ($standardTitle) curriculum, and invite them to research any topic or ask a question.
+            1. OER Curated Collections Research: When asked to research, summarize, locate, or explain curriculum topics, standards, lesson plans, or benchmarks, utilize your full knowledge of OER Commons Curated Collections (https://oercommons.org/curated-collections). Present clear, structured, accredited overviews and learning objectives.
+            2. For greetings (e.g., "hello", "hi", "hey", "good morning"): Greet the student/parent enthusiastically in character, state that you are an AI Research Assistant connected to the OER Commons Curated Collections (https://oercommons.org/curated-collections) & $schoolDistrict curriculum, and invite them to explore any concept or ask any question.
             3. For academic/homework problems: Provide direct, accurate answers and solutions alongside clear, friendly, step-by-step explanations. When evaluating a student's answer, state clearly whether it is correct or incorrect: praise correct answers, and gently point out mistakes with the correct solution if incorrect.
-            4. For general knowledge or conceptual questions: Provide clear, friendly, bite-sized explanations with engaging analogies grounded in the active curriculum.
+            4. For general knowledge or conceptual questions: Provide clear, friendly, bite-sized explanations with engaging analogies grounded in the active curriculum and interest world.
             5. NO CITATIONS OR FOOTNOTES: Do NOT append any citation footers, reference tags, or footnotes (such as "[Curriculum Reference:...]") to the end of your responses. Keep responses clean and engaging.
         """.trimIndent()
 

@@ -19,33 +19,46 @@ import com.example.data.curriculum.oer.OerCommonsCurriculumItem
 import com.example.data.curriculum.oer.OerSyncResult
 import com.example.data.curriculum.oer.OerTutorCurriculumContext
 import com.example.data.local.AppDatabase
+import com.example.data.local.ChatSessionSummary
+import com.example.data.local.entity.ChatMessageEntity
 import com.example.data.local.entity.ChildProfileEntity
 import com.example.data.local.entity.LessonRecordEntity
 import com.example.data.local.entity.OerCurriculumEntity
 import com.example.data.local.entity.ProgressLogEntity
 import com.example.data.model.AgeGroupTier
 import com.example.data.model.AppLanguage
+import com.example.data.model.EducationalExplanationMode
 import com.example.data.model.EducationalLocaleManager
 import com.example.data.model.EducationalSubject
+import com.example.data.model.EducationalSubjectTag
 import com.example.data.model.FullLesson
 import com.example.data.model.GradeLevel
 import com.example.data.model.LocaleLegalComplianceManager
 import com.example.data.model.LocaleLegalNotice
+import com.example.data.model.NeuroThemeCatalog
+import com.example.data.model.NeuroThemeData
+import com.example.data.model.ThemeRotationSchedule
 import com.example.data.model.WorldTheme
 import com.example.data.repository.NeuroPathRepository
 import com.example.network.ChatModelMode
 import com.example.network.GeminiClient
 import com.example.speech.SpeechManager
+import com.example.ui.components.BreathingVisualMode
 import com.example.util.LocationComplianceHelper
 import com.example.util.LocationComplianceResult
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
+
 
 enum class AppScreen {
     LANGUAGE_SELECTION,
@@ -73,11 +86,19 @@ enum class BreathingPhase(val label: String, val durationSec: Int, val instructi
 }
 
 data class ChatMessage(
-    val id: String,
+    val id: String = UUID.randomUUID().toString(),
+    val dbId: Long = 0L,
     val sender: String, // "USER" or "BUDDY"
     val text: String,
+    val explanationMode: EducationalExplanationMode = EducationalExplanationMode.STEP_BY_STEP,
+    val modelMode: ChatModelMode = ChatModelMode.GENERAL,
+    val isFreeModel: Boolean = true,
+    val subjectTag: EducationalSubjectTag = EducationalSubjectTag.ALL,
+    val isBookmarked: Boolean = false,
+    val suggestedFollowUps: List<String> = emptyList(),
     val timestamp: Long = System.currentTimeMillis()
 )
+
 
 class NeuroPathViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -208,9 +229,15 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private val _completedBreathCycles = MutableStateFlow(0)
     val completedBreathCycles: StateFlow<Int> = _completedBreathCycles.asStateFlow()
 
+    private val _isBreathingPaused = MutableStateFlow(false)
+    val isBreathingPaused: StateFlow<Boolean> = _isBreathingPaused.asStateFlow()
+
+    private val _breathingVisualMode = MutableStateFlow(BreathingVisualMode.BLOSSOM)
+    val breathingVisualMode: StateFlow<BreathingVisualMode> = _breathingVisualMode.asStateFlow()
+
     private var breathingJob: Job? = null
 
-    // Learning Buddy AI Chatbot
+    // Learning Buddy AI Chatbot & Educational Explanations
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
 
@@ -219,6 +246,41 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _chatModelMode = MutableStateFlow(ChatModelMode.GENERAL)
     val chatModelMode: StateFlow<ChatModelMode> = _chatModelMode.asStateFlow()
+
+    private val _explanationMode = MutableStateFlow(EducationalExplanationMode.STEP_BY_STEP)
+    val explanationMode: StateFlow<EducationalExplanationMode> = _explanationMode.asStateFlow()
+
+    private val _selectedSubjectTag = MutableStateFlow(EducationalSubjectTag.ALL)
+    val selectedSubjectTag: StateFlow<EducationalSubjectTag> = _selectedSubjectTag.asStateFlow()
+
+    private val _currentSessionId = MutableStateFlow("session_${System.currentTimeMillis()}")
+    val currentSessionId: StateFlow<String> = _currentSessionId.asStateFlow()
+
+    private val _currentSessionTitle = MutableStateFlow("Personalized Study Session")
+    val currentSessionTitle: StateFlow<String> = _currentSessionTitle.asStateFlow()
+
+    private val _searchQueryChat = MutableStateFlow("")
+    val searchQueryChat: StateFlow<String> = _searchQueryChat.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val chatSessionSummaries: StateFlow<List<ChatSessionSummary>> = _currentProfile.flatMapLatest { profile ->
+        repository.getChatSessionSummariesFlow(profile.id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val bookmarkedChatMessages: StateFlow<List<ChatMessageEntity>> = _currentProfile.flatMapLatest { profile ->
+        repository.getBookmarkedChatMessagesFlow(profile.id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchResultsChatMessages: StateFlow<List<ChatMessageEntity>> = _searchQueryChat.flatMapLatest { query ->
+        if (query.isBlank()) {
+            flowOf(emptyList())
+        } else {
+            repository.searchChatMessagesFlow(_currentProfile.value.id, query)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
 
     // Voice Conversations (Live API - gemini-3.1-flash-live-preview)
     private val _isVoiceConversationMode = MutableStateFlow(false)
@@ -309,13 +371,15 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             if (profiles.isNotEmpty()) {
                 val completed = profiles.firstOrNull { it.isInitialSetupComplete }
                 if (completed != null) {
-                    _currentProfile.value = completed
-                    GeminiClient.customApiKeyOverride = completed.customApiKey
-                    speechManager.setLanguage(completed.appLanguageCode)
-                    speechManager.setSpeechParameters(completed.ttsSpeed, completed.ttsVoicePitch)
+                    val rotated = checkAndApplyThemeRotation(completed)
+                    _currentProfile.value = rotated
+                    GeminiClient.customApiKeyOverride = rotated.customApiKey
+                    speechManager.setLanguage(rotated.appLanguageCode)
+                    speechManager.setSpeechParameters(rotated.ttsSpeed, rotated.ttsVoicePitch)
                     _currentScreen.value = AppScreen.PROFILE_SELECTION
                 } else {
-                    _currentProfile.value = profiles.first()
+                    val first = checkAndApplyThemeRotation(profiles.first())
+                    _currentProfile.value = first
                     _currentScreen.value = AppScreen.LANGUAGE_SELECTION
                 }
             } else {
@@ -333,10 +397,11 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun selectChildProfile(profile: ChildProfileEntity) {
-        _currentProfile.value = profile
-        GeminiClient.customApiKeyOverride = profile.customApiKey
-        speechManager.setLanguage(profile.appLanguageCode)
-        speechManager.setSpeechParameters(profile.ttsSpeed, profile.ttsVoicePitch)
+        val rotated = checkAndApplyThemeRotation(profile)
+        _currentProfile.value = rotated
+        GeminiClient.customApiKeyOverride = rotated.customApiKey
+        speechManager.setLanguage(rotated.appLanguageCode)
+        speechManager.setSpeechParameters(rotated.ttsSpeed, rotated.ttsVoicePitch)
         fetchDailyQuote()
         navigateTo(AppScreen.HOME)
     }
@@ -633,9 +698,52 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         speechManager.speak(_dailyQuote.value)
     }
 
+    fun getActiveNeuroTheme(): NeuroThemeData {
+        val themeId = _currentProfile.value.activeThemeId
+        return NeuroThemeCatalog.findThemeById(themeId)
+    }
+
     fun getActiveTheme(): WorldTheme {
         val themeId = _currentProfile.value.activeThemeId
         return WorldTheme.values().find { it.id == themeId } ?: WorldTheme.DINOSAURS
+    }
+
+    fun checkAndApplyThemeRotation(profile: ChildProfileEntity): ChildProfileEntity {
+        val schedule = ThemeRotationSchedule.fromId(profile.themeRotationSchedule)
+        if (schedule == ThemeRotationSchedule.MANUAL || schedule.intervalDays <= 0) {
+            return profile
+        }
+
+        val now = System.currentTimeMillis()
+        val intervalMillis = schedule.intervalDays * 24L * 60L * 60L * 1000L
+        if (now - profile.lastThemeRotationTimestamp >= intervalMillis) {
+            val nextTheme = NeuroThemeCatalog.getNextRotatedTheme(profile)
+            val updated = profile.copy(
+                activeThemeId = nextTheme.id,
+                lastThemeRotationTimestamp = now
+            )
+            updateChildProfile(updated)
+            return updated
+        }
+        return profile
+    }
+
+    fun setThemeRotationSchedule(schedule: ThemeRotationSchedule) {
+        val prof = _currentProfile.value
+        val updated = prof.copy(
+            themeRotationSchedule = schedule.id,
+            lastThemeRotationTimestamp = System.currentTimeMillis()
+        )
+        updateChildProfile(updated)
+    }
+
+    fun setActiveNeuroTheme(themeId: String) {
+        val prof = _currentProfile.value
+        val updated = prof.copy(
+            activeThemeId = themeId,
+            lastThemeRotationTimestamp = System.currentTimeMillis()
+        )
+        updateChildProfile(updated)
     }
 
     private val navigationBackStack = mutableListOf<AppScreen>()
@@ -882,34 +990,63 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun setBreathingVisualMode(mode: BreathingVisualMode) {
+        _breathingVisualMode.value = mode
+    }
+
+    fun toggleBreathingPlayPause() {
+        _isBreathingPaused.value = !_isBreathingPaused.value
+    }
+
+    fun resetBreathingSession() {
+        _completedBreathCycles.value = 0
+        startBreathingSession()
+    }
+
+    fun speakBreathingCue(text: String) {
+        speechManager.speak(text)
+    }
+
     private fun startBreathingSession() {
         breathingJob?.cancel()
-        _completedBreathCycles.value = 0
+        _isBreathingPaused.value = false
         breathingJob = viewModelScope.launch {
             while (true) {
+                // Phase 1: INHALE (4 seconds)
                 _breathingPhase.value = BreathingPhase.INHALE
+                if (_currentProfile.value.readAnswersAloud) {
+                    speechManager.speak("Breathe in slowly...")
+                }
                 for (sec in 4 downTo 1) {
                     _breathingSecondsRemaining.value = sec
-                    if (sec == 4 && _currentProfile.value.readAnswersAloud) {
-                        speechManager.speak("Breathe in...")
+                    while (_isBreathingPaused.value) {
+                        delay(200)
                     }
                     delay(1000)
                 }
 
+                // Phase 2: HOLD (7 seconds)
                 _breathingPhase.value = BreathingPhase.HOLD
+                if (_currentProfile.value.readAnswersAloud) {
+                    speechManager.speak("Hold calmly...")
+                }
                 for (sec in 7 downTo 1) {
                     _breathingSecondsRemaining.value = sec
-                    if (sec == 7 && _currentProfile.value.readAnswersAloud) {
-                        speechManager.speak("Hold...")
+                    while (_isBreathingPaused.value) {
+                        delay(200)
                     }
                     delay(1000)
                 }
 
+                // Phase 3: EXHALE (8 seconds)
                 _breathingPhase.value = BreathingPhase.EXHALE
+                if (_currentProfile.value.readAnswersAloud) {
+                    speechManager.speak("Exhale slowly...")
+                }
                 for (sec in 8 downTo 1) {
                     _breathingSecondsRemaining.value = sec
-                    if (sec == 8 && _currentProfile.value.readAnswersAloud) {
-                        speechManager.speak("Exhale slowly...")
+                    while (_isBreathingPaused.value) {
+                        delay(200)
                     }
                     delay(1000)
                 }
@@ -923,6 +1060,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private fun stopBreathingSession() {
         breathingJob?.cancel()
         breathingJob = null
+        _isBreathingPaused.value = false
     }
 
     fun recordSensoryBreakTaken() {
@@ -937,7 +1075,29 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    // Avatar Shop
+    // Avatar Shop & Rewards
+    fun addPoints(points: Int) {
+        viewModelScope.launch {
+            repository.awardStarsAndGems(_currentProfile.value.id, stars = points, gems = (points / 5).coerceAtLeast(1))
+            val updated = repository.getProfileDirect(_currentProfile.value.id)
+            if (updated != null) {
+                _currentProfile.value = updated
+            }
+            triggerHapticSuccess()
+        }
+    }
+
+    fun awardStarsAndGems(stars: Int, gems: Int) {
+        viewModelScope.launch {
+            repository.awardStarsAndGems(_currentProfile.value.id, stars, gems)
+            val updated = repository.getProfileDirect(_currentProfile.value.id)
+            if (updated != null) {
+                _currentProfile.value = updated
+            }
+            triggerHapticSuccess()
+        }
+    }
+
     fun unlockAvatarItem(itemId: String, starCost: Int, gemCost: Int) {
         viewModelScope.launch {
             val success = repository.unlockItem(_currentProfile.value.id, itemId, starCost, gemCost)
@@ -1144,28 +1304,155 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         lyriaMusicPlayer.togglePlayPause()
     }
 
-    // Learning Buddy AI Tutor Chat
+    // Learning Buddy AI Tutor Chat & Educational Explanations
     private fun initDefaultChatGreeting() {
         val theme = getActiveTheme()
         _chatMessages.value = listOf(
             ChatMessage(
                 id = "greet",
                 sender = "BUDDY",
-                text = "${theme.greeting} I'm ${theme.buddyName}, your ${theme.buddyRole}! How can I help you learn today?"
+                text = "${theme.greeting} I'm ${theme.buddyName}, your ${theme.buddyRole}! I can explain anything in your lessons with step-by-step guidance, fun analogies, or direct answers. What are we exploring today?",
+                explanationMode = _explanationMode.value,
+                modelMode = _chatModelMode.value,
+                isFreeModel = _chatModelMode.value.isFreeTier,
+                subjectTag = _selectedSubjectTag.value,
+                suggestedFollowUps = listOf(
+                    "Explain today's lesson",
+                    "Give me a fun math puzzle",
+                    "Tell me a fascinating science fact"
+                )
             )
         )
     }
 
+    fun setExplanationMode(mode: EducationalExplanationMode) {
+        _explanationMode.value = mode
+    }
+
+    fun setSelectedSubjectTag(tag: EducationalSubjectTag) {
+        _selectedSubjectTag.value = tag
+    }
+
+    fun startNewChatSession(title: String) {
+        val newSessionId = "session_${System.currentTimeMillis()}"
+        _currentSessionId.value = newSessionId
+        _currentSessionTitle.value = title.ifBlank { "Personalized Study Session" }
+        initDefaultChatGreeting()
+    }
+
+    fun loadChatSession(sessionId: String, sessionTitle: String) {
+        _currentSessionId.value = sessionId
+        _currentSessionTitle.value = sessionTitle
+        viewModelScope.launch {
+            repository.getChatMessagesForSessionFlow(_currentProfile.value.id, sessionId).collect { entities ->
+                if (entities.isNotEmpty()) {
+                    _chatMessages.value = entities.map { entity ->
+                        ChatMessage(
+                            id = entity.id.toString(),
+                            dbId = entity.id,
+                            sender = entity.sender,
+                            text = entity.text,
+                            explanationMode = EducationalExplanationMode.fromId(entity.explanationMode),
+                            modelMode = ChatModelMode.values().find { it.modelName == entity.modelUsed } ?: ChatModelMode.GENERAL,
+                            isFreeModel = entity.isFreeModel,
+                            subjectTag = EducationalSubjectTag.fromId(entity.subjectTag),
+                            isBookmarked = entity.isBookmarked,
+                            timestamp = entity.timestamp
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun deleteChatSession(sessionId: String) {
+        viewModelScope.launch {
+            repository.deleteChatSession(_currentProfile.value.id, sessionId)
+            if (_currentSessionId.value == sessionId) {
+                startNewChatSession("New Study Topic")
+            }
+        }
+    }
+
+    fun clearAllChatHistory() {
+        viewModelScope.launch {
+            repository.clearAllChatHistory(_currentProfile.value.id)
+            startNewChatSession("Personalized Study Session")
+        }
+    }
+
+    fun toggleMessageBookmark(message: ChatMessage) {
+        viewModelScope.launch {
+            val newStatus = !message.isBookmarked
+            _chatMessages.value = _chatMessages.value.map {
+                if (it.id == message.id) it.copy(isBookmarked = newStatus) else it
+            }
+            if (message.dbId > 0) {
+                repository.toggleChatBookmark(message.dbId, newStatus)
+            }
+        }
+    }
+
+    fun searchChatMessages(query: String) {
+        _searchQueryChat.value = query
+    }
+
+    fun requestSimplerExplanation(baseText: String) {
+        _explanationMode.value = EducationalExplanationMode.SIMPLER_ANALOGY
+        val snippet = baseText.take(120).replace("\n", " ")
+        sendChatMessage("Can you explain that simpler with a fun, intuitive analogy? \"$snippet...\"")
+    }
+
+    fun requestStepByStepExplanation(baseText: String) {
+        _explanationMode.value = EducationalExplanationMode.STEP_BY_STEP
+        val snippet = baseText.take(120).replace("\n", " ")
+        sendChatMessage("Can you break that down into clear numbered step-by-step instructions? \"$snippet...\"")
+    }
+
     fun sendChatMessage(userText: String) {
         if (userText.isBlank()) return
-        val userMsg = ChatMessage(id = System.currentTimeMillis().toString(), sender = "USER", text = userText)
+        val currentMode = _explanationMode.value
+        val currentModel = _chatModelMode.value
+        val currentSubject = _selectedSubjectTag.value
+        val profile = _currentProfile.value
+        val activeSession = _currentSessionId.value
+        val sessionTitle = _currentSessionTitle.value
+
+        val userMsg = ChatMessage(
+            id = System.currentTimeMillis().toString(),
+            sender = "USER",
+            text = userText,
+            explanationMode = currentMode,
+            modelMode = currentModel,
+            isFreeModel = currentModel.isFreeTier,
+            subjectTag = currentSubject
+        )
         _chatMessages.value = _chatMessages.value + userMsg
         _isChatGenerating.value = true
 
         viewModelScope.launch {
+            // Save user message to Room DB
+            try {
+                repository.saveChatMessage(
+                    ChatMessageEntity(
+                        profileId = profile.id,
+                        sessionId = activeSession,
+                        sessionTitle = sessionTitle,
+                        sender = "USER",
+                        text = userText,
+                        explanationMode = currentMode.id,
+                        modelUsed = currentModel.modelName,
+                        isFreeModel = currentModel.isFreeTier,
+                        subjectTag = currentSubject.id,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+            } catch (e: Exception) {
+                Log.w("NeuroPathViewModel", "Error saving user message to DB: ${e.message}")
+            }
+
             try {
                 val theme = getActiveTheme()
-                val profile = _currentProfile.value
                 val studentGrade = GradeLevel.values().find { it.code == profile.gradeLevel } ?: GradeLevel.GRADE_1
                 val oerTutorContext = repository.retrieveOerTutorContext(
                     query = userText,
@@ -1178,27 +1465,30 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     latestCurriculum.value?.curriculumSummary
                         ?: "Accredited grade-level curriculum benchmarks for ${profile.gradeLevel} in ${profile.schoolDistrict}."
                 }
-                
-                val replyText = if (hasValidApiKey) {
+
+                val replyText = if (hasValidApiKey && currentModel != ChatModelMode.OFFLINE) {
                     val history = _chatMessages.value.takeLast(6).map {
                         (if (it.sender == "USER") "user" else "model") to it.text
                     }
-        
-                    val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
-                    val socraticDirective = "1. Provide direct, accurate answers and solutions with clear, friendly, step-by-step explanations. When evaluating a student's answer, state clearly whether it is correct or incorrect: praise correct answers, and gently point out mistakes with the correct solution if incorrect."
 
+                    val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
                     val systemPrompt = """
                         $basePrompt
                         Theme world: ${theme.title} (${theme.buddyRole}).
+                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
+                        Personalized Explanation Style: ${currentMode.title}
+                        Style Directive: ${currentMode.promptDirective}
                         District requirements context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
                         Learner profile accommodation considerations: ${profile.neurodivergentTypesCsv}.
-                        Pedagogical Guidance Mandate:
-                        $socraticDirective
-                        2. Ground explanations in the active curriculum standard framework (${profile.stateStandard} / ${profile.schoolDistrict}), but DO NOT append any citation tags, reference notes, or footnotes to your messages.
-                        3. Always be patient, encouraging, and use positive reinforcement.
-                        4. Explain concepts in clear, structured steps with relatable real-world and ${theme.title} metaphors.
+                        Curriculum Framework: ${profile.stateStandard} (${profile.schoolDistrict}).
+                        
+                        Core Tutoring Rules:
+                        1. Prioritize ${currentMode.title}: ${currentMode.promptDirective}
+                        2. Connect ideas to the learner's interest world (${theme.title}) and real-world examples.
+                        3. Ground explanations in accredited benchmarks (${profile.stateStandard}), but do NOT append citation tags or footnotes.
+                        4. Provide encouraging, positive reinforcement.
                     """.trimIndent()
-        
+
                     GeminiClient.generateChatReply(
                         conversationHistory = history,
                         systemPrompt = systemPrompt,
@@ -1208,11 +1498,11 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         country = profile.country,
                         standardTitle = profile.stateStandard,
                         curriculumContext = currSummary,
-                        modelMode = _chatModelMode.value,
+                        modelMode = currentModel,
                         customApiKey = activeApiKey
                     )
                 } else {
-                    delay(600)
+                    delay(500)
                     GeminiClient.generateLocalSocraticReply(
                         lastUserMessage = userText,
                         schoolDistrict = profile.schoolDistrict,
@@ -1225,12 +1515,40 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                 }
 
+                // Generate smart follow-up question chips based on topic
+                val followUps = generateSuggestedFollowUps(userText, currentSubject)
+
                 val replyMsg = ChatMessage(
                     id = (System.currentTimeMillis() + 1).toString(),
                     sender = "BUDDY",
-                    text = replyText
+                    text = replyText,
+                    explanationMode = currentMode,
+                    modelMode = currentModel,
+                    isFreeModel = currentModel.isFreeTier,
+                    subjectTag = currentSubject,
+                    suggestedFollowUps = followUps
                 )
                 _chatMessages.value = _chatMessages.value + replyMsg
+
+                // Persist Buddy reply to Room DB
+                val savedId = repository.saveChatMessage(
+                    ChatMessageEntity(
+                        profileId = profile.id,
+                        sessionId = activeSession,
+                        sessionTitle = sessionTitle,
+                        sender = "BUDDY",
+                        text = replyText,
+                        explanationMode = currentMode.id,
+                        modelUsed = currentModel.modelName,
+                        isFreeModel = currentModel.isFreeTier,
+                        subjectTag = currentSubject.id,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+                _chatMessages.value = _chatMessages.value.map {
+                    if (it.id == replyMsg.id) it.copy(dbId = savedId) else it
+                }
+
                 if (_currentProfile.value.readAnswersAloud) {
                     speechManager.speak(replyText)
                 }
@@ -1248,7 +1566,12 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 val replyMsg = ChatMessage(
                     id = (System.currentTimeMillis() + 1).toString(),
                     sender = "BUDDY",
-                    text = fallbackReply
+                    text = fallbackReply,
+                    explanationMode = currentMode,
+                    modelMode = currentModel,
+                    isFreeModel = currentModel.isFreeTier,
+                    subjectTag = currentSubject,
+                    suggestedFollowUps = listOf("Can you show another example?", "Why does this work?", "Quiz me!")
                 )
                 _chatMessages.value = _chatMessages.value + replyMsg
             } finally {
@@ -1256,6 +1579,38 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
     }
+
+    private fun generateSuggestedFollowUps(query: String, subject: EducationalSubjectTag): List<String> {
+        val qLower = query.lowercase()
+        return when {
+            qLower.contains("fraction") || qLower.contains("math") || subject == EducationalSubjectTag.MATH -> listOf(
+                "Show another practice problem",
+                "Why do we need a common denominator?",
+                "Give me a real-world math example"
+            )
+            qLower.contains("plant") || qLower.contains("science") || subject == EducationalSubjectTag.SCIENCE -> listOf(
+                "What happens at night?",
+                "Can you give me a fun quiz question?",
+                "How does this connect to animals?"
+            )
+            qLower.contains("read") || qLower.contains("word") || subject == EducationalSubjectTag.READING -> listOf(
+                "Give me a practice sentence",
+                "What is an antonym for this?",
+                "How do I use this in an essay?"
+            )
+            qLower.contains("code") || qLower.contains("program") || subject == EducationalSubjectTag.CODING -> listOf(
+                "Show me a simple code snippet",
+                "What kind of bug could happen here?",
+                "How does this work in video games?"
+            )
+            else -> listOf(
+                "Explain this with another example",
+                "Why is this important?",
+                "Ask me a check-in question!"
+            )
+        }
+    }
+
 
     // Parent PIN & Settings
     fun appendPinDigit(digit: String) {

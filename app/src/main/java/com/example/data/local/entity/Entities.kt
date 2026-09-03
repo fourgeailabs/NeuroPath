@@ -44,7 +44,9 @@ data class ChildProfileEntity(
     val isInitialSetupComplete: Boolean = false,
     val zipOrPostalCodeOverride: String = "",
     val customAiPlatform: String = "Google Gemini",
-    val customApiKey: String = ""
+    val customApiKey: String = "",
+    val themeRotationSchedule: String = "MANUAL", // MANUAL, DAILY, EVERY_3_DAYS, WEEKLY, BIWEEKLY, MONTHLY
+    val lastThemeRotationTimestamp: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "downloaded_curriculum")
@@ -110,3 +112,21 @@ data class SensorySessionEntity(
     val countAction: Int, // e.g. bubbles popped or breath cycles
     val timestamp: Long = System.currentTimeMillis()
 )
+
+@Entity(tableName = "chat_messages")
+data class ChatMessageEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val profileId: Long = 1,
+    val sessionId: String = "session_default",
+    val sessionTitle: String = "General Q&A",
+    val sender: String = "BUDDY", // "USER" or "BUDDY"
+    val text: String = "",
+    val explanationMode: String = "STEP_BY_STEP", // STEP_BY_STEP, ANALOGY, DEEP_DIVE, DIRECT
+    val modelUsed: String = "gemini-3.5-flash",
+    val isFreeModel: Boolean = true,
+    val subjectTag: String = "GENERAL", // MATH, SCIENCE, READING, SOCIAL_STUDIES, CODING, SENSORY, GENERAL
+    val isBookmarked: Boolean = false,
+    val timestamp: Long = System.currentTimeMillis()
+)
+

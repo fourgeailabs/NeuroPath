@@ -127,6 +127,21 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         }
     }
 
+    suspend fun getCuratedCollectionsDirectoryForGemini(): String = withContext(Dispatchers.IO) {
+        val all = getAllUnits()
+        val builder = StringBuilder()
+        builder.append("OER COMMONS CURATED COLLECTIONS DIRECTORY (https://oercommons.org/curated-collections):\n")
+        val grouped = all.groupBy { it.subject }
+        grouped.forEach { (subject, items) ->
+            builder.append("\n• Subject Domain: ${subject.title} (${items.size} Curated Units):\n")
+            items.forEach { item ->
+                builder.append("  - [${item.gradeBand.title}] ${item.unitTitle} | Code: ${item.standardCode} | Collection: ${item.collectionTitle} | URL: ${item.oerCommonsUrl}\n")
+                builder.append("    Key Concepts: ${item.keyConcepts.joinToString(", ")}\n")
+            }
+        }
+        builder.toString()
+    }
+
     suspend fun retrieveCurriculumContextForTutor(
         query: String,
         studentGrade: GradeLevel,
@@ -139,30 +154,41 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
 
         // Match subject from query keywords if not provided
         val inferredSubject = studentSubject ?: when {
-            q.contains("math") || q.contains("count") || q.contains("add") || q.contains("algebra") || q.contains("quad") || q.contains("fraction") || q.contains("geometry") || q.contains("trig") -> EducationalSubject.MATH
-            q.contains("read") || q.contains("phon") || q.contains("spell") || q.contains("word") || q.contains("rhetoric") || q.contains("essay") || q.contains("lit") -> EducationalSubject.READING
-            q.contains("sci") || q.contains("bio") || q.contains("cell") || q.contains("physic") || q.contains("dna") || q.contains("force") || q.contains("nature") -> EducationalSubject.SCIENCE
-            q.contains("civic") || q.contains("gov") || q.contains("history") || q.contains("court") || q.contains("amend") || q.contains("ecom") -> EducationalSubject.SOCIAL_STUDIES
-            q.contains("sel") || q.contains("finance") || q.contains("budget") || q.contains("calm") || q.contains("emotion") || q.contains("breath") -> EducationalSubject.LIFE_SKILLS
+            q.contains("math") || q.contains("count") || q.contains("add") || q.contains("algebra") || q.contains("quad") || q.contains("fraction") || q.contains("geometry") || q.contains("trig") || q.contains("number") -> EducationalSubject.MATH
+            q.contains("read") || q.contains("phon") || q.contains("spell") || q.contains("word") || q.contains("rhetoric") || q.contains("essay") || q.contains("lit") || q.contains("cer") || q.contains("claim") -> EducationalSubject.READING
+            q.contains("sci") || q.contains("bio") || q.contains("cell") || q.contains("physic") || q.contains("dna") || q.contains("force") || q.contains("nature") || q.contains("chem") || q.contains("plate") || q.contains("earth") -> EducationalSubject.SCIENCE
+            q.contains("civic") || q.contains("gov") || q.contains("history") || q.contains("court") || q.contains("amend") || q.contains("ecom") || q.contains("geo") || q.contains("map") || q.contains("equator") -> EducationalSubject.SOCIAL_STUDIES
+            q.contains("sel") || q.contains("finance") || q.contains("budget") || q.contains("calm") || q.contains("emotion") || q.contains("breath") || q.contains("credit") || q.contains("interest") -> EducationalSubject.LIFE_SKILLS
             else -> null
         }
 
-        // Find best matching unit
-        var matchedUnit = all.find { item ->
+        // Find best matching units (primary and related)
+        val matchingUnits = all.filter { item ->
             val matchesSubject = inferredSubject == null || item.subject == inferredSubject
-            val matchesGrade = item.gradeLevel == studentGrade
+            val matchesGrade = item.gradeLevel == studentGrade || item.gradeBand == when (studentGrade) {
+                GradeLevel.PRE_K, GradeLevel.KINDERGARTEN -> OerGradeBand.EARLY_CHILDHOOD
+                GradeLevel.GRADE_1, GradeLevel.GRADE_2, GradeLevel.GRADE_3, GradeLevel.GRADE_4, GradeLevel.GRADE_5 -> OerGradeBand.ELEMENTARY
+                GradeLevel.GRADE_6, GradeLevel.GRADE_7, GradeLevel.GRADE_8 -> OerGradeBand.MIDDLE_SCHOOL
+                GradeLevel.HIGH_SCHOOL -> OerGradeBand.HIGH_SCHOOL
+            }
             val matchesKeywords = item.keyConcepts.any { q.contains(it.lowercase()) } ||
                     item.vocabulary.any { q.contains(it.lowercase()) } ||
-                    item.unitTitle.lowercase().split(" ").any { q.contains(it) && it.length > 3 }
-            matchesSubject && (matchesGrade || matchesKeywords)
+                    item.unitTitle.lowercase().split(" ").any { q.contains(it) && it.length > 3 } ||
+                    item.summary.lowercase().contains(q)
+            (matchesSubject && matchesKeywords) || (matchesSubject && matchesGrade)
         }
 
-        if (matchedUnit == null && inferredSubject != null) {
-            matchedUnit = all.find { it.subject == inferredSubject && (it.gradeLevel == studentGrade || it.gradeBand == OerGradeBand.HIGH_SCHOOL && studentGrade == GradeLevel.HIGH_SCHOOL) }
+        var matchedUnit = matchingUnits.firstOrNull { item ->
+            item.keyConcepts.any { q.contains(it.lowercase()) } ||
+                    item.vocabulary.any { q.contains(it.lowercase()) } ||
+                    item.unitTitle.lowercase().split(" ").any { q.contains(it) && it.length > 3 }
         }
 
         if (matchedUnit == null) {
-            matchedUnit = all.find { it.gradeLevel == studentGrade } ?: all.firstOrNull()
+            matchedUnit = matchingUnits.firstOrNull { it.gradeLevel == studentGrade }
+                ?: matchingUnits.firstOrNull()
+                ?: all.find { it.gradeLevel == studentGrade }
+                ?: all.firstOrNull()
         }
 
         if (matchedUnit != null) {
@@ -172,27 +198,39 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             val misconceptionsStr = matchedUnit.commonMisconceptions.joinToString("\n- ")
             val sampleProblem = matchedUnit.practiceProblems.firstOrNull()
 
+            // Related units summary from OER Curated Collections
+            val relatedUnits = all.filter { it.id != matchedUnit.id && it.subject == matchedUnit.subject }.take(2)
+            val relatedSummary = if (relatedUnits.isNotEmpty()) {
+                "\n\nConnected OER Curated Units (https://oercommons.org/curated-collections):\n" +
+                        relatedUnits.joinToString("\n") { "• ${it.unitTitle} (${it.standardCode}) - ${it.oerCommonsUrl}" }
+            } else ""
+
             val formatted = """
-                [OER COMMONS CURATED COLLECTION BENCHMARK]
-                Unit: ${matchedUnit.unitTitle} (${matchedUnit.collectionTitle})
+                [OER COMMONS CURATED COLLECTIONS REPOSITORY BENCHMARK]
+                Source Database: OER Commons Curated Collections (https://oercommons.org/curated-collections)
+                Collection: ${matchedUnit.collectionTitle}
+                Unit: ${matchedUnit.unitTitle}
                 Standard Code: ${matchedUnit.standardCode}
-                Grade Band: ${matchedUnit.gradeBand.title}
-                Key Concepts: $conceptsStr
+                Grade Band: ${matchedUnit.gradeBand.title} (Grade: ${matchedUnit.gradeLevel.displayName})
+                Direct Resource URL: ${matchedUnit.oerCommonsUrl}
+                License: ${matchedUnit.openLicense}
+                
+                Key Concepts & Vocabulary:
+                - Concepts: $conceptsStr
+                - Terms: ${matchedUnit.vocabulary.joinToString(", ")}
                 
                 Learning Objectives:
                 - $objectivesStr
                 
-                Socratic Inquiries & Guiding Prompts:
+                Socratic Inquiries & Guiding Scaffolding:
                 - $socraticStr
                 
                 Common Student Misconceptions to Address:
                 - $misconceptionsStr
-                ${if (sampleProblem != null) "\nPractice Problem Prompt: ${sampleProblem.questionPrompt}\nCorrect Solution: ${sampleProblem.correctAnswer} (${sampleProblem.stepByStepExplanation})" else ""}
-                
-                Curriculum Source: ${matchedUnit.oerCommonsUrl} (${matchedUnit.openLicense})
+                ${if (sampleProblem != null) "\nSample OER Practice Problem: ${sampleProblem.questionPrompt}\nCorrect Solution: ${sampleProblem.correctAnswer} (${sampleProblem.stepByStepExplanation})\nSocratic Hint: ${sampleProblem.socraticClue}" else ""}$relatedSummary
             """.trimIndent()
 
-            val citation = "OER Commons Curated Collections: ${matchedUnit.unitTitle} (${matchedUnit.standardCode})"
+            val citation = "OER Commons Curated Collections: ${matchedUnit.unitTitle} (${matchedUnit.standardCode}) [https://oercommons.org/curated-collections]"
             val inquiry = matchedUnit.socraticGuidingQuestions.firstOrNull()
                 ?: "What part of ${matchedUnit.unitTitle} would you like to explore step-by-step?"
 
@@ -206,7 +244,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         } else {
             OerTutorCurriculumContext(
                 matchedUnit = null,
-                formattedContextPrompt = "OER Commons K-12 Curated Collections standard alignment active.",
+                formattedContextPrompt = "OER Commons K-12 Curated Collections standard alignment active (https://oercommons.org/curated-collections).",
                 citationSource = "OER Commons Curated Collections (https://oercommons.org/curated-collections)",
                 standardCode = "OER.K12.STANDARD",
                 inquiryPrompt = "What curriculum topic would you like to explore?"

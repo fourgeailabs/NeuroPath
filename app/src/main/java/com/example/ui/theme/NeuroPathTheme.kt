@@ -26,6 +26,89 @@ val TwilightSurface = Color(0xFF2B2F3E)
 val TwilightCard = Color(0xFF383D50)
 
 fun getThemeColorScheme(
+    neuroTheme: com.example.data.model.NeuroThemeData,
+    contrastMode: String,
+    darkTheme: Boolean = false
+): ColorScheme {
+    val primary = Color(neuroTheme.primaryHex)
+    val secondary = Color(neuroTheme.secondaryHex)
+    val tertiary = Color(0xFFF4A261)
+
+    return when (contrastMode) {
+        "TWILIGHT_DARK" -> darkColorScheme(
+            primary = secondary,
+            secondary = Color(0xFF81C784),
+            tertiary = Color(0xFFFFB74D),
+            background = TwilightBg,
+            surface = TwilightSurface,
+            surfaceVariant = TwilightCard,
+            onPrimary = Color.White,
+            onSecondary = Color.Black,
+            onBackground = Color(0xFFE8EAED),
+            onSurface = Color(0xFFF1F3F4)
+        )
+        "BUTTERCREAM" -> lightColorScheme(
+            primary = primary,
+            secondary = secondary,
+            tertiary = tertiary,
+            background = ButtercreamBg,
+            surface = ButtercreamCard,
+            surfaceVariant = Color(0xFFE5DFC5),
+            onPrimary = Color.White,
+            onSecondary = Color.White,
+            onBackground = Color(0xFF2C2523),
+            onSurface = Color(0xFF2C2523)
+        )
+        "MINT" -> lightColorScheme(
+            primary = Color(0xFF2D6A4F),
+            secondary = Color(0xFF52B788),
+            tertiary = Color(0xFF74C69D),
+            background = Color(0xFFF3FBF7),
+            surface = Color(0xFFE3F6EC),
+            surfaceVariant = Color(0xFFD0F0E0),
+            onPrimary = Color.White,
+            onSecondary = Color.White,
+            onBackground = Color(0xFF1B382B),
+            onSurface = Color(0xFF1B382B)
+        )
+        "HIGH_CONTRAST" -> lightColorScheme(
+            primary = Color(0xFF0D3B66),
+            secondary = Color(0xFFF95738),
+            tertiary = Color(0xFFEE964B),
+            background = Color(0xFFFAFAFA),
+            surface = Color(0xFFFFFFFF),
+            surfaceVariant = Color(0xFFEBEBEB),
+            onPrimary = Color.White,
+            onSecondary = Color.White,
+            onBackground = Color(0xFF000000),
+            onSurface = Color(0xFF000000)
+        )
+        else -> lightColorScheme(
+            primary = primary,
+            onPrimary = Color.White,
+            primaryContainer = Color(neuroTheme.cardHex),
+            onPrimaryContainer = primary,
+            secondary = secondary,
+            onSecondary = Color.White,
+            secondaryContainer = Color(neuroTheme.surfaceHex),
+            onSecondaryContainer = secondary,
+            tertiary = tertiary,
+            onTertiary = Color.White,
+            tertiaryContainer = Color(0xFFFFE0B2),
+            onTertiaryContainer = Color(0xFFE65100),
+            background = Color(neuroTheme.surfaceHex),
+            onBackground = Color(0xFF1E212B),
+            surface = Color(neuroTheme.cardHex),
+            onSurface = Color(0xFF1E212B),
+            surfaceVariant = Color(neuroTheme.surfaceHex),
+            onSurfaceVariant = Color(0xFF424242),
+            outline = secondary,
+            outlineVariant = Color(neuroTheme.cardHex)
+        )
+    }
+}
+
+fun getThemeColorScheme(
     worldTheme: WorldTheme,
     contrastMode: String,
     darkTheme: Boolean = false
