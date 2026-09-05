@@ -4,7 +4,7 @@
 Created by **FourgeAI LABS** ([https://github.com/fourgeailabs](https://github.com/fourgeailabs))
 
 [![Build Status](https://github.com/fourgeailabs/neuropath/actions/workflows/build.yml/badge.svg)](.github/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.14.00-blue.svg)](app/build.gradle.kts)
+[![Version](https://img.shields.io/badge/version-1.17.00-blue.svg)](app/build.gradle.kts)
 [![Android](https://img.shields.io/badge/Platform-Android_14_%2B-green.svg)](app/build.gradle.kts)
 [![Compose](https://img.shields.io/badge/Jetpack_Compose-M3-purple.svg)](app/build.gradle.kts)
 [![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
@@ -13,13 +13,30 @@ Created by **FourgeAI LABS** ([https://github.com/fourgeailabs](https://github.c
 
 ## 🌟 Overview
 
-**NeuroPath** is a comprehensive, sensory-conscious mobile learning application built with Kotlin and Jetpack Compose by **FourgeAI LABS**. Tailored specifically for children with ADHD, Autism, Dyslexia, Dyscalculia, and all curious learners, NeuroPath blends granular local school district educational requirements with personalized interest worlds, regulation tools, global multi-language compatibility, pre-installed K-12 OER Commons curriculum materials with **Interactive Video and Audio Playback Modules**, an interactive **4-7-8 Breathing Exercise Visualizer**, an **Interactive Theme Preview Modal & Atmospheric Visualizer**, a library of **100 Adaptive Neuro-Themes with Automated Periodic Rotation**, a robust **Gemini Educational Chat Architecture with Multi-Tier Models (gemini-3.5-flash, gemini-3.1-flash-lite-preview, gemini-3.1-pro-preview)**, clean standardized UI chip/pill layouts, and speech-to-text voice assist.
+**NeuroPath** is a comprehensive, sensory-conscious mobile learning application built with Kotlin and Jetpack Compose by **FourgeAI LABS**. Tailored specifically for children with ADHD, Autism, Dyslexia, Dyscalculia, and all curious learners, NeuroPath blends granular local school district educational requirements with personalized interest worlds, regulation tools, global multi-language compatibility, pre-installed K-12 OER Commons curriculum materials with **Interactive Video and Audio Playback Modules**, precise **GPS & ZIP/Postal Code City Resolution**, an interactive **4-7-8 Breathing Exercise Visualizer**, an **Interactive Theme Preview Modal & Atmospheric Visualizer**, a library of **100 Adaptive Neuro-Themes with Automated Periodic Rotation**, a robust **Gemini Educational Chat Architecture with Multi-Tier Models (gemini-1.5-flash, gemini-1.5-pro)**, clean standardized UI chip/pill layouts, and speech-to-text voice assist.
 
 ---
 
 ## 🚀 Key Features in Recent Updates
 
-### 📐 1. Standardized Sizing, Chip & Pill Formatting Polish (v1.14.00)
+### 📍 1. Precise GPS & ZIP/Postal Code City Resolution (v1.17.00)
+* **Exact City & Jurisdiction Matching**: Upgraded `LocationComplianceHelper` to extract exact cities (e.g., Surprise, AZ from 85379, Scottsdale, Mesa, Chandler, Beverly Hills, etc.) via Android `Geocoder` and comprehensive postal lookup tables.
+* **Accurate Curriculum & District Alignment**: Automatically aligns educational standards, school districts, and state frameworks with the actual city reported by GPS or ZIP code input.
+* **Resilient Offline Fallback**: Maintains robust pattern matching and dynamic local educational locale creation for any entered postal code worldwide.
+
+### ⚡ 2. Production Cloud AI Integration: Standardized Gemini 1.5 Flash & Pro Models (v1.16.00)
+* **Upgraded to Production Gemini 1.5 Models**: Migrated all API endpoints and chat mode configurations to standard production-ready `gemini-1.5-flash` and `gemini-1.5-pro` models, ensuring seamless cloud AI connectivity without HTTP 404 fallback errors.
+* **Robust Voice & Audio Transcription**: Configured direct cloud transcription and real-time voice conversation turns using verified Gemini 1.5 endpoints.
+* **Curriculum & Quiz Sync**: Enhanced online OER Commons curriculum synchronization, adaptive hint generation, and flashcard creation with reliable cloud AI intelligence.
+* **Graceful Socratic Fallback**: Maintained resilient offline Socratic tutoring when offline or when API keys are pending configuration.
+
+### ✨ 2. Comprehensive UI Polish, Layout Alignment & Component Standardization (v1.15.00)
+* **Visual Polish & Precision Alignment**: Completed comprehensive audit and refinement across Theme Spotlight, Top Sensory Suite, and NeuroBuddy chat interfaces.
+* **Secrets Management Resilience**: Restored environment files (`.env`, `.env.example`) and verified build compatibility with the Secrets Gradle plugin.
+* **Rock-Solid Multi-Tier Gemini 3.5 & 3.1 AI Fleet**: Verified end-to-end operation across `gemini-3.5-flash`, `gemini-3.1-flash-lite-preview`, and `gemini-3.1-pro-preview` with offline Socratic fallbacks.
+* **Touch Targets & Accessibility**: Ensured all buttons, chips, tabs, and interactive controls maintain standard 48dp touch targets and WCAG AAA contrast ratios.
+
+### 📐 2. Standardized Sizing, Chip & Pill Formatting Polish (v1.14.00)
 * **Eliminated Theme Category Pill Squeezing**: Redesigned the Active Theme Spotlight Card in the Child Profile Setup and Catalog items with stacked header rows and distinct badges, preventing vertical letter-by-letter wrapping when rendering long theme titles.
 * **Streamlined Chat Header & Action Controls**: Re-architected the NeuroBuddy chat header with clean, unclipped Gemini model pills (`⚡ 3.5 Flash`, `🚀 Flash Lite`, `🧠 3.1 Pro`, `🔌 Offline`), balanced touch targets, and balanced session subtitles.
 * **Ergonomic Educational Input Bar**: Optimized the bottom input field with adaptive single-to-multi-line height expansion, balanced 42dp action buttons, and concise placeholder prompts.
@@ -106,7 +123,15 @@ NeuroPath is created and maintained by **FourgeAI LABS**.
 
 ## 📝 Changelog & Release History
 
-### **v1.11.00** (Current Version)
+### **v1.17.00** (Current Version)
+* 📍 **Precise GPS & ZIP/Postal Code City Resolution**: Enhanced `LocationComplianceHelper` with exact city extraction (Surprise, AZ, Scottsdale, Mesa, Chandler, Beverly Hills, etc.) via Geocoder and comprehensive postal mapping.
+* 🏛️ **Accurate Jurisdiction & Curriculum Alignment**: Automatically locks educational standards and school districts to the actual city reported by GPS or postal code input.
+
+### **v1.16.00**
+* ⚡ **Production Gemini 1.5 Integration**: Migrated all cloud AI endpoints to standard production-ready `gemini-1.5-flash` and `gemini-1.5-pro` models.
+* 🎙️ **Robust Voice & Transcription**: Verified real-time voice conversation turns and curriculum sync with Gemini 1.5 endpoints.
+
+### **v1.11.00**
 * 🎨 **100 Adaptive Neuro-Themes**: Comprehensive library of 100 immersive theme worlds covering Pre-K through 12th Grade (Ancient Civilizations, Robotics & AI, Mythological Creatures, Culinary Adventures, Musical Journeys, Sports Superstars, Environmental Explorers, Artistic Expression, Transportation Tycoons, Spy Academy, Deep Space, Medical Science, Architecture, Gaming, etc.).
 * 🔄 **Periodic Theme Rotation Engine**: Configurable rotation preferences (Permanent, Daily, Every 3 Days, Weekly, Bi-Weekly, Monthly) tailored to child diagnosis, strengths, struggles, and hyper-fixations.
 * 📚 **100-Theme Catalog Browser**: Searchable dialog with category filters, companion buddy cards, and subject adaptations (Math, Reading, Science, Social Studies).

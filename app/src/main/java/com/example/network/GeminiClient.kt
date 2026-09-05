@@ -36,9 +36,9 @@ enum class ChatModelMode(
     val isFreeTier: Boolean = true,
     val tierLabel: String = "Free Model"
 ) {
-    GENERAL("GENERAL", "gemini-3.5-flash", "Gemini 3.5 Flash", "⚡", "Free Model • High-speed personalized tutor for educational explanations", true, "Free Tier"),
-    FAST("FAST", "gemini-3.1-flash-lite-preview", "Gemini Flash Lite", "🚀", "Free Model • Ultra-low latency, quota-friendly chat", true, "Free Tier"),
-    COMPLEX("COMPLEX", "gemini-3.1-pro-preview", "Gemini 3.1 Pro", "🧠", "Deep Reasoning • Advanced multi-step STEM breakdown", false, "Pro Tier"),
+    GENERAL("GENERAL", "gemini-1.5-flash", "Gemini 1.5 Flash", "⚡", "Free Model • High-speed personalized tutor for educational explanations", true, "Free Tier"),
+    FAST("FAST", "gemini-1.5-flash", "Gemini 1.5 Flash", "🚀", "Free Model • Ultra-low latency, quota-friendly chat", true, "Free Tier"),
+    COMPLEX("COMPLEX", "gemini-1.5-pro", "Gemini 1.5 Pro", "🧠", "Deep Reasoning • Advanced multi-step STEM breakdown", false, "Pro Tier"),
     OFFLINE("OFFLINE", "offline-socratic", "Offline Socratic", "🛡️", "Offline Local • Zero-network accredited curriculum engine", true, "Offline")
 }
 
@@ -193,7 +193,7 @@ object GeminiClient {
         )
 
         try {
-            val response = service.generateContent("gemini-3.5-flash", apiKey, request)
+            val response = service.generateContent("gemini-1.5-flash", apiKey, request)
             val text = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
             if (!text.isNullOrBlank()) return@withContext text
         } catch (e: Exception) {
@@ -201,7 +201,7 @@ object GeminiClient {
         }
 
         try {
-            val response = service.generateContent("gemini-3.1-flash-lite-preview", apiKey, request)
+            val response = service.generateContent("gemini-1.5-pro", apiKey, request)
             response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim() ?: ""
         } catch (e: Exception) {
             Log.e("GeminiClient", "transcribeAudio fallback model failed", e)
@@ -281,8 +281,9 @@ object GeminiClient {
 
         val modelsToTry = listOf(
             modelMode.modelName,
-            "gemini-3.5-flash",
-            "gemini-3.1-flash-lite-preview"
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+            "gemini-2.0-flash"
         ).distinct()
 
         for (model in modelsToTry) {
@@ -433,7 +434,7 @@ object GeminiClient {
         )
 
         try {
-            val response = service.generateContent("gemini-3.5-flash", apiKey, request)
+            val response = service.generateContent("gemini-1.5-flash", apiKey, request)
             val candidate = response.candidates?.firstOrNull()
             val text = candidate?.content?.parts?.firstOrNull()?.text ?: ""
             val audioInline = candidate?.content?.parts?.firstOrNull { it.inlineData != null }?.inlineData?.data
@@ -446,7 +447,7 @@ object GeminiClient {
         } catch (e: Exception) {
             Log.e("GeminiClient", "generateLiveVoiceConversationTurn primary failed", e)
             try {
-                val fallbackResponse = service.generateContent("gemini-3.1-flash-lite-preview", apiKey, request)
+                val fallbackResponse = service.generateContent("gemini-1.5-pro", apiKey, request)
                 val text = fallbackResponse.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: ""
                 LiveVoiceTurnResult(
                     transcriptText = if (text.isNotBlank()) text else "I am right here with you! Let's take it one step at a time.",
@@ -573,12 +574,12 @@ object GeminiClient {
         )
 
         try {
-            val response = service.generateContent("gemini-3.5-flash", apiKey, request)
+            val response = service.generateContent("gemini-1.5-flash", apiKey, request)
             response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
                 ?: "Mistakes are how our brains make new connections! Take another look at the clues."
         } catch (e: Exception) {
             try {
-                val response = service.generateContent("gemini-3.1-flash-lite-preview", apiKey, request)
+                val response = service.generateContent("gemini-1.5-pro", apiKey, request)
                 response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
                     ?: "Mistakes are how our brains make new connections! Take another look at the clues."
             } catch (_: Exception) {
@@ -679,7 +680,7 @@ object GeminiClient {
         )
 
         try {
-            val response = service.generateContent("gemini-3.5-flash", apiKey, request)
+            val response = service.generateContent("gemini-1.5-flash", apiKey, request)
             val text = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
                 ?: "Curriculum synchronized from OER Commons Curated Collections (https://oercommons.org/curated-collections) across all K-12 grades for $schoolDistrict."
             DownloadedCurriculumResult(
@@ -736,7 +737,7 @@ object GeminiClient {
         )
 
         try {
-            val response = service.generateContent("gemini-3.5-flash", apiKey, request)
+            val response = service.generateContent("gemini-1.5-flash", apiKey, request)
             response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
                 ?: "$district ($city, $state) $grade curriculum synchronized."
         } catch (e: Exception) {

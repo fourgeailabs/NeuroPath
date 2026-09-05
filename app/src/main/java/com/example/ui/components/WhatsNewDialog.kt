@@ -48,8 +48,32 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v1.14.00",
+        version = "v1.16.00",
         date = "Current Update",
+        title = "Production Cloud AI Integration: Standardized Gemini 1.5 Flash & Pro Models",
+        highlights = listOf(
+            "⚡ Upgraded to Production Gemini 1.5 Models: Migrated all API endpoints and chat mode configurations to standard production-ready gemini-1.5-flash and gemini-1.5-pro models, ensuring seamless cloud AI connectivity without 404 fallback errors.",
+            "🎙️ Robust Voice & Audio Transcription: Configured direct cloud transcription and real-time voice conversation turns using verified Gemini 1.5 endpoints.",
+            "📚 Curriculum & Quiz Sync: Enhanced online OER Commons curriculum synchronization, adaptive hint generation, and flashcard creation with reliable cloud AI intelligence.",
+            "🛡️ Graceful Socratic Fallback: Maintained resilient offline Socratic tutoring when offline or when API keys are pending configuration."
+        ),
+        isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v1.15.00",
+        date = "Previous Update",
+        title = "Comprehensive UI Polish, Component Alignment & Architecture Verification",
+        highlights = listOf(
+            "✨ Complete UI Element Alignment: Verified and perfected layout spacing, padding, text contrast, and pill badges across Theme Spotlight, Top Sensory Suite, and NeuroBuddy chat.",
+            "🛡️ Secure Secrets & Key Management: Ensured seamless integration between Secrets Gradle plugin, local configuration, and live AI Studio runtime environment.",
+            "🚀 Robust Multi-Tier Gemini Fleet: Verified stable end-to-end operation with offline Socratic fallbacks.",
+            "📐 Enhanced Visual Typography & Touch Ergonomics: All interactive components adhere strictly to 48dp touch targets and Material Design 3 guidelines."
+        ),
+        isCurrentVersion = false
+    ),
+    ReleaseNote(
+        version = "v1.14.00",
+        date = "Previous Update",
         title = "Clean Sizing, Chip & Pill Formatting Standardization and UI Alignment Polish",
         highlights = listOf(
             "📐 Fixed Theme Card Category Pill Squeezing: Redesigned the Active Theme Spotlight Card and Theme Catalog items with dedicated header rows, preventing vertical text squishing and text wrapping on longer theme titles.",
@@ -58,7 +82,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
             "✨ Enhanced Follow-up & Suggestion Chips: Balanced font metrics, corner radii, and padding across all educational suggestion pills and cross-curricular subject badges.",
             "🛡️ High-Contrast Theme Card Contrast: Enhanced text contrast across all light and vibrant theme palette cards with dark, readable typography paired with theme-accented metadata badges."
         ),
-        isCurrentVersion = true
+        isCurrentVersion = false
     ),
     ReleaseNote(
         version = "v1.13.00",

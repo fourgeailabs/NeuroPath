@@ -962,7 +962,7 @@ fun ParentDashboardScreen(
                             }
 
                             Text(
-                                "NeuroPath is powered directly by Google AI Studio Gemini API offerings (gemini-3.5-flash, gemini-3.1-pro-preview, and gemini-3.1-flash-lite-preview) provided natively by the AI Studio environment.",
+                                "NeuroPath is powered directly by Google AI Studio Gemini API offerings (gemini-1.5-flash and gemini-1.5-pro) provided natively by the AI Studio environment.",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

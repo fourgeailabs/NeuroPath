@@ -275,9 +275,9 @@ fun EducationalChatInterface(
                         // Free Model / Model Mode Dropdown Pill
                         Box {
                             val modelLabel = when (activeChatMode) {
-                                ChatModelMode.FAST -> "Flash Lite"
-                                ChatModelMode.GENERAL -> "3.5 Flash"
-                                ChatModelMode.COMPLEX -> "3.1 Pro"
+                                ChatModelMode.FAST -> "1.5 Flash"
+                                ChatModelMode.GENERAL -> "1.5 Flash"
+                                ChatModelMode.COMPLEX -> "1.5 Pro"
                                 ChatModelMode.OFFLINE -> "Offline"
                             }
 

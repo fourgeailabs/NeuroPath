@@ -80,27 +80,43 @@ object LocationComplianceHelper {
         if (foundState.isNullOrBlank()) {
             val usZipMatch = Regex("^\\d{5}(-\\d{4})?$").find(clean)
             if (usZipMatch != null) {
-                val num = clean.take(5).toIntOrNull() ?: 0
+                val zipStr = clean.take(5)
+                val num = zipStr.toIntOrNull() ?: 0
                 foundCountry = "United States"
                 foundCountryCode = "US"
-                when (num) {
-                    in 90000..96199 -> { foundState = "California"; foundCity = "Los Angeles" }
-                    in 75000..79999 -> { foundState = "Texas"; foundCity = "Dallas" }
-                    in 10000..14999 -> { foundState = "New York"; foundCity = "New York City" }
-                    in 32000..34999 -> { foundState = "Florida"; foundCity = "Miami" }
-                    in 60000..62999 -> { foundState = "Illinois"; foundCity = "Chicago" }
-                    in 98000..99499 -> { foundState = "Washington"; foundCity = "Seattle" }
-                    in 1000..2799 -> { foundState = "Massachusetts"; foundCity = "Boston" }
-                    in 15000..19699 -> { foundState = "Pennsylvania"; foundCity = "Philadelphia" }
-                    in 30000..31999 -> { foundState = "Georgia"; foundCity = "Atlanta" }
-                    in 43000..45999 -> { foundState = "Ohio"; foundCity = "Columbus" }
-                    in 48000..49999 -> { foundState = "Michigan"; foundCity = "Detroit" }
-                    in 27000..28999 -> { foundState = "North Carolina"; foundCity = "Charlotte" }
-                    in 20100..24658 -> { foundState = "Virginia"; foundCity = "Fairfax" }
-                    in 80000..81658 -> { foundState = "Colorado"; foundCity = "Denver" }
-                    in 85000..86556 -> { foundState = "Arizona"; foundCity = "Phoenix" }
-                    in 20000..20599 -> { foundState = "Washington D.C."; foundCity = "Washington" }
-                    else -> { foundState = "California"; foundCity = "Los Angeles" }
+                when (zipStr) {
+                    "85379" -> { foundState = "Arizona"; foundCity = "Surprise" }
+                    "90210", "90211", "90212" -> { foundState = "California"; foundCity = "Beverly Hills" }
+                    else -> {
+                        when {
+                            num in 85251..85260 || num in 85266..85268 || num == 85271 -> { foundState = "Arizona"; foundCity = "Scottsdale" }
+                            num in 85201..85215 -> { foundState = "Arizona"; foundCity = "Mesa" }
+                            num in 85224..85226 -> { foundState = "Arizona"; foundCity = "Chandler" }
+                            num in 85233..85234 || num in 85295..85297 -> { foundState = "Arizona"; foundCity = "Gilbert" }
+                            num in 85301..85310 -> { foundState = "Arizona"; foundCity = "Glendale" }
+                            num == 85345 || num in 85381..85383 -> { foundState = "Arizona"; foundCity = "Peoria" }
+                            num in 85281..85284 -> { foundState = "Arizona"; foundCity = "Tempe" }
+                            num in 85701..85756 -> { foundState = "Arizona"; foundCity = "Tucson" }
+                            num in 86001..86004 -> { foundState = "Arizona"; foundCity = "Flagstaff" }
+                            num in 90000..96199 -> { foundState = "California"; foundCity = "Los Angeles" }
+                            num in 75000..79999 -> { foundState = "Texas"; foundCity = "Dallas" }
+                            num in 10000..14999 -> { foundState = "New York"; foundCity = "New York City" }
+                            num in 32000..34999 -> { foundState = "Florida"; foundCity = "Miami" }
+                            num in 60000..62999 -> { foundState = "Illinois"; foundCity = "Chicago" }
+                            num in 98000..99499 -> { foundState = "Washington"; foundCity = "Seattle" }
+                            num in 1000..2799 -> { foundState = "Massachusetts"; foundCity = "Boston" }
+                            num in 15000..19699 -> { foundState = "Pennsylvania"; foundCity = "Philadelphia" }
+                            num in 30000..31999 -> { foundState = "Georgia"; foundCity = "Atlanta" }
+                            num in 43000..45999 -> { foundState = "Ohio"; foundCity = "Columbus" }
+                            num in 48000..49999 -> { foundState = "Michigan"; foundCity = "Detroit" }
+                            num in 27000..28999 -> { foundState = "North Carolina"; foundCity = "Charlotte" }
+                            num in 20100..24658 -> { foundState = "Virginia"; foundCity = "Fairfax" }
+                            num in 80000..81658 -> { foundState = "Colorado"; foundCity = "Denver" }
+                            num in 85000..86556 -> { foundState = "Arizona"; foundCity = "Phoenix" }
+                            num in 20000..20599 -> { foundState = "Washington D.C."; foundCity = "Washington" }
+                            else -> { foundState = "California"; foundCity = "Los Angeles" }
+                        }
+                    }
                 }
             } else if (clean.startsWith("SW") || clean.startsWith("EC") || clean.startsWith("W1") || clean.startsWith("E1") || clean.startsWith("N1") || clean.startsWith("SE") || clean.startsWith("WC")) {
                 foundCountry = "United Kingdom"
@@ -193,6 +209,10 @@ object LocationComplianceHelper {
         val normalizedCountry = mapToStandardCountryName(foundCountryCode, foundCountry)
         val matchedLocale = GLOBAL_EDUCATIONAL_LOCALES.find {
             (it.country.equals(normalizedCountry, ignoreCase = true) || it.countryCode.equals(foundCountryCode, ignoreCase = true)) &&
+            (foundState == null || it.stateOrProvince.contains(foundState!!, ignoreCase = true)) &&
+            (foundCity != null && it.city.equals(foundCity!!, ignoreCase = true))
+        } ?: GLOBAL_EDUCATIONAL_LOCALES.find {
+            (it.country.equals(normalizedCountry, ignoreCase = true) || it.countryCode.equals(foundCountryCode, ignoreCase = true)) &&
             (foundState == null || it.stateOrProvince.contains(foundState!!, ignoreCase = true))
         } ?: GLOBAL_EDUCATIONAL_LOCALES.find {
             it.country.equals(normalizedCountry, ignoreCase = true) || it.countryCode.equals(foundCountryCode, ignoreCase = true)
@@ -243,7 +263,10 @@ object LocationComplianceHelper {
                             addr.countryName?.let { detectedCountryName = it }
                             addr.countryCode?.let { detectedCountryCode = it.uppercase() }
                             addr.adminArea?.let { detectedState = it }
-                            addr.locality?.let { detectedCity = it }
+                            val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality
+                            if (!reportedCity.isNullOrBlank()) {
+                                detectedCity = reportedCity
+                            }
                             isFromGps = true
                         }
                     } else {
@@ -254,7 +277,10 @@ object LocationComplianceHelper {
                             addr.countryName?.let { detectedCountryName = it }
                             addr.countryCode?.let { detectedCountryCode = it.uppercase() }
                             addr.adminArea?.let { detectedState = it }
-                            addr.locality?.let { detectedCity = it }
+                            val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality
+                            if (!reportedCity.isNullOrBlank()) {
+                                detectedCity = reportedCity
+                            }
                             isFromGps = true
                         }
                     }
@@ -289,8 +315,14 @@ object LocationComplianceHelper {
         // Map to supported educational locales
         val normalizedCountry = mapToStandardCountryName(detectedCountryCode, detectedCountryName)
         val matchedLocale = GLOBAL_EDUCATIONAL_LOCALES.find {
-            it.country.equals(normalizedCountry, ignoreCase = true) ||
-            it.countryCode.equals(detectedCountryCode, ignoreCase = true)
+            (it.country.equals(normalizedCountry, ignoreCase = true) || it.countryCode.equals(detectedCountryCode, ignoreCase = true)) &&
+            (detectedState == null || it.stateOrProvince.contains(detectedState!!, ignoreCase = true)) &&
+            (detectedCity != null && it.city.equals(detectedCity!!, ignoreCase = true))
+        } ?: GLOBAL_EDUCATIONAL_LOCALES.find {
+            (it.country.equals(normalizedCountry, ignoreCase = true) || it.countryCode.equals(detectedCountryCode, ignoreCase = true)) &&
+            (detectedState == null || it.stateOrProvince.contains(detectedState!!, ignoreCase = true))
+        } ?: GLOBAL_EDUCATIONAL_LOCALES.find {
+            it.country.equals(normalizedCountry, ignoreCase = true) || it.countryCode.equals(detectedCountryCode, ignoreCase = true)
         } ?: GLOBAL_EDUCATIONAL_LOCALES.first()
 
         val complianceMsg = if (isFromGps) {
