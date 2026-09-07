@@ -278,6 +278,7 @@ fun EducationalChatInterface(
                                 ChatModelMode.FAST -> "1.5 Flash"
                                 ChatModelMode.GENERAL -> "1.5 Flash"
                                 ChatModelMode.COMPLEX -> "1.5 Pro"
+                                ChatModelMode.GEMMA_LOCAL -> "Gemma 2B"
                                 ChatModelMode.OFFLINE -> "Offline"
                             }
 

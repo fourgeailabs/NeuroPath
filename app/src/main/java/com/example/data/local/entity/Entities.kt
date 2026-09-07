@@ -33,6 +33,10 @@ data class ChildProfileEntity(
     val totalStars: Int = 0,
     val totalGems: Int = 0,
     val currentStreakDays: Int = 0,
+    val lastActiveDate: String = "",
+    val learningBuddyDisabled: Boolean = false,
+    val aiVersionMode: String = "SOCRATIC_AND_FULL", // SOCRATIC_ONLY, FULL_AI, LOCAL_OFFLINE
+    val localGeminiInstalled: Boolean = false,
     val currentAvatarId: String = "av_robot",
     val equippedHatId: String? = null,
     val equippedPetId: String? = null,

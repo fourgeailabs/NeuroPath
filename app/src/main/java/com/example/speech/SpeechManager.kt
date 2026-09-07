@@ -47,6 +47,9 @@ class SpeechManager(private val context: Context) {
     val currentWordIndex: StateFlow<Int> = _currentWordIndex.asStateFlow()
 
     private var speechRate: Float = 0.88f
+    private val _speechRateFlow = MutableStateFlow(0.88f)
+    val speechRateFlow: StateFlow<Float> = _speechRateFlow.asStateFlow()
+
     private var speechPitch: Float = 1.05f
     private var currentLanguage: AppLanguage = AppLanguage.ENGLISH_US
 
@@ -56,6 +59,7 @@ class SpeechManager(private val context: Context) {
                 tts?.language = currentLanguage.locale
                 tts?.setSpeechRate(speechRate)
                 tts?.setPitch(speechPitch)
+                _speechRateFlow.value = speechRate
                 isInitialized = true
                 setupUtteranceListener()
             }
@@ -77,9 +81,16 @@ class SpeechManager(private val context: Context) {
         }
     }
 
+    fun setSpeechRate(rate: Float) {
+        speechRate = rate.coerceIn(0.5f, 2.0f)
+        _speechRateFlow.value = speechRate
+        tts?.setSpeechRate(speechRate)
+    }
+
     fun setSpeechParameters(rate: Float, pitch: Float) {
-        speechRate = rate.coerceIn(0.5f, 1.5f)
+        speechRate = rate.coerceIn(0.5f, 2.0f)
         speechPitch = pitch.coerceIn(0.6f, 1.5f)
+        _speechRateFlow.value = speechRate
         tts?.setSpeechRate(speechRate)
         tts?.setPitch(speechPitch)
     }

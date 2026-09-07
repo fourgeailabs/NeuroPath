@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Stop
@@ -36,14 +37,17 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -62,7 +66,7 @@ import com.example.audio.AmbientSoundType
 import com.example.ui.AppScreen
 import com.example.ui.NeuroPathViewModel
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TopSensoryBar(
     viewModel: NeuroPathViewModel,
@@ -276,179 +280,104 @@ fun TopSensoryBar(
         }
     }
 
-    // Soundscape & Lyria Music Generation Dialog
+    // Soundscape & Lyria Music Generation Slide-Up Sheet
     if (showSoundDialog) {
         var customMusicPrompt by remember { mutableStateOf("") }
         var isShortClipMode by remember { mutableStateOf(true) }
+        val sheetState = rememberModalBottomSheetState()
 
-        AlertDialog(
+        ModalBottomSheet(
             onDismissRequest = { showSoundDialog = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🌿 Ambient Soundscapes & AI Music", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                }
-            },
-            text = {
-                Column(
+            sheetState = sheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "Generate calming audio using Google Lyria AI models (lyria-3-clip-preview & lyria-3-pro-preview) or procedural noise frequencies tailored for ADHD and ASD sensory regulation.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("🌿 AI Soundscape Generator", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    IconButton(onClick = { showSoundDialog = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
 
-                    // Lyria AI Generator Box
+                Text(
+                    "Search & generate custom ambient audio on-demand using Google Lyria AI models (lyria-3-clip-preview & lyria-3-pro-preview) tailored for sensory regulation.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Model Length Selector Pill (Clip vs Pro)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                        modifier = Modifier.fillMaxWidth()
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isShortClipMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.clickable { isShortClipMode = true }
                     ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = "Lyria AI",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text(
-                                    "Lyria AI Music Generator",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                        Text(
+                            "⚡ 30s Focus Clip (Clip)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isShortClipMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (!isShortClipMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.clickable { isShortClipMode = false }
+                    ) {
+                        Text(
+                            "🎵 Full Track (Pro)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (!isShortClipMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
 
-                            Spacer(Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = customMusicPrompt,
+                    onValueChange = { customMusicPrompt = it },
+                    placeholder = { Text("Search / describe soundscape (e.g. 432Hz lo-fi forest stream)", fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 3,
+                    leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                )
 
-                            // Model Length Selector Pill (Clip vs Pro)
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isShortClipMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.clickable { isShortClipMode = true }
-                                ) {
-                                    Text(
-                                        "⚡ 30s Focus Clip (lyria-3-clip-preview)",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (isShortClipMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (!isShortClipMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                                    modifier = Modifier.clickable { isShortClipMode = false }
-                                ) {
-                                    Text(
-                                        "🎵 Full Track (lyria-3-pro-preview)",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (!isShortClipMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(Modifier.height(6.dp))
-
-                            OutlinedTextField(
-                                value = customMusicPrompt,
-                                onValueChange = { customMusicPrompt = it },
-                                placeholder = { Text("e.g. 432Hz lo-fi piano with gentle woodland stream", fontSize = 11.sp) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp),
-                                maxLines = 2
+                ElevatedButton(
+                    onClick = {
+                        if (customMusicPrompt.isNotBlank()) {
+                            viewModel.generateLyriaSoundscape(
+                                soundType = AmbientSoundType.OCEAN,
+                                isShortClip = isShortClipMode,
+                                customPrompt = customMusicPrompt
                             )
-
-                            Spacer(Modifier.height(6.dp))
-
-                            ElevatedButton(
-                                onClick = {
-                                    viewModel.generateLyriaSoundscape(
-                                        soundType = AmbientSoundType.OCEAN,
-                                        isShortClip = isShortClipMode,
-                                        customPrompt = customMusicPrompt.ifBlank { null }
-                                    )
-                                    showSoundDialog = false
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Generate AI Soundscape", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
+                            showSoundDialog = false
                         }
-                    }
-
-                    Text("Standard Ambient Presets:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-
-                    AmbientSoundType.values().forEach { soundType ->
-                        val isCurrent = activeSound == soundType
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isCurrent) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.toggleAmbientSound(soundType)
-                                    showSoundDialog = false
-                                }
-                                .padding(2.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(soundType.emoji, fontSize = 20.sp)
-                                Spacer(Modifier.width(10.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        soundType.title,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                        color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        soundType.description,
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                                if (soundType != AmbientSoundType.OFF) {
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.generateLyriaSoundscape(
-                                                soundType = soundType,
-                                                isShortClip = isShortClipMode
-                                            )
-                                            showSoundDialog = false
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = "Generate Lyria Track",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("generate_lyria_sound_btn"),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Generate & Play AI Soundscape", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSoundDialog = false }) {
-                    Text("Done")
-                }
+
+                Spacer(Modifier.height(24.dp))
             }
-        )
+        }
     }
 
     // Contrast Palette Dialog

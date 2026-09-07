@@ -43,6 +43,8 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.filled.Wifi
+import com.example.network.GemmaDownloadState
+import com.example.network.GemmaLocalManager
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -73,6 +75,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -140,6 +144,7 @@ fun ParentDashboardScreen(
     val isOerSyncing by viewModel.isOerSyncing.collectAsState()
     val oerSyncResult by viewModel.oerSyncResult.collectAsState()
     val uriHandler = LocalUriHandler.current
+    val coroutineScope = rememberCoroutineScope()
 
     var selectedTab by remember { mutableStateOf(ParentDashboardTab.PROFILES) }
     var editingProfileId by remember { mutableStateOf<Long?>(null) }
@@ -169,8 +174,11 @@ fun ParentDashboardScreen(
     var stateOrProvince by remember(profile) { mutableStateOf(profile.stateOrProvince) }
     var city by remember(profile) { mutableStateOf(profile.city) }
     var schoolDistrict by remember(profile) { mutableStateOf(profile.schoolDistrict) }
+    var zipOrPostalInput by remember(profile) { mutableStateOf(profile.zipOrPostalCodeOverride) }
+    var zipMessage by remember { mutableStateOf<String?>(null) }
 
     var selectedThemeId by remember(profile) { mutableStateOf(profile.activeThemeId) }
+    var hfTokenInput by remember { mutableStateOf("") }
     var dyslexiaEnabled by remember(profile) { mutableStateOf(profile.dyslexiaFontEnabled) }
     var contrastMode by remember(profile) { mutableStateOf(profile.highContrastMode) }
     var ttsSpeed by remember(profile) { mutableFloatStateOf(profile.ttsSpeed) }
@@ -966,6 +974,205 @@ fun ParentDashboardScreen(
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                            // Disable Learning Buddy toggle
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Disable Learning Buddy Collectively", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("Completely hides Learning Buddy from the child's interface.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(
+                                    checked = profile.learningBuddyDisabled,
+                                    onCheckedChange = { disabled ->
+                                        viewModel.updateParentAiConfig(disabled, profile.aiVersionMode, profile.localGeminiInstalled)
+                                    },
+                                    modifier = Modifier.testTag("disable_learning_buddy_switch")
+                                )
+                            }
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Text("Child AI Version Mode", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                listOf(
+                                    "SOCRATIC_ONLY" to "Socratic Only",
+                                    "FULL_AI" to "Full AI (1.5)",
+                                    "LOCAL_OFFLINE" to "Local Offline"
+                                ).forEach { (mode, label) ->
+                                    val isSelected = profile.aiVersionMode == mode
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable {
+                                                viewModel.updateParentAiConfig(profile.learningBuddyDisabled, mode, profile.localGeminiInstalled)
+                                            }
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                label,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(Modifier.height(4.dp))
+
+                            // Local Offline Gemini 1.3/1.5 Installation with GPU Acceleration
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("⚡ Gemini 1.5 Local GPU Acceleration", fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.secondary)
+                                    }
+                                    Text(
+                                        if (profile.localGeminiInstalled) "Status: Gemini 1.5 Flash/Pro loaded on-device with Vulkan/OpenCL GPU hardware acceleration active." else "Status: Install Gemini 1.5 locally to execute inference using device GPU hardware acceleration without cloud dependency.",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Button(
+                                        onClick = {
+                                            viewModel.updateParentAiConfig(profile.learningBuddyDisabled, "LOCAL_OFFLINE", !profile.localGeminiInstalled)
+                                        },
+                                        modifier = Modifier.fillMaxWidth().testTag("install_local_gemini_btn"),
+                                        shape = RoundedCornerShape(10.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                    ) {
+                                        Text(if (profile.localGeminiInstalled) "Uninstall Local Gemini 1.5 Package" else "Install Gemini 1.5 with Device GPU", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    }
+                                }
+                            }
+
+                            Spacer(Modifier.height(6.dp))
+
+                            // Gemma 2B Local On-Device Engine (2020+ Compatible)
+                            val gemmaState by GemmaLocalManager.downloadState.collectAsState()
+                            val gemmaComp = remember(context) { GemmaLocalManager.checkDeviceCompatibility(context) }
+                            val isGemmaInstalled = remember(gemmaState) { GemmaLocalManager.isGemmaInstalled(context) }
+
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("💎 Gemma 2-2B Local Engine (Hugging Face: google/gemma-2-2b)", fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.tertiary)
+                                    }
+
+                                    Text(
+                                        "Source: ${GemmaLocalManager.HUGGINGFACE_REPO_URL}",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+
+                                    Text(
+                                        gemmaComp.compatibilitySummary,
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    when (val state = gemmaState) {
+                                        is GemmaDownloadState.NotInstalled, is GemmaDownloadState.Error -> {
+                                            if (state is GemmaDownloadState.Error) {
+                                                Text(
+                                                    "⚠️ ${state.message}",
+                                                    fontSize = 11.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+
+                                            Text("Official Repository: google/gemma-2-2b (Gated) | Public Mirror: bartowski/gemma-2-2b-it-GGUF (~1.63 GB)", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                                            OutlinedTextField(
+                                                value = hfTokenInput,
+                                                onValueChange = { hfTokenInput = it },
+                                                label = { Text("Hugging Face Access Token (hf_...) [Optional]") },
+                                                placeholder = { Text("Required only for official gated google/gemma-2-2b") },
+                                                singleLine = true,
+                                                modifier = Modifier.fillMaxWidth().testTag("hf_token_input")
+                                            )
+
+                                            Button(
+                                                onClick = {
+                                                    coroutineScope.launch {
+                                                        GemmaLocalManager.startGemmaDownload(context, hfTokenInput)
+                                                    }
+                                                },
+                                                modifier = Modifier.fillMaxWidth().testTag("download_gemma_2b_btn"),
+                                                shape = RoundedCornerShape(10.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                                            ) {
+                                                Text("Download Gemma 2-2B Weights from Hugging Face", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            }
+                                        }
+                                        is GemmaDownloadState.Downloading -> {
+                                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    Text("Downloading Gemma 2-2B from Hugging Face...", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                    Text("${(state.progress * 100).toInt()}% (${state.downloadSpeedKbps} KB/s)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                                                }
+                                                LinearProgressIndicator(
+                                                    progress = { state.progress },
+                                                    modifier = Modifier.fillMaxWidth().height(8.dp),
+                                                    color = MaterialTheme.colorScheme.tertiary
+                                                )
+                                            }
+                                        }
+                                        is GemmaDownloadState.Installed -> {
+                                            Text(
+                                                "Status: Hugging Face Gemma 2-2B model package (${"%.2f".format(state.fileSizeBytes / (1024f * 1024f * 1024f))} GB) installed locally on device storage at ${state.localPath}. Active for on-device local inference!",
+                                                fontSize = 11.sp,
+                                                color = Color(0xFF1B5E20),
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Button(
+                                                    onClick = {
+                                                        viewModel.updateParentAiConfig(profile.learningBuddyDisabled, "GEMMA_LOCAL", true)
+                                                    },
+                                                    modifier = Modifier.weight(1f).testTag("activate_gemma_local_btn"),
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                                                ) {
+                                                    Text("Set Active Engine", fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                                                }
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        GemmaLocalManager.deleteGemmaModel(context)
+                                                    },
+                                                    modifier = Modifier.weight(1f).testTag("delete_gemma_model_btn"),
+                                                    shape = RoundedCornerShape(10.dp)
+                                                ) {
+                                                    Text("Delete Model", fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1061,12 +1268,12 @@ fun ParentDashboardScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            // Auto-Detect Location Button
+                            // Auto-Detect / Rescan Location via Google Maps Button
                             Button(
                                 onClick = {
                                     viewModel.detectLocationCompliance(context)
                                 },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().testTag("rescan_google_maps_location_btn"),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
@@ -1077,26 +1284,77 @@ fun ParentDashboardScreen(
                                         strokeWidth = 2.dp
                                     )
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Verifying Home Country Standards...", fontSize = 13.sp)
+                                    Text("Scanning Location with Google Maps...", fontSize = 13.sp)
                                 } else {
                                     Icon(imageVector = Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("📍 Auto-Detect & Lock Home Country Locale", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text("🗺️ Rescan Location with Google Maps", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
 
                             locationComplianceResult?.let { res ->
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = Color(0xFFE8F5E9),
+                                    color = if (res.isGoogleMapsVerified) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surfaceVariant,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Column(modifier = Modifier.padding(10.dp)) {
-                                        Text("✅ Verified Locale: ${res.detectedCountry} (${res.detectedState})", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF1B5E20))
-                                        Text("Academic Framework: ${res.educationalStandard}", fontSize = 11.sp, color = Color(0xFF2E7D32))
-                                        Text("Source: ${res.verificationSource}", fontSize = 10.sp, color = Color(0xFF388E3C))
+                                        Text(
+                                            if (res.isGoogleMapsVerified) "🗺️ Google Maps Verified: ${res.detectedCity}, ${res.detectedState}, ${res.detectedCountry}" else "📍 Location Detected: ${res.detectedCountry} (${res.detectedState})",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = if (res.isGoogleMapsVerified) Color(0xFF1B5E20) else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text("District Alignment: ${res.detectedDistrict} (${res.educationalStandard})", fontSize = 11.sp, color = if (res.isGoogleMapsVerified) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("Source: ${res.verificationSource}", fontSize = 10.sp, color = if (res.isGoogleMapsVerified) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
+                            }
+
+                            Spacer(Modifier.height(4.dp))
+
+                            // Postal Code / ZIP Code Fallback Option
+                            Text("Postal Code / ZIP Code Fallback:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("If location services are unavailable or denied, enter a postal or ZIP code to look up curriculum standards.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = zipOrPostalInput,
+                                    onValueChange = {
+                                        zipOrPostalInput = it
+                                        zipMessage = null
+                                    },
+                                    label = { Text("ZIP / Postal Code") },
+                                    placeholder = { Text("e.g. 85374, 90210, M5V 2T6") },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f).testTag("zip_fallback_input")
+                                )
+
+                                Button(
+                                    onClick = {
+                                        if (zipOrPostalInput.isNotBlank()) {
+                                            viewModel.resolvePostalOrZipCode(context, zipOrPostalInput) { res ->
+                                                country = res.detectedCountry
+                                                stateOrProvince = res.detectedState
+                                                city = res.detectedCity ?: city
+                                                schoolDistrict = res.detectedDistrict
+                                                zipMessage = "✅ Mapped via Google Maps Geocoding to ${res.detectedDistrict} (${res.detectedState})"
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.testTag("apply_zip_fallback_btn")
+                                ) {
+                                    Text("Apply ZIP", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                            }
+
+                            if (zipMessage != null) {
+                                Text(zipMessage!!, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             }
 
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -1578,6 +1836,7 @@ fun ParentDashboardScreen(
                     }
                 }
             }
+            else -> {}
         }
 
         // About FourgeAI LABS Section
@@ -1599,29 +1858,12 @@ fun ParentDashboardScreen(
 
                     Text("App Version: v${com.example.BuildConfig.VERSION_NAME} • Locale: $country", fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    OutlinedButton(
+                        onClick = { showWhatsNewDialog = true },
+                        modifier = Modifier.fillMaxWidth().testTag("whats_new_btn"),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = { showWhatsNewDialog = true },
-                            modifier = Modifier.weight(1f).testTag("whats_new_btn"),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(AppLanguageDictionary.getString("whats_new", selectedLanguageCode), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
-                        }
-
-                        Button(
-                            onClick = {
-                                updateStatusMessage = "Checking GitHub Releases..."
-                                showUpdateDialog = true
-                            },
-                            modifier = Modifier.weight(1f).testTag("check_updates_btn"),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Text(AppLanguageDictionary.getString("check_updates", selectedLanguageCode), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
-                        }
+                        Text(AppLanguageDictionary.getString("whats_new", selectedLanguageCode), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
 
                     Text(

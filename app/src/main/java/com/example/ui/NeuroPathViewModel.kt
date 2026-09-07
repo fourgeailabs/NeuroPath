@@ -42,6 +42,7 @@ import com.example.data.model.WorldTheme
 import com.example.data.repository.NeuroPathRepository
 import com.example.network.ChatModelMode
 import com.example.network.GeminiClient
+import com.example.network.GemmaLocalManager
 import com.example.speech.SpeechManager
 import com.example.ui.components.BreathingVisualMode
 import com.example.util.LocationComplianceHelper
@@ -399,8 +400,39 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    private fun checkAndUpdateStreak(profile: ChildProfileEntity): ChildProfileEntity {
+        val today = java.time.LocalDate.now().toString()
+        if (profile.lastActiveDate == today) return profile
+        val yesterday = java.time.LocalDate.now().minusDays(1).toString()
+        val newStreak = when {
+            profile.lastActiveDate == yesterday -> if (profile.currentStreakDays <= 0) 2 else profile.currentStreakDays + 1
+            profile.lastActiveDate.isBlank() -> 1
+            else -> if (profile.currentStreakDays <= 0) 1 else profile.currentStreakDays + 1
+        }
+        val updated = profile.copy(currentStreakDays = if (newStreak < 1) 1 else newStreak, lastActiveDate = today)
+        viewModelScope.launch {
+            repository.updateProfile(updated)
+        }
+        return updated
+    }
+
+    fun updateParentAiConfig(disabled: Boolean, versionMode: String, localInstalled: Boolean) {
+        viewModelScope.launch {
+            val prof = _currentProfile.value
+            val updated = prof.copy(
+                learningBuddyDisabled = disabled,
+                aiVersionMode = versionMode,
+                localGeminiInstalled = localInstalled
+            )
+            repository.updateProfile(updated)
+            _currentProfile.value = updated
+            speechManager.speak("AI and Learning Buddy configuration updated.")
+        }
+    }
+
     fun selectChildProfile(profile: ChildProfileEntity) {
-        val rotated = checkAndApplyThemeRotation(profile)
+        val updatedStreak = checkAndUpdateStreak(profile)
+        val rotated = checkAndApplyThemeRotation(updatedStreak)
         _currentProfile.value = rotated
         GeminiClient.customApiKeyOverride = rotated.customApiKey
         speechManager.setLanguage(rotated.appLanguageCode)
@@ -683,7 +715,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             val theme = getActiveTheme()
             val prof = _currentProfile.value
-            val prompt = "Give a 1-sentence encouraging, inspiring motivational quote for a student in ${AppLanguage.fromCode(prof.appLanguageCode).displayName}, using a ${theme.title} theme."
+            val prompt = "Give a 1-sentence encouraging, inspiring motivational quote with author citation (e.g. \"Quote...\" - Author) for a student in ${AppLanguage.fromCode(prof.appLanguageCode).displayName}, using a ${theme.title} theme."
             val quote = GeminiClient.generateChatReply(
                 conversationHistory = listOf("user" to prompt),
                 systemPrompt = getSystemPromptForProfile(prof, roleContext = "quote"),
@@ -695,6 +727,10 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 _dailyQuote.value = quote
             }
         }
+    }
+
+    fun refreshDailyQuote() {
+        fetchDailyQuote()
     }
 
     fun readDailyQuote() {
@@ -1469,7 +1505,22 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         ?: "Accredited grade-level curriculum benchmarks for ${profile.gradeLevel} in ${profile.schoolDistrict}."
                 }
 
-                val replyText = if (hasValidApiKey && currentModel != ChatModelMode.OFFLINE) {
+                val replyText = if (currentModel == ChatModelMode.GEMMA_LOCAL) {
+                    val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
+                    val systemPrompt = """
+                        $basePrompt
+                        Theme world: ${theme.title} (${theme.buddyRole}).
+                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
+                        District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
+                    """.trimIndent()
+                    GemmaLocalManager.generateGemmaResponse(
+                        context = getApplication(),
+                        prompt = userText,
+                        systemPrompt = systemPrompt,
+                        schoolDistrict = profile.schoolDistrict,
+                        standardTitle = profile.stateStandard
+                    )
+                } else if (hasValidApiKey && currentModel != ChatModelMode.OFFLINE) {
                     val history = _chatMessages.value.takeLast(6).map {
                         (if (it.sender == "USER") "user" else "model") to it.text
                     }

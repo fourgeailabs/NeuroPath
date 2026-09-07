@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.School
@@ -1053,14 +1054,30 @@ fun ChildProfileSetupScreen(
 
                     Spacer(Modifier.height(14.dp))
 
-                    // Manual Postal / Zip Code Override
+                    // Google Maps Location Auto-Scan Action
+                    Button(
+                        onClick = {
+                            viewModel.detectLocationCompliance(context)
+                        },
+                        modifier = Modifier.fillMaxWidth().testTag("google_maps_setup_scan_btn"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(imageVector = Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("🗺️ Scan Location with Google Maps", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                    }
+
+                    Spacer(Modifier.height(14.dp))
+
+                    // Manual Postal / Zip Code Override Fallback
                     Text(
-                        "Postal Code / ZIP Override (Optional):",
+                        "Postal Code / ZIP Fallback:",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )
                     Text(
-                        "Set a specific zip or postal code if setting up outside the child's home school district.",
+                        "If location services are denied or unavailable, enter a postal or ZIP code to lock curriculum standards.",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

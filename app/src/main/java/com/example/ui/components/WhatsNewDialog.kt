@@ -48,21 +48,31 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v1.16.00",
+        version = "v1.20.00",
         date = "Current Update",
-        title = "Production Cloud AI Integration: Standardized Gemini 1.5 Flash & Pro Models",
+        title = "Enhanced Parental Controls, AI Version Modes & Robust Database Schema Migration",
         highlights = listOf(
-            "⚡ Upgraded to Production Gemini 1.5 Models: Migrated all API endpoints and chat mode configurations to standard production-ready gemini-1.5-flash and gemini-1.5-pro models, ensuring seamless cloud AI connectivity without 404 fallback errors.",
-            "🎙️ Robust Voice & Audio Transcription: Configured direct cloud transcription and real-time voice conversation turns using verified Gemini 1.5 endpoints.",
-            "📚 Curriculum & Quiz Sync: Enhanced online OER Commons curriculum synchronization, adaptive hint generation, and flashcard creation with reliable cloud AI intelligence.",
-            "🛡️ Graceful Socratic Fallback: Maintained resilient offline Socratic tutoring when offline or when API keys are pending configuration."
+            "🛡️ Advanced Parental Controls & AI Configuration: Added parental controls to completely disable Learning Buddy or select between Socratic Only, Full AI 1.5, and Local Offline AI modes.",
+            "📦 Local On-Device Gemini Installation: Added support for optional on-device Gemini model package installation for fully offline cloud-independent execution.",
+            "🔥 Enhanced Streak Tracking & Data Persistence: Upgraded Room database schema version to 9 with robust migration fallback and accurate daily login streak tracking.",
+            "📍 Precise GPS & ZIP Resolution: Refined location compliance helper for Surprise, AZ and exact regional boundary verification."
         ),
         isCurrentVersion = true
     ),
     ReleaseNote(
-        version = "v1.15.00",
+        version = "v1.17.00",
         date = "Previous Update",
-        title = "Comprehensive UI Polish, Component Alignment & Architecture Verification",
+        title = "Previous Feature Set & UI Alignment",
+        highlights = listOf(
+            "✨ Initial parent dashboard controls and UI refinements.",
+            "📚 Curriculum synchronization and offline Socratic modes."
+        ),
+        isCurrentVersion = false
+    ),
+    ReleaseNote(
+        version = "v1.16.00",
+        date = "Previous Update",
+        title = "Production Cloud AI Integration: Standardized Gemini 1.5 Flash & Pro Models",
         highlights = listOf(
             "✨ Complete UI Element Alignment: Verified and perfected layout spacing, padding, text contrast, and pill badges across Theme Spotlight, Top Sensory Suite, and NeuroBuddy chat.",
             "🛡️ Secure Secrets & Key Management: Ensured seamless integration between Secrets Gradle plugin, local configuration, and live AI Studio runtime environment.",

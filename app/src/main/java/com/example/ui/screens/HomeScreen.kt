@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Group
@@ -249,111 +250,7 @@ fun HomeScreen(
                 }
             }
 
-            // 1.5 Location Services & Daily Curriculum Sync Status Bar
-            item {
-                val latestCurriculum by viewModel.latestCurriculum.collectAsState()
-                ElevatedCard(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Location Indicator
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color(0xFFE8F5E9),
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text("📍", fontSize = 12.sp)
-                                    }
-                                }
-                                Spacer(Modifier.width(6.dp))
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            "Location Active",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 11.5.sp,
-                                            color = Color(0xFF2E7D32)
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = Color(0xFF2E7D32)
-                                        ) {
-                                            Text(
-                                                "LOCALE ONLY",
-                                                fontSize = 8.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = Color.White,
-                                                modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
-                                            )
-                                        }
-                                    }
-                                    Text(
-                                        "${profile.schoolDistrict} (${profile.stateOrProvince})",
-                                        fontSize = 10.5.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
 
-                            // Daily Curriculum Sync Status & Button
-                            OutlinedButton(
-                                onClick = { viewModel.syncDailyCurriculumForLocale(forceRefresh = true) },
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp).testTag("daily_curriculum_sync_btn")
-                            ) {
-                                Text(
-                                    text = if (isDownloadingCurriculum) "Syncing..." else "Sync Daily",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-
-                        if (latestCurriculum != null) {
-                            Spacer(Modifier.height(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("📚", fontSize = 13.sp)
-                                    Spacer(Modifier.width(6.dp))
-                                    Column {
-                                        Text(
-                                            "Standards: ${latestCurriculum?.standardTitle ?: profile.stateStandard}",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 10.5.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            "Source: ${latestCurriculum?.officialSourceAgency ?: "Accredited Educational Standards"}",
-                                            fontSize = 9.5.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
 
             // DYNAMIC LAYOUT ACCORDING TO AGE TIER
             when (tier) {
@@ -439,6 +336,20 @@ fun HomeScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+
+                        Spacer(Modifier.width(8.dp))
+
+                        IconButton(
+                            onClick = { viewModel.refreshDailyQuote() },
+                            modifier = Modifier.testTag("refresh_quote_btn").size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Autorenew,
+                                contentDescription = "Refresh Quote",
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }

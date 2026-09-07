@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = true
 
         setContent {
             val profile by viewModel.currentProfile.collectAsState()
@@ -76,7 +77,8 @@ class MainActivity : ComponentActivity() {
                             currentScreen != AppScreen.TERMS_AND_CONDITIONS &&
                             currentScreen != AppScreen.PARENT_PIN_SETUP &&
                             currentScreen != AppScreen.CHILD_PROFILE_SETUP &&
-                            currentScreen != AppScreen.PROFILE_SELECTION) {
+                            currentScreen != AppScreen.PROFILE_SELECTION &&
+                            currentScreen != AppScreen.PARENT_DASHBOARD) {
                             TopSensoryBar(viewModel = viewModel)
                         }
                     }

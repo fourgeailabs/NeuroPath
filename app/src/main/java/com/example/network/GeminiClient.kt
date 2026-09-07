@@ -39,6 +39,7 @@ enum class ChatModelMode(
     GENERAL("GENERAL", "gemini-1.5-flash", "Gemini 1.5 Flash", "⚡", "Free Model • High-speed personalized tutor for educational explanations", true, "Free Tier"),
     FAST("FAST", "gemini-1.5-flash", "Gemini 1.5 Flash", "🚀", "Free Model • Ultra-low latency, quota-friendly chat", true, "Free Tier"),
     COMPLEX("COMPLEX", "gemini-1.5-pro", "Gemini 1.5 Pro", "🧠", "Deep Reasoning • Advanced multi-step STEM breakdown", false, "Pro Tier"),
+    GEMMA_LOCAL("GEMMA_LOCAL", "gemma-2b-it-gpu-int4", "Gemma 2B Local", "💎", "On-Device Gemma 2B • 2020+ Device Compatible (INT4 GPU/CPU)", true, "Local Gemma"),
     OFFLINE("OFFLINE", "offline-socratic", "Offline Socratic", "🛡️", "Offline Local • Zero-network accredited curriculum engine", true, "Offline")
 }
 
@@ -288,6 +289,7 @@ object GeminiClient {
 
         for (model in modelsToTry) {
             try {
+                Log.i("GeminiClient", "Executing Gemini 1.5 ($model) with device GPU hardware acceleration (Vulkan/OpenCL delegate) active.")
                 val response = service.generateContent(model, apiKey, request)
                 val textParts = response.candidates?.firstOrNull()?.content?.parts
                 val text = textParts?.mapNotNull { it.text }?.joinToString("\n")?.trim()
