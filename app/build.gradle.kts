@@ -20,9 +20,10 @@ android {
     targetSdk = 36
     versionCode = 36
     versionName = "1.25.00"
-
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
+
+  ndk { abiFilters += listOf("arm64-v8a") }
 
   signingConfigs {
     create("release") {
@@ -36,10 +37,7 @@ android {
       val debugKeystoreFile = file("${rootDir}/debug.keystore")
       val debugKeystoreBase64File = file("${rootDir}/debug.keystore.base64")
       if (!debugKeystoreFile.exists() && debugKeystoreBase64File.exists()) {
-        runCatching {
-          val decoded = Base64.getDecoder().decode(debugKeystoreBase64File.readText().trim())
-          debugKeystoreFile.writeBytes(decoded)
-        }
+        runCatching { debugKeystoreFile.writeBytes(Base64.getDecoder().decode(debugKeystoreBase64File.readText().trim())) }
       }
       storeFile = debugKeystoreFile
       storePassword = "android"
@@ -56,24 +54,16 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
-      if (file("${rootDir}/debug.keystore").exists()) {
-        signingConfig = signingConfigs.getByName("debugConfig")
-      }
+      if (file("${rootDir}/debug.keystore").exists()) signingConfig = signingConfigs.getByName("debugConfig")
     }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
   }
-  buildFeatures {
-    compose = true
-    buildConfig = true
-  }
+  buildFeatures { compose = true; buildConfig = true }
   testOptions { unitTests { isIncludeAndroidResources = true } }
-  dependenciesInfo {
-    includeInApk = false
-    includeInBundle = true
-  }
+  dependenciesInfo { includeInApk = false; includeInBundle = true }
 }
 
 secrets {
@@ -110,6 +100,7 @@ dependencies {
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
   implementation(libs.retrofit)
+  implementation(libs.llama.android)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
