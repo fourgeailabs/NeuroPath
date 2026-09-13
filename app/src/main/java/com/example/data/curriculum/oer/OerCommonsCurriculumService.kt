@@ -78,51 +78,50 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
     }
 
     suspend fun fetchAndParseOnlineCollection(): OerSyncResult = withContext(Dispatchers.IO) {
+        val preinstalled = PreinstalledOerCurriculumCatalog.getAllPreinstalledCurriculum()
+        val entities = preinstalled.map { OerCurriculumEntity.fromDomainModel(it, isPreinstalled = true) }
+
         try {
-            // Attempt live probe to OER Commons Curated Collections endpoint
             val request = Request.Builder()
                 .url(PreinstalledOerCurriculumCatalog.OER_COMMONS_BASE_URL)
-                .header("User-Agent", "NeuroPath-K12-Educational-App/1.06.00")
+                .header("User-Agent", "NeuroPath-K12-Educational-App/1.25.00")
                 .build()
 
-            val response = try {
-                okHttpClient.newCall(request).execute()
-            } catch (e: Exception) {
-                null
-            }
+            okHttpClient.newCall(request).execute().use { response ->
+                val isOnlineLive = response.isSuccessful
+                val responseCode = response.code
 
-            val responseCode = response?.code ?: 0
-            val isOnlineLive = response != null && response.isSuccessful
+                // The app's curated catalog remains the authoritative offline cache. A successful
+                // HTTP probe means the upstream collection is reachable; it does not mean that the
+                // entire remote catalog was downloaded or validated.
+                db.oerCurriculumDao().insertUnits(entities)
+                memoryCache = preinstalled
 
-            // Ensure database is populated with full catalog
-            val preinstalled = PreinstalledOerCurriculumCatalog.getAllPreinstalledCurriculum()
-            val entities = preinstalled.map { OerCurriculumEntity.fromDomainModel(it, isPreinstalled = true) }
-            db.oerCurriculumDao().insertUnits(entities)
-            memoryCache = preinstalled
-
-            if (isOnlineLive) {
-                OerSyncResult(
-                    isSuccess = true,
-                    sourceTitle = "OER Commons Curated Collections (HTTP $responseCode Live)",
-                    totalUnitsCount = preinstalled.size,
-                    message = "Successfully synchronized and validated ${preinstalled.size} K-12 curated curriculum units with OER Commons."
-                )
-            } else {
-                OerSyncResult(
-                    isSuccess = true,
-                    sourceTitle = "OER Commons Curated Collections (Pre-Installed Database)",
-                    totalUnitsCount = preinstalled.size,
-                    message = "All ${preinstalled.size} K-12 OER Commons curriculum units are active and ready offline."
-                )
+                if (isOnlineLive) {
+                    OerSyncResult(
+                        isSuccess = true,
+                        sourceTitle = "OER Commons Curated Collections (Online Reachable)",
+                        totalUnitsCount = preinstalled.size,
+                        message = "OER Commons is reachable (HTTP $responseCode). ${preinstalled.size} pre-installed curriculum units remain available offline."
+                    )
+                } else {
+                    OerSyncResult(
+                        isSuccess = false,
+                        sourceTitle = "OER Commons Curated Collections (Offline Cache)",
+                        totalUnitsCount = preinstalled.size,
+                        message = "OER Commons returned HTTP $responseCode. Using ${preinstalled.size} pre-installed curriculum units offline."
+                    )
+                }
             }
         } catch (e: Exception) {
-            val preinstalled = PreinstalledOerCurriculumCatalog.getAllPreinstalledCurriculum()
+            db.oerCurriculumDao().insertUnits(entities)
             memoryCache = preinstalled
+            Log.w("OerCurriculumService", "OER Commons live probe failed; using offline catalog", e)
             OerSyncResult(
-                isSuccess = true,
+                isSuccess = false,
                 sourceTitle = "OER Commons Curated Collections (Offline Cache)",
                 totalUnitsCount = preinstalled.size,
-                message = "Pre-installed K-12 OER Commons collection active (${preinstalled.size} units ready)."
+                message = "OER Commons could not be reached. Using ${preinstalled.size} pre-installed curriculum units offline."
             )
         }
     }
@@ -152,7 +151,6 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         val all = getAllUnits()
         val q = query.trim().lowercase()
 
-        // Match subject from query keywords if not provided
         val inferredSubject = studentSubject ?: when {
             q.contains("math") || q.contains("count") || q.contains("add") || q.contains("algebra") || q.contains("quad") || q.contains("fraction") || q.contains("geometry") || q.contains("trig") || q.contains("number") -> EducationalSubject.MATH
             q.contains("read") || q.contains("phon") || q.contains("spell") || q.contains("word") || q.contains("rhetoric") || q.contains("essay") || q.contains("lit") || q.contains("cer") || q.contains("claim") -> EducationalSubject.READING
@@ -162,34 +160,53 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             else -> null
         }
 
-        // Find best matching units (primary and related)
-        val matchingUnits = all.filter { item ->
-            val matchesSubject = inferredSubject == null || item.subject == inferredSubject
-            val matchesGrade = item.gradeLevel == studentGrade || item.gradeBand == when (studentGrade) {
-                GradeLevel.PRE_K, GradeLevel.KINDERGARTEN -> OerGradeBand.EARLY_CHILDHOOD
-                GradeLevel.GRADE_1, GradeLevel.GRADE_2, GradeLevel.GRADE_3, GradeLevel.GRADE_4, GradeLevel.GRADE_5 -> OerGradeBand.ELEMENTARY
-                GradeLevel.GRADE_6, GradeLevel.GRADE_7, GradeLevel.GRADE_8 -> OerGradeBand.MIDDLE_SCHOOL
-                GradeLevel.HIGH_SCHOOL -> OerGradeBand.HIGH_SCHOOL
+        val gradeBand = when (studentGrade) {
+            GradeLevel.PRE_K, GradeLevel.KINDERGARTEN -> OerGradeBand.EARLY_CHILDHOOD
+            GradeLevel.GRADE_1, GradeLevel.GRADE_2, GradeLevel.GRADE_3, GradeLevel.GRADE_4, GradeLevel.GRADE_5 -> OerGradeBand.ELEMENTARY
+            GradeLevel.GRADE_6, GradeLevel.GRADE_7, GradeLevel.GRADE_8 -> OerGradeBand.MIDDLE_SCHOOL
+            GradeLevel.HIGH_SCHOOL -> OerGradeBand.HIGH_SCHOOL
+        }
+
+        // Score units rather than accepting the first subject/grade match. This keeps the
+        // Learning Buddy anchored to the requested topic while still falling back to the
+        // student's grade when no strong topic match exists.
+        fun score(item: OerCommonsCurriculumItem): Int {
+            if (inferredSubject != null && item.subject != inferredSubject) return Int.MIN_VALUE
+
+            val searchable = buildString {
+                append(item.unitTitle.lowercase()).append(' ')
+                append(item.collectionTitle.lowercase()).append(' ')
+                append(item.summary.lowercase()).append(' ')
+                append(item.standardCode.lowercase()).append(' ')
+                append(item.keyConcepts.joinToString(" ").lowercase()).append(' ')
+                append(item.vocabulary.joinToString(" ").lowercase()).append(' ')
+                append(item.learningObjectives.joinToString(" ").lowercase())
             }
-            val matchesKeywords = item.keyConcepts.any { q.contains(it.lowercase()) } ||
-                    item.vocabulary.any { q.contains(it.lowercase()) } ||
-                    item.unitTitle.lowercase().split(" ").any { q.contains(it) && it.length > 3 } ||
-                    item.summary.lowercase().contains(q)
-            (matchesSubject && matchesKeywords) || (matchesSubject && matchesGrade)
+
+            val queryTerms = q.split(Regex("[^a-z0-9]+"))
+                .filter { it.length >= 3 }
+                .distinct()
+
+            val keywordScore = queryTerms.sumOf { term -> if (searchable.contains(term)) 3 else 0 }
+            val exactTitleScore = if (q.isNotBlank() && item.unitTitle.lowercase().contains(q)) 12 else 0
+            val gradeScore = when {
+                item.gradeLevel == studentGrade -> 8
+                item.gradeBand == gradeBand -> 4
+                else -> 0
+            }
+
+            return keywordScore + exactTitleScore + gradeScore
         }
 
-        var matchedUnit = matchingUnits.firstOrNull { item ->
-            item.keyConcepts.any { q.contains(it.lowercase()) } ||
-                    item.vocabulary.any { q.contains(it.lowercase()) } ||
-                    item.unitTitle.lowercase().split(" ").any { q.contains(it) && it.length > 3 }
-        }
+        val rankedUnits = all.map { it to score(it) }
+            .filter { it.second != Int.MIN_VALUE && it.second > 0 }
+            .sortedByDescending { it.second }
+            .map { it.first }
 
-        if (matchedUnit == null) {
-            matchedUnit = matchingUnits.firstOrNull { it.gradeLevel == studentGrade }
-                ?: matchingUnits.firstOrNull()
-                ?: all.find { it.gradeLevel == studentGrade }
-                ?: all.firstOrNull()
-        }
+        val matchedUnit = rankedUnits.firstOrNull()
+            ?: all.firstOrNull { it.gradeLevel == studentGrade }
+            ?: all.firstOrNull { it.gradeBand == gradeBand }
+            ?: all.firstOrNull()
 
         if (matchedUnit != null) {
             val objectivesStr = matchedUnit.learningObjectives.joinToString("\n- ")
@@ -198,7 +215,6 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             val misconceptionsStr = matchedUnit.commonMisconceptions.joinToString("\n- ")
             val sampleProblem = matchedUnit.practiceProblems.firstOrNull()
 
-            // Related units summary from OER Curated Collections
             val relatedUnits = all.filter { it.id != matchedUnit.id && it.subject == matchedUnit.subject }.take(2)
             val relatedSummary = if (relatedUnits.isNotEmpty()) {
                 "\n\nConnected OER Curated Units (https://oercommons.org/curated-collections):\n" +
