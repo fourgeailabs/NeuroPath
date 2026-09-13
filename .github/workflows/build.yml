@@ -25,6 +25,21 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Install Gradle wrapper when repository wrapper is absent
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            echo "Gradle wrapper is missing; installing Gradle 9.1.1 for CI."
+            curl -fsSL https://services.gradle.org/distributions/gradle-9.1.1-bin.zip -o /tmp/gradle.zip
+            sudo mkdir -p /opt/gradle
+            sudo unzip -q /tmp/gradle.zip -d /opt/gradle
+            export GRADLE_HOME=/opt/gradle/gradle-9.1.1
+            export PATH="$GRADLE_HOME/bin:$PATH"
+          fi
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+          fi
+          gradle --version
+
       - name: Decode Debug Keystore
         run: |
           if [ -f "debug.keystore.base64" ]; then
@@ -39,7 +54,6 @@ jobs:
       - name: Build Debug APK
         run: |
           if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
             ./gradlew assembleDebug --stacktrace
           else
             gradle assembleDebug --stacktrace
