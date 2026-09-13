@@ -45,7 +45,7 @@ object GemmaLocalManager {
     const val PUBLIC_GGUF_REPO_URL = "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF"
 
     private const val MODEL_FILENAME = "gemma-2-2b-it-Q4_K_M.gguf"
-    private const val MODEL_ESTIMATED_SIZE_BYTES = 1_600_000_000L
+    private const val MODEL_ESTIMATED_SIZE_BYTES = 1_710_000_000L
     private const val MIN_VALID_MODEL_SIZE_BYTES = 500_000_000L
     private const val GGUF_MAGIC = 0x46554747
     private const val DEFAULT_CONTEXT_SIZE = 2048
@@ -219,6 +219,11 @@ object GemmaLocalManager {
             if (systemPrompt.isNotBlank()) append(systemPrompt.trim())
         }
 
+        // Gemma 2 2B GGUF does not advertise support for a separate system
+        // prompt, so include the teaching instructions in the user prompt rather
+        // than relying on the runtime to preserve a system role that the model ignores.
+        val finalPrompt = "$grounding\n\nStudent question:\n$userPrompt"
+
         try {
             val model = Llama.loadModel(
                 modelPath = modelFile.absolutePath,
@@ -228,7 +233,12 @@ object GemmaLocalManager {
                 )
             )
             val result = try {
-                Llama.complete(model, userPrompt, grounding, DEFAULT_MAX_TOKENS)
+                Llama.complete(
+                    model,
+                    prompt = finalPrompt,
+                    systemPrompt = "",
+                    maxTokens = DEFAULT_MAX_TOKENS
+                )
             } finally {
                 Llama.releaseModel(model)
             }
