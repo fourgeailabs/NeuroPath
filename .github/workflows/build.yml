@@ -22,23 +22,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Set up Gradle
+      - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
 
-      - name: Install Gradle wrapper when repository wrapper is absent
-        run: |
-          if [ ! -f "./gradlew" ]; then
-            echo "Gradle wrapper is missing; installing Gradle 9.1.1 for CI."
-            curl -fsSL https://services.gradle.org/distributions/gradle-9.1.1-bin.zip -o /tmp/gradle.zip
-            sudo mkdir -p /opt/gradle
-            sudo unzip -q /tmp/gradle.zip -d /opt/gradle
-            export GRADLE_HOME=/opt/gradle/gradle-9.1.1
-            export PATH="$GRADLE_HOME/bin:$PATH"
-          fi
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-          fi
-          gradle --version
+      - name: Verify Gradle
+        run: gradle --version
 
       - name: Decode Debug Keystore
         run: |
@@ -52,12 +42,7 @@ jobs:
           ls -la debug.keystore
 
       - name: Build Debug APK
-        run: |
-          if [ -f "./gradlew" ]; then
-            ./gradlew assembleDebug --stacktrace
-          else
-            gradle assembleDebug --stacktrace
-          fi
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
