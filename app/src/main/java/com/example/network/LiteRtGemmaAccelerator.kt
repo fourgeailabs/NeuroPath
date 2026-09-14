@@ -36,12 +36,15 @@ object LiteRtGemmaAccelerator {
         .readTimeout(10, TimeUnit.MINUTES)
         .build()
 
+    private fun socManufacturer(): String = if (Build.VERSION.SDK_INT >= 31) Build.SOC_MANUFACTURER else Build.MANUFACTURER
+    private fun socModel(): String = if (Build.VERSION.SDK_INT >= 31) Build.SOC_MODEL else ""
+
     fun modelFile(context: Context): File =
         File(File(context.filesDir, "models"), selectedModelFilename())
 
     fun selectedModelFilename(
-        manufacturer: String = Build.SOC_MANUFACTURER,
-        socModel: String = Build.SOC_MODEL
+        manufacturer: String = socManufacturer(),
+        socModel: String = socModel()
     ): String {
         val model = socModel.lowercase()
         return when {
@@ -151,13 +154,7 @@ object LiteRtGemmaAccelerator {
                             else -> LocalAiBackend.CPU
                         }
                         Log.i(TAG, "Verified active backend=$active model=${file.name} loadMs=$loadTimeMs generationMs=$generationTimeMs")
-                        return@withContext LiteRtGemmaResult(
-                            text = text,
-                            backend = active,
-                            modelFile = file.name,
-                            loadTimeMs = loadTimeMs,
-                            generationTimeMs = generationTimeMs
-                        )
+                        return@withContext LiteRtGemmaResult(text, active, file.name, loadTimeMs, generationTimeMs)
                     }
                 }
             } catch (t: Throwable) {
