@@ -76,6 +76,29 @@ val normalizeLegacyIntegrations = tasks.register("normalizeLegacyIntegrations") 
         "lyriaMusicPlayer.playAudioFromBase64(result.audioBase64, \"Live Buddy Voice\", loop = false)",
         "lyriaMusicPlayer.playPcm16FromBase64(result.audioBase64, \"Live Buddy Voice\", loop = false)"
       )
+
+      // Inject the learner fingerprint into every main Learning Buddy chat request.
+      val chatProfileAnchor = "val currentSubject = _selectedSubjectTag.value\n        val profile = _currentProfile.value\n        val activeSession = _currentSessionId.value"
+      if (text.contains(chatProfileAnchor) && !text.contains("val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt")) {
+        text = text.replace(
+          chatProfileAnchor,
+          "val currentSubject = _selectedSubjectTag.value\n        val profile = _currentProfile.value\n        val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, currentSubject.id)\n        val activeSession = _currentSessionId.value"
+        )
+      }
+      text = text.replace(
+        "Learner profile accommodation considerations: ${profile.neurodivergentTypesCsv}.",
+        "Learner profile accommodation considerations: ${profile.neurodivergentTypesCsv}.\n                        $personalizationProfile"
+      )
+      text = text.replace(
+        "val basePrompt = getSystemPromptForProfile(profile, roleContext = \"tutor\")\n                    val systemPrompt = \"\"\"",
+        "val basePrompt = getSystemPromptForProfile(profile, roleContext = \"tutor\")\n                    val systemPrompt = \"\"\"\n                        $personalizationProfile"
+      )
+
+      // Record real learning outcomes so future sessions can adapt to observed performance.
+      text = text.replace(
+        "_isAnswerCorrect.value = isCorrect",
+        "_isAnswerCorrect.value = isCorrect\n        com.example.learning.LearnerPersonalizationEngine.recordAnswer(getApplication(), _currentProfile.value.id, _selectedSubject.value.name, isCorrect, question.questionText.take(100))"
+      )
       viewModel.writeText(text)
     }
 
@@ -174,7 +197,6 @@ dependencies {
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.graphics)
   implementation(libs.androidx.compose.ui.tooling.preview)
-  implementation(libs.androidx.core.ktx)
   implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
