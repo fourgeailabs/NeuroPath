@@ -47,12 +47,26 @@ jobs:
           set -o pipefail
           gradle assembleDebug --stacktrace --console=plain 2>&1 | tee build.log
 
+      - name: Run JVM unit tests
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle testDebugUnitTest --stacktrace --console=plain 2>&1 | tee test.log
+
       - name: Upload Gradle build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: neuropath-gradle-build-log
           path: build.log
+          if-no-files-found: ignore
+
+      - name: Upload JVM test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: neuropath-jvm-test-log
+          path: test.log
           if-no-files-found: ignore
 
       - name: Upload APK Artifact
