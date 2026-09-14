@@ -67,12 +67,12 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
 
             val matchesQuery = if (q.isBlank()) true else {
                 item.unitTitle.lowercase().contains(q) ||
-                        item.collectionTitle.lowercase().contains(q) ||
-                        item.summary.lowercase().contains(q) ||
-                        item.standardCode.lowercase().contains(q) ||
-                        item.keyConcepts.any { it.lowercase().contains(q) } ||
-                        item.vocabulary.any { it.lowercase().contains(q) } ||
-                        item.learningObjectives.any { it.lowercase().contains(q) }
+                    item.collectionTitle.lowercase().contains(q) ||
+                    item.summary.lowercase().contains(q) ||
+                    item.standardCode.lowercase().contains(q) ||
+                    item.keyConcepts.any { it.lowercase().contains(q) } ||
+                    item.vocabulary.any { it.lowercase().contains(q) } ||
+                    item.learningObjectives.any { it.lowercase().contains(q) }
             }
 
             matchesSubject && matchesGrade && matchesQuery
@@ -86,7 +86,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         try {
             val request = Request.Builder()
                 .url(PreinstalledOerCurriculumCatalog.OER_COMMONS_BASE_URL)
-                .header("User-Agent", "NeuroPath-K12-Educational-App/1.25.00")
+                .header("User-Agent", "NeuroPath-K12-Educational-App/2.00.00")
                 .build()
 
             okHttpClient.newCall(request).execute().use { response ->
@@ -144,7 +144,8 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         studentGrade: GradeLevel,
         studentSubject: EducationalSubject? = null,
         schoolDistrict: String = "",
-        country: String = ""
+        country: String = "",
+        stateOrProvince: String = ""
     ): OerTutorCurriculumContext = withContext(Dispatchers.IO) {
         val all = getAllUnits()
         val q = query.trim().lowercase()
@@ -170,7 +171,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
 
         val curriculumResolution = CurriculumResolver.resolve(
             country = country,
-            stateOrProvince = "",
+            stateOrProvince = stateOrProvince,
             schoolDistrict = schoolDistrict,
             stageOrGrade = studentGrade.displayName,
             subject = inferredSubject?.title ?: "GENERAL"
@@ -220,7 +221,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             val relatedUnits = all.filter { it.id != matchedUnit.id && it.subject == matchedUnit.subject }.take(2)
             val relatedSummary = if (relatedUnits.isNotEmpty()) {
                 "\n\nConnected OER Curated Units (https://oercommons.org/curated-collections):\n" +
-                        relatedUnits.joinToString("\n") { "• ${it.unitTitle} (${it.standardCode}) - ${it.oerCommonsUrl}" }
+                    relatedUnits.joinToString("\n") { "• ${it.unitTitle} (${it.standardCode}) - ${it.oerCommonsUrl}" }
             } else ""
 
             val formatted = """
@@ -272,9 +273,9 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         } else {
             OerTutorCurriculumContext(
                 matchedUnit = null,
-                formattedContextPrompt = if (ukDirectory.isNotBlank()) ukDirectory else "OER Commons K-12 Curated Collections standard alignment active (https://oercommons.org/curated-collections).",
+                formattedContextPrompt = if (ukDirectory.isNotBlank()) ukDirectory else curriculumResolution.contextText(),
                 citationSource = if (curriculumResolution.officialSourceUrl.isNotBlank()) curriculumResolution.officialSourceUrl else "OER Commons Curated Collections (https://oercommons.org/curated-collections)",
-                standardCode = if (curriculumResolution.educationAuthority.isNotBlank()) "${curriculumResolution.jurisdictionId}.STANDARD" else "OER.K12.STANDARD",
+                standardCode = if (curriculumResolution.jurisdictionId != null) "${curriculumResolution.jurisdictionId}.STANDARD" else "OER.K12.STANDARD",
                 inquiryPrompt = "What curriculum topic would you like to explore?"
             )
         }
