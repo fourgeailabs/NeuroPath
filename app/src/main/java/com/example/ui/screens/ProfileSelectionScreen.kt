@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.ChildProfileEntity
@@ -161,32 +162,38 @@ fun ProfileSelectionScreen(
                         Spacer(Modifier.width(14.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Small badge line above user's name
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+                            ) {
                                 Text(
-                                    text = if (profile.name.isNotBlank()) profile.name else "Learner",
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(theme.primaryHex)
+                                    text = "${tier.icon} ${tier.title}",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
-                                Spacer(Modifier.width(8.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer
-                                ) {
-                                    Text(
-                                        text = "${tier.icon} ${tier.title}",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
                             }
 
                             Spacer(Modifier.height(3.dp))
+
+                            Text(
+                                text = if (profile.name.isNotBlank()) profile.name else "Learner",
+                                fontSize = 19.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(theme.primaryHex),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            Spacer(Modifier.height(2.dp))
+
                             Text(
                                 text = "Age ${profile.age} • ${theme.title}",
-                                fontSize = 12.5.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

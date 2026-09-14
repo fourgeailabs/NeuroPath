@@ -111,7 +111,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -205,7 +209,7 @@ fun EducationalChatInterface(
                     // Back button & Buddy Avatar Info
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f)
                     ) {
                         IconButton(
                             onClick = onBack,
@@ -234,7 +238,7 @@ fun EducationalChatInterface(
 
                         Spacer(Modifier.width(8.dp))
 
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     theme.buddyName,
@@ -254,7 +258,9 @@ fun EducationalChatInterface(
                                         fontSize = 8.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (activeChatMode.isFreeTier) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSecondaryContainer,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                             }
@@ -275,9 +281,9 @@ fun EducationalChatInterface(
                         // Free Model / Model Mode Dropdown Pill
                         Box {
                             val modelLabel = when (activeChatMode) {
-                                ChatModelMode.FAST -> "1.5 Flash"
-                                ChatModelMode.GENERAL -> "1.5 Flash"
-                                ChatModelMode.COMPLEX -> "1.5 Pro"
+                                ChatModelMode.FAST -> "3.5 Flash"
+                                ChatModelMode.GENERAL -> "3.5 Flash"
+                                ChatModelMode.COMPLEX -> "3.1 Pro"
                                 ChatModelMode.GEMMA_LOCAL -> "Gemma 2B"
                                 ChatModelMode.OFFLINE -> "Offline"
                             }
@@ -463,30 +469,6 @@ fun EducationalChatInterface(
                         }
                     }
 
-                    // OER Commons Curated Collections Browser Button Pill
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFE0F2FE),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8)),
-                        modifier = Modifier
-                            .clickable { showOerCollectionsSheet = true }
-                            .testTag("oer_curated_collections_pill")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("🌐", fontSize = 11.sp)
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                "OER Commons Curated",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0369A1)
-                            )
-                        }
-                    }
-
                     // Subject Selector Chips
                     EducationalSubjectTag.values().forEach { subject ->
                         val isSelected = activeSubjectTag == subject
@@ -579,7 +561,7 @@ fun EducationalChatInterface(
                             color = MaterialTheme.colorScheme.surface,
                             shadowElevation = 1.dp,
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.clickable(enabled = !isGenerating) {
                                 viewModel.sendChatMessage(prompt)
                             }
                         ) {
@@ -718,7 +700,7 @@ fun EducationalChatInterface(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                         keyboardActions = KeyboardActions(
                             onSend = {
-                                if (inputText.isNotBlank()) {
+                                if (inputText.isNotBlank() && !isGenerating) {
                                     viewModel.sendChatMessage(inputText)
                                     inputText = ""
                                 }
@@ -779,14 +761,12 @@ fun EducationalChatInterface(
                     // Send Button
                     Surface(
                         shape = CircleShape,
-                        color = if (inputText.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                        color = if (inputText.isNotBlank() && !isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                         modifier = Modifier
                             .size(42.dp)
-                            .clickable {
-                                if (inputText.isNotBlank()) {
-                                    viewModel.sendChatMessage(inputText)
-                                    inputText = ""
-                                }
+                            .clickable(enabled = inputText.isNotBlank() && !isGenerating) {
+                                viewModel.sendChatMessage(inputText)
+                                inputText = ""
                             }
                             .testTag("chat_send_btn")
                     ) {
@@ -875,6 +855,87 @@ fun EducationalChatInterface(
     }
 }
 
+fun buildMarkdownAnnotatedString(
+    text: String,
+    baseColor: Color,
+    boldColor: Color = baseColor
+): AnnotatedString {
+    return buildAnnotatedString {
+        val lines = text.split("\n")
+        lines.forEachIndexed { lineIndex, line ->
+            if (lineIndex > 0) {
+                append("\n")
+            }
+
+            var processedLine = line
+            var isHeading = false
+
+            if (processedLine.startsWith("### ")) {
+                processedLine = processedLine.substring(4)
+                isHeading = true
+            } else if (processedLine.startsWith("## ")) {
+                processedLine = processedLine.substring(3)
+                isHeading = true
+            } else if (processedLine.startsWith("# ")) {
+                processedLine = processedLine.substring(2)
+                isHeading = true
+            }
+
+            val lineStart = length
+
+            var i = 0
+            while (i < processedLine.length) {
+                if (i + 1 < processedLine.length && processedLine[i] == '*' && processedLine[i + 1] == '*') {
+                    val closingIndex = processedLine.indexOf("**", i + 2)
+                    if (closingIndex != -1) {
+                        val content = processedLine.substring(i + 2, closingIndex)
+                        pushStyle(SpanStyle(fontWeight = FontWeight.Bold, color = boldColor))
+                        append(content)
+                        pop()
+                        i = closingIndex + 2
+                        continue
+                    }
+                } else if (processedLine[i] == '*' || processedLine[i] == '_') {
+                    val marker = processedLine[i]
+                    val closingIndex = processedLine.indexOf(marker, i + 1)
+                    if (closingIndex != -1 && closingIndex > i + 1) {
+                        val content = processedLine.substring(i + 1, closingIndex)
+                        pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
+                        append(content)
+                        pop()
+                        i = closingIndex + 1
+                        continue
+                    }
+                } else if (processedLine[i] == '`') {
+                    val closingIndex = processedLine.indexOf('`', i + 1)
+                    if (closingIndex != -1) {
+                        val content = processedLine.substring(i + 1, closingIndex)
+                        pushStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = baseColor.copy(alpha = 0.1f)))
+                        append(content)
+                        pop()
+                        i = closingIndex + 1
+                        continue
+                    }
+                }
+                append(processedLine[i])
+                i++
+            }
+
+            if (isHeading) {
+                addStyle(
+                    SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = boldColor
+                    ),
+                    lineStart,
+                    length
+                )
+            }
+        }
+    }
+}
+
 /**
  * Individual message bubble with rich educational actions, dyslexic spacing,
  * speaker TTS, copy, explanation transformer, and follow-up chips.
@@ -894,6 +955,17 @@ private fun EducationalMessageBubble(
     onSelectFollowUp: (String) -> Unit
 ) {
     val isUser = message.sender == "USER"
+
+    val baseTextColor = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val boldTextColor = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+
+    val annotatedContent = remember(message.text, isUser, baseTextColor, boldTextColor) {
+        buildMarkdownAnnotatedString(
+            text = message.text,
+            baseColor = baseTextColor,
+            boldColor = boldTextColor
+        )
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -926,9 +998,9 @@ private fun EducationalMessageBubble(
                     bottomStart = if (isUser) 16.dp else 4.dp,
                     bottomEnd = if (isUser) 4.dp else 16.dp
                 ),
-                color = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                shadowElevation = 1.dp,
-                border = if (!isUser) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)) else null,
+                color = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                shadowElevation = 0.5.dp,
+                border = if (!isUser) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)) else null,
                 modifier = Modifier.widthIn(max = 340.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
@@ -939,24 +1011,33 @@ private fun EducationalMessageBubble(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = if (message.isFreeModel) "⚡ Free Model" else "🧠 Pro Model",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (message.isFreeModel) Color(0xFF2E7D32) else MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.width(6.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
                                 Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = if (message.isFreeModel) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.primaryContainer
+                                ) {
+                                    Text(
+                                        text = if (message.isFreeModel) "⚡ Free Model" else "🧠 Pro Model",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (message.isFreeModel) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.surfaceTint.copy(alpha = 0.08f)
                                 ) {
                                     Text(
                                         text = message.explanationMode.shortBadge,
-                                        fontSize = 9.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
                             }
@@ -974,24 +1055,25 @@ private fun EducationalMessageBubble(
                                 )
                             }
                         }
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(8.dp))
                     }
 
                     // Main Text Content
                     Text(
-                        text = message.text,
+                        text = annotatedContent,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            letterSpacing = if (dyslexiaFont) 1.1.sp else 0.3.sp,
-                            lineHeight = if (dyslexiaFont) 22.sp else 19.sp
+                            letterSpacing = if (dyslexiaFont) 1.0.sp else 0.2.sp,
+                            lineHeight = if (dyslexiaFont) 22.sp else 20.sp,
+                            fontSize = 14.sp
                         ),
-                        color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                        color = baseTextColor
                     )
 
                     // AI Message Action Bar (TTS, Copy, Simplify, Step-by-Step)
                     if (!isUser) {
-                        Spacer(Modifier.height(8.dp))
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(10.dp))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        Spacer(Modifier.height(6.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -999,32 +1081,35 @@ private fun EducationalMessageBubble(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             // Transformation Quick Actions
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
                                     modifier = Modifier.clickable { onExplainSimpler(message.text) }
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("💡 Simpler", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                        Text("💡 Simpler", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onTertiaryContainer)
                                     }
                                 }
 
-                                Spacer(Modifier.width(4.dp))
-
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
                                     modifier = Modifier.clickable { onStepByStep(message.text) }
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("🪜 Steps", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                        Text("🪜 Steps", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                                     }
                                 }
                             }

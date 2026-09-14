@@ -78,7 +78,9 @@ class MainActivity : ComponentActivity() {
                             currentScreen != AppScreen.PARENT_PIN_SETUP &&
                             currentScreen != AppScreen.CHILD_PROFILE_SETUP &&
                             currentScreen != AppScreen.PROFILE_SELECTION &&
-                            currentScreen != AppScreen.PARENT_DASHBOARD) {
+                            currentScreen != AppScreen.PARENT_DASHBOARD &&
+                            currentScreen != AppScreen.PARENT_PIN_GATE &&
+                            currentScreen != AppScreen.NEURO_BUDDY_CHAT) {
                             TopSensoryBar(viewModel = viewModel)
                         }
                     }

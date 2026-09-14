@@ -90,6 +90,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AppLanguage
@@ -334,7 +335,10 @@ fun ParentDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                ) {
                                     Surface(
                                         shape = CircleShape,
                                         color = Color(pTheme.primaryHex),
@@ -345,13 +349,16 @@ fun ParentDashboardScreen(
                                         }
                                     }
                                     Spacer(Modifier.width(12.dp))
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f, fill = false)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
                                                 text = if (p.name.isNotBlank()) p.name else "Learner",
                                                 fontWeight = FontWeight.ExtraBold,
                                                 fontSize = 17.sp,
-                                                color = if (isActive) Color(pTheme.primaryHex) else MaterialTheme.colorScheme.onSurface
+                                                color = if (isActive) Color(pTheme.primaryHex) else MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f, fill = false)
                                             )
                                             if (isActive) {
                                                 Spacer(Modifier.width(8.dp))
@@ -372,7 +379,9 @@ fun ParentDashboardScreen(
                                         Text(
                                             text = "Age ${p.age} • ${pTier.title} • ${pTheme.title}",
                                             fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
@@ -970,7 +979,7 @@ fun ParentDashboardScreen(
                             }
 
                             Text(
-                                "NeuroPath is powered directly by Google AI Studio Gemini API offerings (gemini-1.5-flash and gemini-1.5-pro) provided natively by the AI Studio environment.",
+                                "NeuroPath is powered directly by Google AI Studio Gemini API offerings (gemini-3.5-flash and gemini-3.1-pro-preview) provided natively by the AI Studio environment.",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1959,7 +1968,7 @@ fun ParentDashboardScreen(
 
     if (showUpdateDialog) {
         UpdateCheckDialog(
-            currentVersion = "1.12.00",
+            currentVersion = "2.00.00",
             statusMessage = updateStatusMessage,
             onDismiss = { showUpdateDialog = false },
             onRemindLater = {

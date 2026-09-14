@@ -195,9 +195,16 @@ object GemmaLocalManager {
     suspend fun generateGemmaResponse(
         context: Context,
         prompt: String,
-        systemPrompt: String,
-        schoolDistrict: String,
-        standardTitle: String
+        systemPrompt: String = "",
+        schoolDistrict: String = "",
+        stateOrProvince: String = "",
+        country: String = "",
+        standardTitle: String = "",
+        languageCode: String = "en-US",
+        conversationHistory: List<Pair<String, String>> = emptyList(),
+        curriculumContext: String = "",
+        hasValidApiKey: Boolean = false,
+        activeApiKey: String = ""
     ): String = withContext(Dispatchers.Default) {
         val modelFile = getGemmaModelFile(context)
         if (!isGemmaInstalled(context)) {
@@ -215,8 +222,10 @@ object GemmaLocalManager {
             append("Be patient, encouraging, concise, and age-appropriate. ")
             append("Use a Socratic teaching style: guide the learner instead of simply doing their work for them. ")
             if (schoolDistrict.isNotBlank()) append("The learner's school district is $schoolDistrict. ")
-            if (standardTitle.isNotBlank()) append("Their curriculum standard/framework is $standardTitle. ")
-            if (systemPrompt.isNotBlank()) append(systemPrompt.trim())
+            if (stateOrProvince.isNotBlank()) append("Region: $stateOrProvince, $country. ")
+            if (standardTitle.isNotBlank()) append("Curriculum standard: $standardTitle. ")
+            if (curriculumContext.isNotBlank()) append("Curriculum context: $curriculumContext. ")
+            if (systemPrompt.isNotBlank()) append("\n$systemPrompt\n")
         }
 
         // Gemma 2 2B GGUF does not advertise support for a separate system

@@ -48,8 +48,47 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v1.20.00",
+        version = "v2.00.00",
         date = "Current Update",
+        title = "Major Platform 2.0 Milestone: Local GGUF Engine, Real-Time Voice & Adaptive Personalization",
+        highlights = listOf(
+            "🚀 Major Platform 2.0 Milestone: Major generational leap for NeuroPath delivering seamless offline and online adaptive learning.",
+            "🧠 Gemma 2-2B Local GGUF AI Engine: 100% offline, privacy-first Socratic AI Learning Buddy running natively on-device with CPU/NEON optimization.",
+            "🎙️ Real-Time Voice WebSocket Stream: Low-latency Gemini Live API audio interaction with synchronized 16-bit linear PCM audio streaming.",
+            "🎯 Dynamic Learner Personalization Engine: On-device telemetry analyzes learning pace and adapts scaffolding without transmitting private diagnosis labels to cloud servers.",
+            "🗺️ Precision Android Geocoder & Postal Resolver: Aligned educational standards and school districts across the US, UK, Canada, and Australia.",
+            "🎨 100 Sensory Neuro-Themes: Comprehensive multi-disciplinary theme worlds with atmospheric live preview modals and automated rotation scheduling.",
+            "🫁 4-7-8 Breathing & Silicone Pop-It Suite: Interactive sensory regulation tools paired with calming acoustic arrangements."
+        ),
+        isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v1.26.00",
+        date = "Previous Update",
+        title = "Build & AI Engine Stabilization, Real-Time Personalization & On-Device GGUF Fixes",
+        highlights = listOf(
+            "⚡ Build Script Stabilization: Resolved all Gradle script compilation errors and normalized on-device integrations.",
+            "🤖 Enhanced AI Engine: Fixed Gemma 2 2B local GGUF engine integration with flexible multi-parameter signature support.",
+            "🧠 On-Device Learner Personalization: Integrated real-time learning fingerprint and accommodation signal builder with privacy-first on-device telemetry.",
+            "🗺️ Pure Android Geocoder & Postal Resolution: Aligned educational standards and school district resolution with 100% private Android Geocoder and offline ZIP resolver.",
+            "🔄 Accordion Release Notes: What's New dialog starts closed and toggles smoothly with single-open dropdown behavior."
+        ),
+        isCurrentVersion = false
+    ),
+    ReleaseNote(
+        version = "v1.25.00",
+        date = "Previous Update",
+        title = "Gemma 2-2B Local GGUF Engine & Real-Time Voice WebSocket Integration",
+        highlights = listOf(
+            "🧠 Gemma 2-2B GGUF Model Integration: Local on-device Socratic AI tutor running 100% offline.",
+            "🎙️ Real-Time Voice WebSocket Stream: Low-latency Gemini Live API audio interaction.",
+            "📍 UK Regional Curriculum Standards: Added Scottish Curriculum for Excellence, Curriculum for Wales, and Northern Ireland Curriculum."
+        ),
+        isCurrentVersion = false
+    ),
+    ReleaseNote(
+        version = "v1.20.00",
+        date = "Previous Update",
         title = "Enhanced Parental Controls, AI Version Modes & Robust Database Schema Migration",
         highlights = listOf(
             "🛡️ Advanced Parental Controls & AI Configuration: Added parental controls to completely disable Learning Buddy or select between Socratic Only, Full AI 1.5, and Local Offline AI modes.",
@@ -57,7 +96,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
             "🔥 Enhanced Streak Tracking & Data Persistence: Upgraded Room database schema version to 9 with robust migration fallback and accurate daily login streak tracking.",
             "📍 Precise GPS & ZIP Resolution: Refined location compliance helper for Surprise, AZ and exact regional boundary verification."
         ),
-        isCurrentVersion = true
+        isCurrentVersion = false
     ),
     ReleaseNote(
         version = "v1.17.00",
@@ -72,7 +111,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
         version = "v1.16.00",
         date = "Previous Update",
-        title = "Production Cloud AI Integration: Standardized Gemini 1.5 Flash & Pro Models",
+        title = "Production Cloud AI Integration: Standardized Gemini 3.5 Flash & 3.1 Pro Models",
         highlights = listOf(
             "✨ Complete UI Element Alignment: Verified and perfected layout spacing, padding, text contrast, and pill badges across Theme Spotlight, Top Sensory Suite, and NeuroBuddy chat.",
             "🛡️ Secure Secrets & Key Management: Ensured seamless integration between Secrets Gradle plugin, local configuration, and live AI Studio runtime environment.",

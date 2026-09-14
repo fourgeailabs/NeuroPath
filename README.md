@@ -8,7 +8,7 @@
 NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner personalization, adaptive mastery signals, OER resources, multimedia learning, accessibility features, and jurisdiction-aware curriculum routing.
 
 [![Build Status](https://github.com/fourgeailabs/neuropath/actions/workflows/build.yml/badge.svg)](.github/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.25.00-blue.svg)](app/build.gradle.kts)
+[![Version](https://img.shields.io/badge/version-2.00.00-blue.svg)](app/build.gradle.kts)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](app/build.gradle.kts)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-purple.svg)](app/build.gradle.kts)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
@@ -17,7 +17,7 @@ NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner person
 
 ## 🚀 Current Status
 
-**Version:** `1.25.00`  
+**Version:** `2.00.00`  
 **Application ID:** `com.fourgeailabs.neuropath`  
 **Platform:** Android  
 **Minimum SDK:** 24  
@@ -531,7 +531,7 @@ NeuroPath is created and maintained by **FourgeAI LABS**.
 
 # 📜 Release History
 
-## `1.25.00` — Current Repository Version
+## `2.00.00` — Current Repository Version
 
 The current development line includes the major architecture work described above, including:
 

@@ -25,8 +25,8 @@ data class LocationComplianceResult(
     val isVerified: Boolean,
     val complianceMessage: String,
     val postalCode: String = "",
-    val isGoogleMapsVerified: Boolean = true,
-    val resolutionSource: String = "Google Maps Location Service"
+    val isGoogleMapsVerified: Boolean = false,
+    val resolutionSource: String = "Android Geocoder / postal resolver"
 ) {
     val detectedState: String get() = detectedStateOrProvince ?: ""
     val detectedDistrict: String get() = matchedEducationalLocale?.schoolDistrict ?: ""
@@ -229,10 +229,10 @@ object LocationComplianceHelper {
             detectedCity = foundCity ?: matchedLocale.city,
             matchedEducationalLocale = matchedLocale,
             isVerified = true,
-            complianceMessage = "🗺️ Resolved via Google Maps Geocoding ($clean): Aligned to ${matchedLocale.standardTitle} for ${matchedLocale.schoolDistrict}.",
+            complianceMessage = "🗺️ Resolved via Android Geocoder / postal resolver ($clean): Aligned to ${matchedLocale.standardTitle} for ${matchedLocale.schoolDistrict}.",
             postalCode = clean,
-            isGoogleMapsVerified = true,
-            resolutionSource = "Google Maps Geocoding (ZIP/Postal Fallback)"
+            isGoogleMapsVerified = false,
+            resolutionSource = "Android Geocoder / ZIP-postal fallback"
         )
     }
 
@@ -339,7 +339,7 @@ object LocationComplianceHelper {
         } ?: GLOBAL_EDUCATIONAL_LOCALES.first()
 
         val complianceMsg = if (isFromGps) {
-            "🗺️ Google Maps Location Verified: Curriculum locked strictly to $normalizedCountry (${detectedState ?: matchedLocale.stateOrProvince}, ${detectedCity ?: matchedLocale.city}) educational standards."
+            "🗺️ Location Verified via Android Geocoder: Curriculum locked strictly to $normalizedCountry (${detectedState ?: matchedLocale.stateOrProvince}, ${detectedCity ?: matchedLocale.city}) educational standards."
         } else {
             "📍 System Locale Detected ($detectedCountryCode): Curriculum locked to $normalizedCountry standards. Rescan or enter ZIP code to refine."
         }
@@ -352,8 +352,8 @@ object LocationComplianceHelper {
             matchedEducationalLocale = matchedLocale,
             isVerified = true,
             complianceMessage = complianceMsg,
-            isGoogleMapsVerified = isFromGps,
-            resolutionSource = if (isFromGps) "Google Maps GPS / Network Location" else "System Locale Preset"
+            isGoogleMapsVerified = false,
+            resolutionSource = if (isFromGps) "Android Geocoder GPS / Network Location" else "System Locale Preset"
         )
     }
 

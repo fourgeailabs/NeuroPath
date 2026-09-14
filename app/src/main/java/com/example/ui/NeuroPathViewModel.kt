@@ -942,6 +942,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         _isAnswerSubmitted.value = true
         val isCorrect = selected == question.correctIndex
         _isAnswerCorrect.value = isCorrect
+        com.example.learning.LearnerPersonalizationEngine.recordAnswer(getApplication(), _currentProfile.value.id, _selectedSubject.value.name, isCorrect, question.questionText.take(100))
 
         if (isCorrect) {
             _lessonCorrectCount.value += 1
@@ -1289,7 +1290,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
             // Play voice audio or TTS
             if (!result.audioBase64.isNullOrBlank()) {
-                lyriaMusicPlayer.playAudioFromBase64(result.audioBase64, "Live Buddy Voice", loop = false)
+                lyriaMusicPlayer.playPcm16FromBase64(result.audioBase64, "Live Buddy Voice", loop = false)
             } else {
                 speechManager.speak(result.transcriptText)
             }
@@ -1449,11 +1450,13 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun sendChatMessage(userText: String) {
-        if (userText.isBlank()) return
+        if (userText.isBlank() || _isChatGenerating.value) return
         val currentMode = _explanationMode.value
         val currentModel = _chatModelMode.value
         val currentSubject = _selectedSubjectTag.value
         val profile = _currentProfile.value
+        val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, currentSubject.id, currentModel == ChatModelMode.GEMMA_LOCAL)
+        com.example.learning.LearnerPersonalizationEngine.recordPreferredStyle(getApplication(), profile.id, currentMode.id)
         val activeSession = _currentSessionId.value
         val sessionTitle = _currentSessionTitle.value
 
@@ -1505,6 +1508,10 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         ?: "Accredited grade-level curriculum benchmarks for ${profile.gradeLevel} in ${profile.schoolDistrict}."
                 }
 
+                val history = _chatMessages.value.map {
+                    (if (it.sender == "USER") "user" else "model") to it.text
+                }.takeLast(10)
+
                 val replyText = if (currentModel == ChatModelMode.GEMMA_LOCAL) {
                     val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
                     val systemPrompt = """
@@ -1518,16 +1525,21 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         prompt = userText,
                         systemPrompt = systemPrompt,
                         schoolDistrict = profile.schoolDistrict,
-                        standardTitle = profile.stateStandard
+                        stateOrProvince = profile.stateOrProvince,
+                        country = profile.country,
+                        standardTitle = profile.stateStandard,
+                        languageCode = profile.appLanguageCode,
+                        conversationHistory = history,
+                        curriculumContext = currSummary,
+                        hasValidApiKey = hasValidApiKey,
+                        activeApiKey = activeApiKey
                     )
-                } else if (hasValidApiKey && currentModel != ChatModelMode.OFFLINE) {
-                    val history = _chatMessages.value.takeLast(6).map {
-                        (if (it.sender == "USER") "user" else "model") to it.text
-                    }
+                } else if (currentModel != ChatModelMode.OFFLINE) {
 
                     val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
                     val systemPrompt = """
                         $basePrompt
+                        $personalizationProfile
                         Theme world: ${theme.title} (${theme.buddyRole}).
                         Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
                         Personalized Explanation Style: ${currentMode.title}
