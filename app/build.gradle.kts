@@ -99,6 +99,7 @@ dependencies {
   implementation(libs.okhttp)
   implementation(libs.retrofit)
   implementation(libs.llama.android)
+  implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
