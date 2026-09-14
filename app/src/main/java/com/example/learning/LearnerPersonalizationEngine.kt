@@ -5,9 +5,9 @@ import com.example.data.local.entity.ChildProfileEntity
 import java.util.Locale
 
 /**
- * Builds a private, needs-led learner fingerprint for tutoring and adaption.
- * The exact profile stays on-device unless a caller explicitly requests sensitive
- * diagnosis context for an offline/local model.
+ * Builds a private, needs-led learner fingerprint for tutoring and adaptation.
+ * Sensitive diagnosis labels remain on-device by default. Cloud tutoring receives
+ * educational signals rather than a child's identity or diagnosis labels.
  */
 object LearnerPersonalizationEngine {
     private const val PREFS = "learner_personalization"
@@ -15,6 +15,8 @@ object LearnerPersonalizationEngine {
     private const val KEY_CORRECT_PREFIX = "correct_"
     private const val KEY_MISSED_PREFIX = "missed_"
     private const val KEY_PREFERRED_STYLE_PREFIX = "style_"
+    private const val KEY_SUBJECT_ATTEMPTS_PREFIX = "subject_attempts_"
+    private const val KEY_SUBJECT_CORRECT_PREFIX = "subject_correct_"
 
     fun buildPrompt(
         context: Context,
@@ -27,6 +29,10 @@ object LearnerPersonalizationEngine {
         val attempts = prefs.getInt(KEY_ATTEMPTS_PREFIX + id, 0)
         val correct = prefs.getInt(KEY_CORRECT_PREFIX + id, 0)
         val accuracy = if (attempts == 0) "not enough data yet" else "${(correct * 100) / attempts}%"
+        val subjectKey = subject.trim().uppercase(Locale.US).ifBlank { "GENERAL" }
+        val subjectAttempts = prefs.getInt(KEY_SUBJECT_ATTEMPTS_PREFIX + id + "_" + subjectKey, 0)
+        val subjectCorrect = prefs.getInt(KEY_SUBJECT_CORRECT_PREFIX + id + "_" + subjectKey, 0)
+        val subjectAccuracy = if (subjectAttempts == 0) "not enough data yet" else "${(subjectCorrect * 100) / subjectAttempts}%"
         val preferredStyle = prefs.getString(KEY_PREFERRED_STYLE_PREFIX + id, "adaptive") ?: "adaptive"
         val missed = prefs.getString(KEY_MISSED_PREFIX + id, "") ?: ""
 
@@ -34,27 +40,36 @@ object LearnerPersonalizationEngine {
         val strengths = csv(profile.strengthsCsv)
         val challenges = csv(profile.strugglesCsv)
         val interests = csv(profile.hyperFixationsCsv)
-        val dislikes = if (challenges.isNotEmpty()) challenges else listOf("No explicit dislikes recorded")
         val diagnosisLine = if (includeSensitiveDiagnosis) {
             "Diagnosis or declared learning differences: ${diagnosis.ifEmpty { listOf("None provided") }.joinToString(", ")}"
         } else {
-            "Declared learning-difference details: kept on-device by default; use the needs, strengths and accessibility signals below."
+            "Declared learning-difference details: kept on-device by default; use needs, strengths and accessibility signals below."
+        }
+
+        // Do not send the child's name to a cloud tutor. A local model may opt into
+        // sensitive context, but the default cloud-safe profile uses a generic learner label.
+        val learnerLabel = if (includeSensitiveDiagnosis) profile.name.ifBlank { "Student" } else "Student"
+        val accessibility = buildString {
+            append("dyslexiaFont=${profile.dyslexiaFontEnabled}; ")
+            append("highContrast=${profile.highContrastMode}; ")
+            append("readAloud=${profile.readAnswersAloud}; ")
+            append("autoHighlight=${profile.autoHighlightWords}")
         }
 
         return """
             LEARNER-CENTRED PERSONALIZATION PROFILE
             Treat this as a living learner profile, not a label. Do not assume every trait applies all the time.
-            Learner: ${profile.name.ifBlank { "Student" }}
+            Learner: $learnerLabel
             Age/grade: ${profile.age} / ${profile.gradeLevel}
             $diagnosisLine
             Strengths/superpowers: ${strengths.ifEmpty { listOf("Discover these through interaction") }.joinToString(", ")}
             Current challenges/weaknesses: ${challenges.ifEmpty { listOf("Discover these through interaction") }.joinToString(", ")}
             Interests, likes and motivating topics: ${interests.ifEmpty { listOf("Discover these through interaction") }.joinToString(", ")}
-            Likely friction/dislike areas: ${dislikes.joinToString(", ")}
             Active theme: ${profile.activeThemeId}
-            Accessibility: dyslexiaFont=${profile.dyslexiaFontEnabled}; highContrast=${profile.highContrastMode}; readAloud=${profile.readAnswersAloud}; ambientSound=${profile.ambientSound}
-            Current subject: $subject
+            Accessibility: $accessibility
+            Current subject: $subjectKey
             Observed answer accuracy across this profile: $accuracy
+            Observed answer accuracy in current subject: $subjectAccuracy
             Recent missed topics/signals: ${missed.ifBlank { "none recorded" }}
             Learned preferred explanation style: $preferredStyle
 
@@ -77,8 +92,13 @@ object LearnerPersonalizationEngine {
         val attemptsKey = KEY_ATTEMPTS_PREFIX + profileId
         val correctKey = KEY_CORRECT_PREFIX + profileId
         val missedKey = KEY_MISSED_PREFIX + profileId
+        val subjectKey = subject.trim().uppercase(Locale.US).ifBlank { "GENERAL" }
+        val subjectAttemptsKey = KEY_SUBJECT_ATTEMPTS_PREFIX + profileId + "_" + subjectKey
+        val subjectCorrectKey = KEY_SUBJECT_CORRECT_PREFIX + profileId + "_" + subjectKey
         val attempts = prefs.getInt(attemptsKey, 0) + 1
         val correctCount = prefs.getInt(correctKey, 0) + if (correct) 1 else 0
+        val subjectAttempts = prefs.getInt(subjectAttemptsKey, 0) + 1
+        val subjectCorrect = prefs.getInt(subjectCorrectKey, 0) + if (correct) 1 else 0
         var missed = prefs.getString(missedKey, "") ?: ""
         if (!correct && !topic.isNullOrBlank()) {
             val entries = missed.split("|").filter { it.isNotBlank() }.toMutableList()
@@ -89,6 +109,8 @@ object LearnerPersonalizationEngine {
         prefs.edit()
             .putInt(attemptsKey, attempts)
             .putInt(correctKey, correctCount)
+            .putInt(subjectAttemptsKey, subjectAttempts)
+            .putInt(subjectCorrectKey, subjectCorrect)
             .putString(missedKey, missed)
             .apply()
     }
