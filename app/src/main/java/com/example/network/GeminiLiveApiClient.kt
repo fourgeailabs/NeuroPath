@@ -84,9 +84,9 @@ object GeminiLiveApiClient {
                         val setup = JSONObject()
                             .put("model", "models/$MODEL")
                             .put("generationConfig", JSONObject()
-                                .put("responseModalities", org.json.JSONArray().put("AUDIO"))
-                                .put("inputAudioTranscription", JSONObject())
-                                .put("outputAudioTranscription", JSONObject()))
+                                .put("responseModalities", org.json.JSONArray().put("AUDIO")))
+                            .put("inputAudioTranscription", JSONObject())
+                            .put("outputAudioTranscription", JSONObject())
                             .put("systemInstruction", JSONObject()
                                 .put("parts", org.json.JSONArray().put(JSONObject().put("text", instructions))))
 
