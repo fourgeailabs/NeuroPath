@@ -27,6 +27,7 @@ object LiteRtGemmaAccelerator {
     private const val TAG = "LiteRtGemmaAccelerator"
     private const val MODEL_REPO = "litert-community/Gemma3-1B-IT"
     private const val GENERIC_GPU_MODEL = "gemma3-1b-it-int4.litertlm"
+    private const val TENSOR_MODEL_MARKER = "_Google_Tensor_"
     private const val MIN_MODEL_BYTES = 450_000_000L
     private const val MODEL_MAGIC = "LITERTLM"
     private const val MAX_OUTPUT_TOKENS = 384
@@ -145,11 +146,12 @@ object LiteRtGemmaAccelerator {
                             append(prompt.trim())
                         }
                         val response = conversation.sendMessage(fullPrompt, maxOutputToken = MAX_OUTPUT_TOKENS)
-                        val text = response.text.trim()
+                        val text = response.contents.toString().trim()
                         check(text.isNotBlank()) { "LiteRT-LM returned an empty response" }
                         val generationTimeMs = (System.nanoTime() - generationStart) / 1_000_000L
                         val active = when (backend) {
                             is Backend.NPU -> LocalAiBackend.NPU
+                            is Backend.GOOGLE_TENSOR -> LocalAiBackend.NPU
                             is Backend.GPU -> LocalAiBackend.GPU
                             else -> LocalAiBackend.CPU
                         }
@@ -167,9 +169,11 @@ object LiteRtGemmaAccelerator {
     }
 
     private fun backendCandidates(context: Context, modelName: String): List<Backend> {
-        val vendorTargetedNpu = modelName != GENERIC_GPU_MODEL
         return buildList {
-            if (vendorTargetedNpu) add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
+            when {
+                modelName.contains(TENSOR_MODEL_MARKER) -> add(Backend.GOOGLE_TENSOR())
+                modelName != GENERIC_GPU_MODEL -> add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
+            }
             add(Backend.GPU())
             add(Backend.CPU())
         }
