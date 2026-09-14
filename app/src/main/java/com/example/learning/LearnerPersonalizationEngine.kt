@@ -82,7 +82,7 @@ object LearnerPersonalizationEngine {
             Recent missed topics/signals: ${missed.ifBlank { "none recorded" }}
             Learned preferred explanation style: $preferredStyle
 
-            $curriculumResolution.contextText()
+            ${curriculumResolution.contextText()}
 
             PERSONALIZATION RULES:
             1. Adapt the explanation to this individual, not merely their age or diagnosis.
