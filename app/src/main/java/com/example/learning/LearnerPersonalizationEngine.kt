@@ -6,7 +6,8 @@ import java.util.Locale
 
 /**
  * Builds a private, needs-led learner fingerprint for tutoring and adaption.
- * This is deliberately stored on-device and never sends the profile anywhere by itself.
+ * The exact profile stays on-device unless a caller explicitly requests sensitive
+ * diagnosis context for an offline/local model.
  */
 object LearnerPersonalizationEngine {
     private const val PREFS = "learner_personalization"
@@ -15,7 +16,12 @@ object LearnerPersonalizationEngine {
     private const val KEY_MISSED_PREFIX = "missed_"
     private const val KEY_PREFERRED_STYLE_PREFIX = "style_"
 
-    fun buildPrompt(context: Context, profile: ChildProfileEntity, subject: String = "GENERAL"): String {
+    fun buildPrompt(
+        context: Context,
+        profile: ChildProfileEntity,
+        subject: String = "GENERAL",
+        includeSensitiveDiagnosis: Boolean = false
+    ): String {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val id = profile.id
         val attempts = prefs.getInt(KEY_ATTEMPTS_PREFIX + id, 0)
@@ -29,13 +35,18 @@ object LearnerPersonalizationEngine {
         val challenges = csv(profile.strugglesCsv)
         val interests = csv(profile.hyperFixationsCsv)
         val dislikes = if (challenges.isNotEmpty()) challenges else listOf("No explicit dislikes recorded")
+        val diagnosisLine = if (includeSensitiveDiagnosis) {
+            "Diagnosis or declared learning differences: ${diagnosis.ifEmpty { listOf("None provided") }.joinToString(", ")}"
+        } else {
+            "Declared learning-difference details: kept on-device by default; use the needs, strengths and accessibility signals below."
+        }
 
         return """
             LEARNER-CENTRED PERSONALIZATION PROFILE
             Treat this as a living learner profile, not a label. Do not assume every trait applies all the time.
             Learner: ${profile.name.ifBlank { "Student" }}
             Age/grade: ${profile.age} / ${profile.gradeLevel}
-            Diagnosis or declared learning differences: ${diagnosis.ifEmpty { listOf("None provided") }.joinToString(", ")}
+            $diagnosisLine
             Strengths/superpowers: ${strengths.ifEmpty { listOf("Discover these through interaction") }.joinToString(", ")}
             Current challenges/weaknesses: ${challenges.ifEmpty { listOf("Discover these through interaction") }.joinToString(", ")}
             Interests, likes and motivating topics: ${interests.ifEmpty { listOf("Discover these through interaction") }.joinToString(", ")}
