@@ -11,8 +11,7 @@ plugins {
 }
 
 // Keep checked-in legacy integrations from shipping claims/model IDs that no longer match reality.
-// The source files are intentionally normalized before Kotlin compilation so the APK is truthful
-// even while the large legacy client is being migrated incrementally.
+// The source files are normalized before Kotlin compilation while the large legacy client is migrated.
 val normalizeLegacyIntegrations = tasks.register("normalizeLegacyIntegrations") {
   doLast {
     val gemini = file("src/main/java/com/example/network/GeminiClient.kt")
@@ -30,10 +29,44 @@ val normalizeLegacyIntegrations = tasks.register("normalizeLegacyIntegrations") 
         "Executing Gemini 1.5 (" to "Executing Gemini ("
       )
       replacements.forEach { (old, new) -> text = text.replace(old, new) }
-      text = text.replace(
-        " with device GPU hardware acceleration (Vulkan/OpenCL delegate) active.",
-        "."
-      )
+      text = text.replace(" with device GPU hardware acceleration (Vulkan/OpenCL delegate) active.", ".")
+
+      // Replace the old request/response shim with the real stateful Gemini Live WebSocket client.
+      val voiceStartMarker = "    /**\n     * Voice Conversations (Live API mode) with full curriculum access.\n     */"
+      val voiceEndMarker = "    /**\n     * Generate Music for Soundscapes"
+      val voiceStart = text.indexOf(voiceStartMarker)
+      val voiceEnd = text.indexOf(voiceEndMarker, voiceStart)
+      if (voiceStart >= 0 && voiceEnd > voiceStart) {
+        val liveMethod = """    /** Real Gemini Live API WebSocket turn. */
+    suspend fun generateLiveVoiceConversationTurn(
+        userVoiceAudio: ByteArray?,
+        userText: String?,
+        conversationHistory: List<Pair<String, String>>,
+        systemPrompt: String,
+        curriculumContext: String,
+        schoolDistrict: String,
+        stateOrProvince: String,
+        country: String,
+        standardTitle: String,
+        languageCode: String,
+        customApiKey: String = ""
+    ): LiveVoiceTurnResult = GeminiLiveApiClient.generateTurn(
+        apiKey = getApiKey(customApiKey),
+        userVoiceAudio = userVoiceAudio,
+        userText = userText,
+        conversationHistory = conversationHistory,
+        systemPrompt = systemPrompt,
+        curriculumContext = curriculumContext,
+        schoolDistrict = schoolDistrict,
+        stateOrProvince = stateOrProvince,
+        country = country,
+        standardTitle = standardTitle,
+        languageCode = languageCode
+    )
+
+"""
+        text = text.substring(0, voiceStart) + liveMethod + text.substring(voiceEnd)
+      }
       gemini.writeText(text)
     }
 
