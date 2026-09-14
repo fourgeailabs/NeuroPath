@@ -74,6 +74,6 @@ data class DownloadedCurriculumResult(
     val officialSourceUrl: String,
     val gradesSummary: String,
     val curriculumSummary: String,
-    val isOnlineSynced: Boolean = true
+    val isOnlineSynced: Boolean = false
 )
 
