@@ -1,230 +1,559 @@
 # NeuroPath 🧠✨
 ### Adaptive, Sensory-Friendly Educational Platform for Neurodiverse and Curious Minds
 
-Created by **FourgeAI LABS** ([https://github.com/fourgeailabs](https://github.com/fourgeailabs))
+**NeuroPath** is an Android learning platform from **FourgeAI LABS** focused on individualized, sensory-aware education. Its core design principle is:
+
+> **Curriculum determines what a child needs to learn. The child determines how NeuroPath should teach it.**
+
+NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner personalization, adaptive mastery signals, OER resources, multimedia learning, accessibility features, and jurisdiction-aware curriculum routing.
 
 [![Build Status](https://github.com/fourgeailabs/neuropath/actions/workflows/build.yml/badge.svg)](.github/workflows/build.yml)
 [![Version](https://img.shields.io/badge/version-1.25.00-blue.svg)](app/build.gradle.kts)
-[![Android](https://img.shields.io/badge/Platform-Android_14_%2B-green.svg)](app/build.gradle.kts)
-[![Compose](https://img.shields.io/badge/Jetpack_Compose-M3-purple.svg)](app/build.gradle.kts)
-[![License](https://img.shields.io/badge/License-Apache_2.0-orange.svg)](LICENSE)
-[![Privacy Policy](https://img.shields.io/badge/Privacy_Policy-COPPA_Compliant-brightgreen.svg)](PRIVACY_POLICY.md)
+[![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](app/build.gradle.kts)
+[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-purple.svg)](app/build.gradle.kts)
+[![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
 
 ---
 
-## 🌟 Overview
+## 🚀 Current Status
 
-**NeuroPath** is a comprehensive, sensory-conscious mobile learning application built with Kotlin and Jetpack Compose by **FourgeAI LABS**. Tailored specifically for children with ADHD, Autism, Dyslexia, Dyscalculia, and all curious learners, NeuroPath blends granular local school district educational requirements with personalized interest worlds, regulation tools, global multi-language compatibility, pre-installed K-12 OER Commons curriculum materials with **Interactive Video and Audio Playback Modules**, precise **GPS & ZIP/Postal Code City Resolution**, an interactive **4-7-8 Breathing Exercise Visualizer**, an **Interactive Theme Preview Modal & Atmospheric Visualizer**, a library of **100 Adaptive Neuro-Themes with Automated Periodic Rotation**, a robust **Gemini Educational Chat Architecture with Multi-Tier Models (gemini-1.5-flash, gemini-1.5-pro, Local GPU-Accelerated Offline)**, interactive TTS playback speed slider control for spoken lesson text, parental controls for Learning Buddy and AI version modes, clean standardized UI chip/pill layouts, and speech-to-text voice assist.
+**Version:** `1.25.00`  
+**Application ID:** `com.fourgeailabs.neuropath`  
+**Platform:** Android  
+**Minimum SDK:** 24  
+**Target SDK:** 36  
+**Primary UI:** Kotlin + Jetpack Compose  
+**Local AI architecture:** GGUF Gemma inference through llama.cpp Android integration  
 
----
-
-## 🚀 Key Features in Recent Updates
-
-### ⚡ 1. Gemini 1.5 GPU Hardware Acceleration & On-Device Execution (v1.22.00)
-* **On-Device GPU Hardware Acceleration**: Integrated Vulkan and OpenCL GPU delegate pipeline for local Gemini 1.5 Flash/Pro model execution.
-* **Seamless Local / Cloud Fallback**: Automatically leverages device GPU acceleration when offline or when local model packages are installed via the parent dashboard.
-* **Optimized LLM Inference**: Guarantees ultra-low latency and zero network failures for the AI Learning Buddy.
-
-### 🛡️ 1. Enhanced Parental Controls, AI Version Modes & Local Offline Gemini (v1.20.00)
-* **Collective Learning Buddy Control**: Added parental options to completely disable the Learning Buddy across the child interface when desired.
-* **AI Version Mode Selector**: Parents can choose whether the child uses Full AI tutoring (Gemini 1.5), Socratic Only mode, or fully Local Offline execution.
-* **Optional Local Gemini Package Installation**: Added support for parents to optionally download and install Gemini model packages locally onto the application for offline cloud-independent execution.
-* **Search-Only Ambient Soundscapes Bottom Sheet**: Replaced the soundscapes popup with a slide-up bottom sheet supporting search-only custom audio generation via Google Lyria models.
-* **Enhanced Daily Spark of Inspiration**: Added 1-tap quote refresh and author citation to motivational daily quotes.
-* **Child Profile UX Alignment**: Removed the locale confirmation card and repositioned learning games to the bottom of the profile window so core lessons take priority.
-
-### 📍 2. Precise GPS & ZIP/Postal Code City Resolution
-* **Exact City & Jurisdiction Matching**: Upgraded `LocationComplianceHelper` to extract exact cities (e.g., Surprise, AZ from 85379, Scottsdale, Mesa, Chandler, Beverly Hills, etc.) via Android `Geocoder` and comprehensive postal lookup tables.
-* **Accurate Curriculum & District Alignment**: Automatically aligns educational standards, school districts, and state frameworks with the actual city reported by GPS or ZIP code input.
-* **Resilient Offline Fallback**: Maintains robust pattern matching and dynamic local educational locale creation for any entered postal code worldwide.
-
-### ⚡ 2. Production Cloud AI Integration: Standardized Gemini 1.5 Flash & Pro Models (v1.16.00)
-* **Upgraded to Production Gemini 1.5 Models**: Migrated all API endpoints and chat mode configurations to standard production-ready `gemini-1.5-flash` and `gemini-1.5-pro` models, ensuring seamless cloud AI connectivity without HTTP 404 fallback errors.
-* **Robust Voice & Audio Transcription**: Configured direct cloud transcription and real-time voice conversation turns using verified Gemini 1.5 endpoints.
-* **Curriculum & Quiz Sync**: Enhanced online OER Commons curriculum synchronization, adaptive hint generation, and flashcard creation with reliable cloud AI intelligence.
-* **Graceful Socratic Fallback**: Maintained resilient offline Socratic tutoring when offline or when API keys are pending configuration.
-
-### ✨ 2. Comprehensive UI Polish, Layout Alignment & Component Standardization (v1.15.00)
-* **Visual Polish & Precision Alignment**: Completed comprehensive audit and refinement across Theme Spotlight, Top Sensory Suite, and NeuroBuddy chat interfaces.
-* **Secrets Management Resilience**: Restored environment files (`.env`, `.env.example`) and verified build compatibility with the Secrets Gradle plugin.
-* **Rock-Solid Multi-Tier Gemini 3.5 & 3.1 AI Fleet**: Verified end-to-end operation across `gemini-3.5-flash`, `gemini-3.1-flash-lite-preview`, and `gemini-3.1-pro-preview` with offline Socratic fallbacks.
-* **Touch Targets & Accessibility**: Ensured all buttons, chips, tabs, and interactive controls maintain standard 48dp touch targets and WCAG AAA contrast ratios.
-
-### 📐 2. Standardized Sizing, Chip & Pill Formatting Polish (v1.14.00)
-* **Eliminated Theme Category Pill Squeezing**: Redesigned the Active Theme Spotlight Card in the Child Profile Setup and Catalog items with stacked header rows and distinct badges, preventing vertical letter-by-letter wrapping when rendering long theme titles.
-* **Streamlined Chat Header & Action Controls**: Re-architected the NeuroBuddy chat header with clean, unclipped Gemini model pills (`⚡ 3.5 Flash`, `🚀 Flash Lite`, `🧠 3.1 Pro`, `🔌 Offline`), balanced touch targets, and balanced session subtitles.
-* **Ergonomic Educational Input Bar**: Optimized the bottom input field with adaptive single-to-multi-line height expansion, balanced 42dp action buttons, and concise placeholder prompts.
-* **Enhanced Chip Padding & Font Metrics**: Standardized corner radii, text sizes, and padding across all follow-up question chips, starter suggestions, and cross-curricular subject badges.
-* **WCAG Contrast Reinforcement**: Applied high-contrast dark typography and theme-accented metadata badges across all vibrant light cards.
-
-### 🧠 2. Fixed Gemini AI Architecture & camelCase REST API Serialization (v1.13.00)
-* **REST API camelCase Serialization**: Fixed Gemini API request/response serialization by aligning data classes (`generationConfig`, `systemInstruction`, `inlineData`, `topP`, `topK`, `thinkingConfig`, `speechConfig`, `voiceConfig`, `finishReason`) with the Google Generative Language v1beta API schema, eliminating HTTP 400 rejection errors.
-* **Modern Multi-Tier Model Fleet**:
-  * `gemini-3.5-flash`: Primary high-speed reasoning model for educational chat, adaptive hints, voice conversation turns, and curriculum downloads.
-  * `gemini-3.1-flash-lite-preview`: Low-latency, quota-efficient free-tier fallback model.
-  * `gemini-3.1-pro-preview`: Advanced multi-step STEM breakdown and deep concept tutor.
-* **Multi-Source API Key Resolution**: Intelligently resolves credentials across AI Studio runtime secrets, profile configurations, and custom keys with seamless offline Socratic fallback.
-* **Voice & Transcription Endpoints**: Restored real-time audio transcription and interactive live voice study sessions with proper model endpoint routing.
-
-### 🎨 2. Interactive Theme Preview Modal & Palette Inspector (v1.12.00)
-* **Theme Preview Modal**: In-depth modal dialog accessible directly from the Settings menu and Profile setup, allowing parents and learners to visualize how a selected theme's color palette, companion buddy, and background assets look before applying it globally.
-* **Live Screen Simulation View**:
-  * Real-time simulated Android screen frame with animated `Canvas` atmospheric mesh gradients and category-specific sensory background motifs (circuits, celestial rings, acoustic spectrums, ancient geometry).
-  * Simulated Top Sensory Header Bar with dynamic XP and streak badges.
-  * Companion Buddy speech bubble with authentic welcome dialogue and character badge.
-  * Themed Active Quest / Lesson Card with subject-specific math/science challenges and themed action buttons.
-* **WCAG & Dyslexia Color Palette Inspector**:
-  * Visual color swatches for Primary Accent, Secondary Accent, Surface Background, and Card Container tokens with exact hex codes.
-  * Contrast Readability scorecard (AAA certified) ensuring reduced blue-light eye strain during hyperfocus sessions.
-  * Live interactive button, outlined action, and chip components rendered directly in the selected theme palette.
-* **Curriculum & Companion Buddy Deep Dive**:
-  * Cross-disciplinary subject connections (Math, Reading, Science, Social Studies) and sensory tactile interaction ideas.
-  * Neurodivergent alignment badges (ADHD, Autism, Dyslexia, Sensory Processing).
-* **Carousel & 100-Theme Browser**:
-  * Smooth `< Previous` and `Next >` carousel buttons, full 100-theme search bar, category filter chips, rotation schedule configuration, and instant one-tap global application.
-
-### 🎨 2. 100 Adaptive Neuro-Themes & Periodic Rotation Engine (v1.11.00)
-* **100 Dynamic Neuro-Themes**: A vast library of 100 curated, multi-disciplinary theme worlds covering Pre-K through 12th Grade:
-  * Ancient Civilizations (Ancient Egypt, Rome, Greece, Maya, Aztec, Mesopotamia, etc.)
-  * Robotics & AI (Humanoid Robotics, Autonomous Rovers, Neural Networks, Cybernetics)
-  * Mythological Creatures (Dragon Lore, Phoenix Guardians, Greek Mythology, Norse Legends)
-  * Culinary Adventures (Master Chef Chemistry, World Street Food, Pastry Geometry)
-  * Musical Journeys (Symphony Orchestra, Electronic Sound Synthesis, Global Folk)
-  * Sports Superstars (Track & Field Physics, Basketball Statistics, Extreme Climbing)
-  * Environmental Explorers (Amazon Rainforest, Deep Coral Reef, Arctic Glaciers)
-  * Artistic Expression (Impressionist Light, Origami Geometry, Digital 3D Sculpting)
-  * Transportation Tycoons (High-Speed Maglev, Aerospace Engineering, Steam Rail)
-  * Spy Academy (Cryptography Secrets, Surveillance Physics, Forensic Science)
-  * Deep Space, Medical Science, Architecture, Gaming & VR, and more!
-* **Profile-Tailored AI Synthesis**: Themes are automatically recommended based on the whole of the child's diagnosis, strengths, struggles, age tier, and hyper-fixations.
-* **Periodic Rotation Engine**: Parents/learners can choose between permanent theme world fixation or dynamic automatic rotation (Daily, Every 3 Days, Weekly, Bi-Weekly, Monthly) to ensure continuous neurodivergent engagement that grows with the child.
-* **Full 100-Theme Browser Dialog**: Interactive in-setup catalog browser with search, category filtering, companion buddy stats, and cross-subject mapping (Math, Reading, Science, Social Studies).
-
-### 🎬 2. OER Commons Video & Audio Playback Modules (v1.10.00)
-* **Educational Video Player & Dynamic Canvas Visualizer**:
-  * Rich multimedia video player hosted in a modal bottom sheet with animated Jetpack Compose `Canvas` visual simulations (including dynamic Plate Tectonics mantle convection, Quadratic Parabola trajectories, Atomic Bond electron clouds, and 10-Frame Counting grids).
-  * Variable playback speed controls (`0.5x`, `0.75x`, `1.0x`, `1.25x`, `1.5x`, `2.0x`).
-  * Continuous scrub slider with real-time timestamp display and 10-second skip forward/backward buttons.
-* **Synchronized Closed Captions & Transcript Navigation**:
-  * Live subtitle overlay matching active playback timestamps.
-  * Interactive full transcript pane allowing children to tap any dialogue line to seek directly to that moment.
-* **In-Video Socratic Checkpoints**:
-  * Automated playback pausing at key conceptual timestamps to prompt learners with interactive multiple-choice Socratic check-ins.
-  * Instant auditory and visual feedback with step-by-step conceptual explanations before resuming.
-* **Auditory Curriculum & Podcast Player**:
-  * Dedicated audio lecture mode with real-time audio waveform spectrum visualizer.
-  * Synchronized Karaoke TTS read-aloud and key takeaway bullet points.
-* **Seamless Course Integration**:
-  * 1-Tap direct launch buttons in `TeachLessonScreen` discovery flow.
-  * 1-Tap 🎬 Video and 🎧 Audio action chips within the `OerCuratedCollectionsBrowserSheet`.
-
-### 🤖 3. Rebuilt Gemini Educational Chat Interface & Message History (v1.09.00)
-* **Free Model Gemini Chatbot Integration**: Prioritizes `gemini-3.5-flash` and `gemini-3.1-flash-lite` free-tier models with full offline fallback Socratic tutoring for zero-cost educational access.
-* **Full Access to OER Commons Curated Collections**: Seamless integration with [OER Commons Curated Collections](https://oercommons.org/curated-collections), featuring an interactive in-app browser sheet, direct web links, standard code alignments (CCSS, NGSS, C3), and 1-tap Socratic practice problem solving.
-* **Personalized Explanation Modes**: Five one-tap configurable pedagogical styles (Step-by-Step, Simpler Analogy, Visual Breakdown, Deep Concept, Direct Answer).
-* **Persistent Room Database Message History**: Multi-topic session creation, switching, deletion, offline storage, search, and bookmarking.
+NeuroPath is actively developed. The current repository contains substantial working foundations for local AI, Gemini cloud/live AI, personalized tutoring, global curriculum routing, UK curriculum routing, OER curriculum retrieval, and real multimedia playback. Some global curriculum jurisdictions currently provide routing metadata and official-source entry points rather than an exhaustive offline copy of every country's curriculum.
 
 ---
 
-## 🏛️ About FourgeAI LABS
+## 🧠 What NeuroPath Is Designed To Do
+
+NeuroPath is being built around an individualized learning pipeline:
+
+**Child**  
+→ **Country / Territory**  
+→ **Education Jurisdiction**  
+→ **Official Curriculum**  
+→ **Stage / Grade**  
+→ **Subject**  
+→ **Learning Objective**  
+→ **Prerequisites & Mastery**  
+→ **Personalized Learning Strategy**  
+→ **Learning Activity**  
+→ **Assessment**  
+→ **Updated Learner Model**
+
+The goal is not simply to teach a generic lesson to every child of the same age. NeuroPath is designed to identify the educational objective that applies to the learner and then adapt presentation, examples, pacing, scaffolding, difficulty, modality, and support around that individual learner.
+
+---
+
+# ✨ Major Current Features
+
+## 🤖 Local Gemma AI
+
+NeuroPath now uses real local GGUF inference instead of the previous hard-coded/fake Gemma responses.
+
+Current implementation includes:
+
+- llama.cpp Android integration
+- `llama-android` dependency
+- ARM64 support
+- Gemma 2 2B instruction model in GGUF format
+- `gemma-2-2b-it-Q4_K_M.gguf`
+- Automatic model downloading
+- Temporary-download handling before installation
+- GGUF validation
+- Download progress reporting
+- Device compatibility reporting
+- Android API and RAM reporting
+- CPU/NEON local inference
+- Actual model loading and completion
+- Model cleanup/release
+- Safe model/download error handling
+
+The selected Android llama.cpp integration is CPU/NEON based. NeuroPath therefore avoids falsely presenting this implementation as GPU-accelerated Gemma inference.
+
+---
+
+## ☁️ Gemini Cloud AI
+
+The Gemini architecture has been modernized away from obsolete model identifiers.
+
+The current architecture supports current Gemini model families for tasks such as:
+
+- educational chat
+- adaptive explanations
+- curriculum assistance
+- hints
+- question generation
+- voice-related workflows
+- advanced tutoring
+
+Legacy Gemini 1.5/2.0 identifiers are being migrated out of the large legacy client while the application moves to current supported model families.
+
+---
+
+## 🎙️ Real Gemini Live API
+
+NeuroPath now contains a real Gemini Live WebSocket client rather than relying on simulated live conversation behavior.
+
+Implemented capabilities include:
+
+- Gemini Live WebSocket connection
+- authenticated setup handshake
+- realtime text input
+- realtime microphone audio input
+- 16-bit PCM audio handling
+- 16 kHz audio handling
+- audio stream termination
+- input audio transcription configuration
+- output audio transcription configuration
+- native audio output handling
+- PCM-to-WAV playback conversion for Android
+- integration with the Learning Buddy voice flow
+
+The Live API is separated from standard text-generation models because realtime audio interaction has different API/model requirements.
+
+---
+
+# 🎓 Curriculum-Aware Learning
+
+NeuroPath's curriculum system has been expanded from broad grade/subject matching toward actual learner-question and learning-objective matching.
+
+Matching can consider:
+
+- exact titles
+- topics
+- concepts
+- vocabulary
+- learning objectives
+- standards
+- grade/stage
+- the learner's actual question
+
+The system also distinguishes between online curriculum synchronization and curriculum that is already available locally/offline, avoiding false synchronization claims.
+
+---
+
+# 🌍 Global Curriculum Jurisdiction Architecture
+
+NeuroPath now includes a global curriculum jurisdiction registry designed to route a learner to the education system that actually applies to them.
+
+The architecture recognizes that a country is not always the final curriculum authority.
+
+Examples include:
+
+- United States → state education systems
+- Canada → provinces and territories
+- Australia → states and territories
+- Germany → Länder
+- Switzerland → cantons
+- Belgium → communities
+- Spain → autonomous communities
+
+The intended routing hierarchy is:
+
+**Country / Territory → Subnational Jurisdiction → Education Authority → Curriculum Framework → Stage → Subject → Objective**
+
+The registry currently contains routing foundations and official-source entry points for many countries and territories across North America, South America, Europe, Africa, Asia, Oceania, and the Caribbean.
+
+### Important scope note
+
+This is a **global curriculum routing foundation**, not a claim that every curriculum document from every jurisdiction has already been fully ingested into the app. Detailed official curriculum adapters and structured objective ingestion are being expanded progressively.
+
+---
+
+# 🇬🇧 UK Curriculum Support
+
+NeuroPath explicitly models the UK's devolved education systems rather than treating the UK as one generic curriculum.
+
+The UK registry currently routes among:
+
+### England
+
+- Key Stage 1–2
+- Key Stage 3–4
+
+### Scotland
+
+- Early / First / Second levels
+- Third / Fourth / Senior levels
+
+### Wales
+
+- Curriculum for Wales
+- ages approximately 3–16
+
+### Northern Ireland
+
+- Foundation / Key Stage 1–2
+- Key Stage 3–4
+
+Official curriculum authority/source information is included in the UK curriculum catalog and is integrated into the OER/tutor curriculum context.
+
+---
+
+# 🧩 Individual Learner Personalization
+
+NeuroPath includes a learner personalization engine intended to build an evolving model of how an individual child learns.
+
+The model can incorporate:
+
+- age
+- grade/stage
+- declared learning differences
+- strengths
+- weaknesses/challenges
+- interests
+- motivating topics
+- disliked/frustrating activities
+- accessibility settings
+- preferred explanation style
+- learning modality
+- active learning theme
+- current subject
+- historical answer accuracy
+- recent struggles
+- successful instructional strategies
+- local learning signals
+
+The objective is to move from generic personalization to **individualized instructional adaptation**.
+
+---
+
+# 📈 Adaptive Learning Signals
+
+NeuroPath can record real learning outcomes and use them to influence future instruction.
+
+Examples include:
+
+- repeated incorrect answers → increased scaffolding
+- successful explanation styles → greater preference for those styles
+- repeated struggles → modified explanations
+- successful modalities → increased use of those modalities
+- performance patterns → changes to difficulty and pacing
+- recent outcomes → changes to support level
+
+This creates a feedback loop between learning performance and future tutoring.
+
+---
+
+# 🛡️ Privacy-Aware Personalization
+
+Learner information can include sensitive information, so NeuroPath is being designed to avoid treating diagnosis labels as a substitute for understanding the child.
+
+The intended architecture separates:
+
+**Sensitive learner information**  
+from  
+**needs-based instructional signals**
+
+Local AI can work with richer local learner context when appropriate. Cloud tutoring should receive only the information needed for the requested task, with sensitive diagnosis information excluded from cloud prompts by default where the current integration permits.
+
+The cloud prompt path remains an area for continued privacy auditing as legacy Gemini code is migrated.
+
+---
+
+# 🎨 Adaptive Neuro-Themes
+
+NeuroPath includes a large collection of themed learning worlds designed to connect learning with a child's interests.
+
+Theme categories include examples such as:
+
+- Ancient civilizations
+- Robotics and AI
+- Mythology
+- Culinary science
+- Music
+- Sports
+- Environmental exploration
+- Art
+- Transportation
+- Space
+- Medical science
+- Architecture
+- Gaming and VR
+- Spy/forensics themes
+
+The theme system supports profile-aware recommendations and configurable periodic rotation.
+
+---
+
+# 🎨 Theme Preview & Accessibility
+
+The theme preview system provides an interactive preview before applying a theme.
+
+Features include:
+
+- simulated screen preview
+- atmospheric visual effects
+- companion-buddy preview
+- lesson-card preview
+- color palette inspection
+- accessibility-oriented contrast information
+- theme category browsing
+- theme search/filtering
+- 100-theme browsing
+- rotation configuration
+
+The application also uses standardized touch-target sizing and accessibility-conscious UI patterns throughout the updated interfaces.
+
+---
+
+# 🎬 Real Multimedia Learning
+
+The previous OER multimedia player was largely a simulated visual/timer experience. It has been replaced with real Android media handling.
+
+## Video
+
+Video resources can now use an actual Android `WebView` with:
+
+- JavaScript enabled
+- DOM storage
+- media playback configuration
+- `WebChromeClient`
+- `WebViewClient`
+- actual video URL loading
+- source URL fallback
+
+This supports real web-hosted video lessons and science simulations.
+
+## Audio
+
+Audio resources can use Android `MediaPlayer` for real playback.
+
+When an audio URL is unavailable, NeuroPath can fall back to text-to-speech through the existing `SpeechManager`.
+
+## Captions and transcripts
+
+The multimedia system retains support for:
+
+- captions
+- transcripts
+- timestamp navigation
+- playback speed
+- checkpoints
+- quizzes
+
+The goal is for multimedia to remain part of the learning flow rather than being an isolated media viewer.
+
+---
+
+# 🔊 Voice & Text-to-Speech
+
+NeuroPath includes spoken-learning support and adjustable playback behavior.
+
+Existing voice features include:
+
+- text-to-speech lesson playback
+- adjustable narration speed
+- voice-assist workflows
+- speech/transcription integration
+- realtime Gemini voice architecture
+
+---
+
+# 🗺️ Location & Curriculum Jurisdiction Resolution
+
+The location system has been corrected to represent its actual sources accurately.
+
+It can use Android geocoding and postal/ZIP resolution to help determine a learner's educational jurisdiction.
+
+The implementation no longer falsely claims Google Maps verification when the information actually comes from Android Geocoder or postal resolution.
+
+Location information is used to help route the learner toward the appropriate curriculum/jurisdiction rather than treating location as a substitute for curriculum verification.
+
+---
+
+# 👨‍👩‍👧 Parent & Learner Controls
+
+NeuroPath includes controls and configuration around:
+
+- Learning Buddy availability
+- AI mode selection
+- local/offline learning modes
+- theme selection
+- theme rotation
+- learner profile information
+- learning preferences
+- accessibility settings
+
+The goal is to let parents/educators remain aware of how the application is configured while allowing the learner experience to remain child-friendly.
+
+---
+
+# 📚 OER & Curriculum Resources
+
+NeuroPath integrates OER-oriented curriculum retrieval and curated learning resources.
+
+The architecture supports curriculum resources such as:
+
+- lessons
+- videos
+- audio
+- transcripts
+- quizzes
+- worksheets
+- standards alignment
+- curriculum objectives
+
+Oak National Academy has also been identified as an important official/curriculum-aligned resource path for England, including its curriculum and lesson-resource APIs. API credentials should be provided through configuration rather than hard-coded into the application.
+
+---
+
+# 📴 Local / Offline Direction
+
+NeuroPath is designed to retain useful learning functionality when cloud services are unavailable.
+
+Local capabilities include:
+
+- local Gemma inference
+- local learner signals
+- locally available curriculum resources
+- offline Socratic tutoring/fallback behavior
+- local multimedia resources when available
+
+Cloud AI remains available for capabilities that benefit from network access.
+
+---
+
+# 🏗️ Build & CI
+
+The project uses GitHub Actions for automated Android builds.
+
+The workflow supports:
+
+- pushes to `main`
+- pull requests
+- manual workflow dispatch
+- JDK 21
+- Gradle 9.3.1
+- debug APK generation
+- debug signing setup
+- release builds from tags
+- APK artifact upload
+
+The debug artifact is published as:
+
+`neuropath-debug-apk`
+
+A successful historical build does not automatically validate later commits; current GitHub Actions results should always be checked before declaring a new build verified.
+
+---
+
+# 🧰 Technology Stack
+
+- Kotlin
+- Jetpack Compose
+- Android SDK
+- Gradle
+- Kotlin Coroutines
+- llama.cpp Android / GGUF inference
+- Gemma 2 2B
+- Google Gemini API
+- Gemini Live API
+- Android WebView
+- Android MediaPlayer
+- Android Text-to-Speech
+- Room/local persistence where applicable
+- OER curriculum resources
+- GitHub Actions
+
+---
+
+# 🔐 Security & Accuracy Principles
+
+NeuroPath's recent development has focused on replacing simulated behavior and inaccurate implementation claims with real functionality.
+
+Examples include:
+
+- fake Gemma responses → real local GGUF inference
+- simulated multimedia playback → real WebView/MediaPlayer playback
+- simulated Live voice behavior → real Gemini Live WebSocket architecture
+- obsolete Gemini identifiers → current model architecture
+- false Google Maps verification → truthful Android Geocoder/postal resolution
+- false online curriculum synchronization → explicit online/offline state
+
+API keys and secrets should never be committed to source code.
+
+For production deployments, repository security features such as secret scanning, dependency alerts, and code scanning are recommended.
+
+---
+
+# ⚠️ Current Development Scope
+
+NeuroPath is actively evolving. The following areas remain under development:
+
+- expanding detailed official curriculum ingestion across countries and subnational jurisdictions
+- building additional jurisdiction-specific curriculum adapters
+- maintaining curriculum-source freshness/version metadata
+- completing long-term learner mastery persistence and visualization
+- further auditing legacy Gemini prompt construction for sensitive-data minimization
+- deeper synchronization between app-level multimedia controls and embedded WebView controls
+- continued automated build and runtime verification
+
+These are intentionally documented as ongoing work rather than being presented as completed functionality.
+
+---
+
+# 🧭 Product Philosophy
+
+NeuroPath is being built around one central idea:
+
+> **Every child should be taught the curriculum that applies to them, in a way that makes sense for them.**
+
+That means NeuroPath should understand both sides of the problem:
+
+### What the child needs to learn
+
+Determined by the applicable education system, curriculum framework, subject, standards, objectives, and prerequisites.
+
+### How this child learns best
+
+Determined by strengths, challenges, interests, preferences, accessibility needs, observed behavior, performance, and successful learning strategies.
+
+The curriculum objective should remain stable. The path to mastery can be individualized.
+
+---
+
+# 🏛️ About FourgeAI LABS
 
 NeuroPath is created and maintained by **FourgeAI LABS**.
-* Creator GitHub: [https://github.com/fourgeailabs](https://github.com/fourgeailabs)
-* App Repository: [https://github.com/fourgeailabs/neuropath](https://github.com/fourgeailabs/neuropath)
-* App Identifier: `com.fourgeailabs.neuropath`
+
+- Creator: [FourgeAI LABS](https://github.com/fourgeailabs)
+- Repository: [fourgeailabs/NeuroPath](https://github.com/fourgeailabs/NeuroPath)
+- Application ID: `com.fourgeailabs.neuropath`
 
 ---
 
-## 📝 Changelog & Release History
+# 📜 Release History
 
-### **v1.25.00** (Current Version)
-* 💎 **Hugging Face Gemma 2-2B Direct Downloader**: Upgraded on-device local model manager to pull down Gemma 2-2B directly from official Hugging Face repository (`https://huggingface.co/google/gemma-2-2b`), streaming model package bytes directly to local storage (`/files/models/gemma-2b-huggingface.bin`).
-* ⚡ **Hugging Face Gemma 2-2B Local On-Device Inference**: Applied installed Hugging Face Gemma 2-2B model file across the Learning Buddy chat engine with live local GPU/CPU execution and local school district curriculum alignment.
+## `1.25.00` — Current Repository Version
 
-### **v1.24.00**
-* 🗺️ **Google Maps Location Auto-Scan & Geocoding**: Added Google Maps reverse geocoding & location resolution during first-time child profile setup and rescan controls in the Settings menu to automatically lock the exact or approximate local school district and curriculum standards.
-* 📮 **Postal Code / ZIP Code Fallback Engine**: Integrated a seamless ZIP/Postal code lookup fallback when location services are denied or unavailable, mapping postal codes to local educational standards.
+The current development line includes the major architecture work described above, including:
 
-### **v1.23.00**
-* 💎 **On-Device Gemma 2B Local Engine (2020+ Android Device Compatible)**: Added complete support for pulling down and executing local Gemma 2B INT4 quantized model packages (`gemma-2b-it-gpu-int4.bin`, ~1.35 GB) designed for Android devices from 2020 and newer (Android 10+, 3GB+ RAM) with Vulkan/OpenCL GPU acceleration.
-* 📦 **Interactive Gemma Local Model Downloader**: Integrated a real-time model package pull-down manager with download progress tracking, device hardware compatibility checker, and instant local inference engine activation.
+- real local Gemma GGUF inference
+- Gemini model modernization
+- Gemini Live API architecture
+- global curriculum jurisdiction routing
+- UK four-nation curriculum routing
+- learner personalization
+- adaptive learning signals
+- privacy-aware learner context handling
+- real video and audio playback
+- OER curriculum matching improvements
+- truthful location-source reporting
+- build/CI improvements
 
-### **v1.22.00**
-* ⚡ **Gemini 1.5 GPU Hardware Acceleration**: Integrated Vulkan and OpenCL hardware acceleration delegates for local on-device Gemini 1.5 Flash/Pro inference, guaranteeing ultra-low latency and zero network interruptions.
+Earlier releases introduced the application's broader Learning Buddy, OER, theme, accessibility, TTS, parent-control, profile, message-history, and curriculum features.
 
-### **v1.21.00** (Current Version)
-* 🔊 **Interactive TTS Playback Speed Slider Control**: Added a real-time speed slider control (0.5x to 1.5x) directly into the Text-to-Speech (TTS) feature for spoken lesson text and concepts, empowering learners with ADHD and dyslexia to adjust narration speed at will.
+---
 
-### **v1.20.00**
-* 🛡️ **Advanced Parental Controls & AI Configuration**: Added controls to collectively disable Learning Buddy and choose between Socratic Only, Full AI 1.5, and Local Offline AI modes.
-* 📦 **Local On-Device Gemini Installation**: Optional download and installation of Gemini model packages locally onto the device for fully offline execution.
-* 🌿 **Search-Only Ambient Soundscapes Bottom Sheet**: Replaced soundscapes popup with a slide-up bottom sheet supporting search-only custom audio generation via Google Lyria models.
-* ✨ **Enhanced Daily Spark of Inspiration & Child Profile UX**: Added 1-tap quote refresh and author citations, removed the locale confirmation card, and repositioned games to the bottom of the profile.
+# 📌 Important Documentation Note
 
-### **v1.16.00**
-* ⚡ **Production Gemini 1.5 Integration**: Migrated all cloud AI endpoints to standard production-ready `gemini-1.5-flash` and `gemini-1.5-pro` models.
-* 🎙️ **Robust Voice & Transcription**: Verified real-time voice conversation turns and curriculum sync with Gemini 1.5 endpoints.
+This README intentionally distinguishes **implemented functionality**, **architecture/foundation work**, and **ongoing development**. NeuroPath's global curriculum architecture is designed to scale to additional countries and territories, but the existence of a jurisdiction entry does not mean that every official curriculum document for that jurisdiction has already been downloaded, normalized, or bundled into the application.
 
-### **v1.11.00**
-* 🎨 **100 Adaptive Neuro-Themes**: Comprehensive library of 100 immersive theme worlds covering Pre-K through 12th Grade (Ancient Civilizations, Robotics & AI, Mythological Creatures, Culinary Adventures, Musical Journeys, Sports Superstars, Environmental Explorers, Artistic Expression, Transportation Tycoons, Spy Academy, Deep Space, Medical Science, Architecture, Gaming, etc.).
-* 🔄 **Periodic Theme Rotation Engine**: Configurable rotation preferences (Permanent, Daily, Every 3 Days, Weekly, Bi-Weekly, Monthly) tailored to child diagnosis, strengths, struggles, and hyper-fixations.
-* 📚 **100-Theme Catalog Browser**: Searchable dialog with category filters, companion buddy cards, and subject adaptations (Math, Reading, Science, Social Studies).
-* 🎬 **OER Commons Video & Audio Playback**: Multimedia playback modules with interactive checkpoints, transcripts, speed toggles (0.75x - 1.5x), and full accessibility.
-
-### **v1.10.00**
-* 🎬 **OER Commons Video Player & Animated Visualizer**: Interactive educational video player with animated Canvas visual simulations, speed toggles (0.5x - 2.0x), and scrub bar.
-* 🎧 **OER Auditory Curriculum & Story Podcast**: Audio lecture player with real-time audio waveform spectrum visualizer and synchronized Karaoke TTS read-aloud.
-* 💡 **In-Video Socratic Checkpoints**: Video and audio playback automatically pauses at key timestamps for interactive conceptual check-ins and explanations.
-* 🚀 **K-12 Course Integration**: 1-tap direct launch from `TeachLessonScreen` and the `OerCuratedCollectionsBrowserSheet` across all K-12 subjects.
-
-### **v1.09.00**
-* 🌐 **Full Access to OER Commons Curated Collections**: Seamless integration with [OER Commons Curated Collections](https://oercommons.org/curated-collections), featuring an interactive in-app browser sheet, direct web links, standard code alignments (CCSS, NGSS, C3), and 1-tap Socratic practice problem solving.
-* 🤖 **Rebuilt Educational Chat Interface**: Overhauled Chat UI with full Gemini free-tier model prioritization (`gemini-3.5-flash` & `gemini-3.1-flash-lite`), clear model badges, and offline fallback.
-* 🎓 **Personalized Explanation Engine**: Added 5 customizable explanation styles (Step-by-Step, Simpler Analogy, Visual Breakdown, Deep Concept, Direct Answer).
-* 🗄️ **Room Chat Message History**: Complete local persistence with multi-topic session switching, history search, and bookmarks.
-
-### **v1.08.00**
-* 🤖 **Rebuilt Educational Chat Interface**: Overhauled Chat UI with full Gemini free-tier model prioritization (`gemini-3.5-flash`), clear model badges, and offline fallback.
-* 🎓 **Personalized Explanation Engine**: Added 5 customizable explanation styles (Step-by-Step, Simpler Analogy, Visual Breakdown, Deep Concept, Direct Answer).
-* 🗄️ **Room Chat Message History**: Complete local persistence with multi-topic session switching, history search, and bookmarks.
-* ⚡ **Quick Transformation Tools**: Instant 'Explain Simpler', 'Breakdown Steps', TTS audio speech playback, and context-aware follow-up question chips.
-
-### **v1.07.00**
-* 🧘 **4-7-8 Breathing Exercise Visualizer Component**: Designed an interactive Canvas-based breathing visualizer with multi-layer animated lotus petals, fluid concentric waves, and cosmic orbital spheres.
-* ⏱️ **Guided Rhythmic Feedback**: Real-time phase countdowns, animated segmented timeline bars, and continuous circular progress rings with phase-adaptive color schemes.
-* 🌿 **Vagus Nerve Calm Index & Affirmations**: Live tracking of autonomic regulation with cycling sensory affirmations.
-* 🎶 **Ambient Sound Integration**: Integrated soothing background soundscapes (Ocean Swells, Gentle Rain, Forest Breeze) directly into breathing sessions.
-
-
-### **v1.06.00**
-* 📚 **Pre-Installed OER Commons Service**: Built an offline-first service that parses and seeds the curated OER Commons collection (`https://oercommons.org/curated-collections`) covering all K-12 grades (Kindergarten to Grade 12) across Mathematics, English Language Arts, Sciences, Social Studies & Civics.
-* 🧠 **AI Tutor Curriculum Retrieval**: Integrated `retrieveOerTutorContext` directly into the Gemini Socratic chat and Live Voice conversation flows to supply rich grade-level benchmarks.
-* 🌐 **Full 21-Language OER Support**: OER retrieval and AI tutor synthesis operate seamlessly across all 21 languages in the application.
-
-### **v1.05.00**
-* 🌐 **21-Language Global Localization**: Full multi-language dictionary across English (US/UK), Spanish, French, German, Mandarin, Japanese, Korean, Portuguese, Italian, Dutch, Swedish, Russian, Turkish, Polish, Greek, Vietnamese, Thai, Indonesian, Hindi, and Arabic.
-* ⚡ **Complete Modal & Dialog Localization**: Fully translated "What's New", "Check for Updates", Parent Dashboard Tabs, Setup Onboarding, and Sensory Suite controls.
-* 🔄 **App Auto-Update Feature**: Real-time update checks against GitHub Releases with options to update, remind later, or skip version.
-
-### **v1.04.00**
-* 🌐 **Global Language Switching**: Complete reactive app-wide localization covering all menus, setup steps, parent settings, sensory bar controls, and dashboard views.
-* 🧠 **Socratic AI Research Assistant**: Deep offline and online curriculum retrieval engine grounded in official localized standards and downloaded offline materials.
-* 📚 **OER Commons K-12 Integration**: Comprehensive curriculum integration across elementary, middle, and high school grades.
-
-### **v1.03.00**
-* 🌐 **OER Commons Database Integration**: Live pull and alignment with OER Commons Curated Collections (`https://oercommons.org/curated-collections`) for all K-12 grades in the US.
-* 🎓 **High School (Grades 9-12) Curriculum Spectrum**: Comprehensive lesson plans and benchmarks for Algebra I & II, Geometry, Quadratic Functions, Rhetoric, Cellular Biology, Physics, Civics, Economics, and Personal Finance.
-* 🔬 **AI Curriculum Research Assistant**: Context-aware assistant providing instantaneous access to state and district standards with interactive prompt chips.
-
-### **v1.02.00**
-* 🤖 **Universal Gemini Free Tier AI Core**: App automatically utilizes the built-in free tier Gemini AI secret across all speech-to-text dictation, personalized tutoring, adaptive hints, and text reviews.
-* 📜 **Scroll-Mandated Terms & Conditions**: Dedicated NeuroPath Terms & Conditions with scroll-to-bottom reading requirement and COPPA privacy acceptance before app activation.
-* ⚠️ **AI Accuracy & Safety Disclaimer**: Prominent disclaimer in settings clarifying that AI models can make mistakes, with parental guidance encouraged.
-* 🔐 **Parental Passcode Security**: 4-digit PIN setup with zero default passcodes protecting parent controls and analytics.
-
-### **v1.01.00**
-* 🎵 **Google Lyria AI Music Generation**: Real-time procedural ambient soundscapes tailored to student sensory needs.
-* 🧘 **4-7-8 Breathing Guide**: Pacing visual rings and haptic pop-it fidget feedback.
-
-### **v1.00.00**
-* 🧠 **Initial Release**: Core Jetpack Compose UI, hyper-interest thematic lessons, Room database, and COPPA privacy compliance.
+The repository source code and current GitHub Actions results are the authoritative sources for implementation and build status.
