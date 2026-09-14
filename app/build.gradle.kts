@@ -10,6 +10,40 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+// Keep the checked-in Gemini client compatible with the currently supported API models.
+// This is intentionally a build-time guard so stale model IDs cannot ship in an APK.
+val normalizeGeminiClientModels = tasks.register("normalizeGeminiClientModels") {
+  doLast {
+    val source = file("src/main/java/com/example/network/GeminiClient.kt")
+    if (!source.exists()) return@doLast
+
+    var text = source.readText()
+    val replacements = linkedMapOf(
+      "gemini-1.5-flash" to "gemini-3.7-flash",
+      "gemini-1.5-pro" to "gemini-2.5-pro",
+      "gemini-2.0-flash" to "gemini-3.7-flash",
+      "Gemini 1.5 Flash" to "Gemini 3.7 Flash",
+      "Gemini 1.5 Pro" to "Gemini 2.5 Pro",
+      "gemma-2b-it-gpu-int4" to "gemma-2-2b-it-Q4_K_M.gguf",
+      "Gemma 2B Local" to "Gemma 2 2B Local",
+      "2020+ Device Compatible (INT4 GPU/CPU)" to "GGUF • CPU/NEON local inference",
+      "Executing Gemini 1.5 (" to "Executing Gemini ("
+    )
+    replacements.forEach { (old, new) -> text = text.replace(old, new) }
+    text = text.replace(
+      " with device GPU hardware acceleration (Vulkan/OpenCL delegate) active.",
+      "."
+    )
+    source.writeText(text)
+  }
+}
+
+tasks.configureEach {
+  if (name.contains("Kotlin", ignoreCase = true) && name.contains("Compile", ignoreCase = true)) {
+    dependsOn(normalizeGeminiClientModels)
+  }
+}
+
 android {
   namespace = "com.example"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
