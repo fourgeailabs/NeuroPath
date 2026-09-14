@@ -29,6 +29,10 @@ object LearnerPersonalizationEngine {
         val accuracy = if (attempts == 0) "not enough data yet" else "${(correct * 100) / attempts}%"
         val preferredStyle = prefs.getString(KEY_PREFERRED_STYLE_PREFIX + id, "adaptive") ?: "adaptive"
         val missed = prefs.getString(KEY_MISSED_PREFIX + id, "") ?: ""
+        val mastery = MasteryRepository.snapshot(context, id)
+        val masterySummary = mastery.take(6).joinToString("; ") {
+            "${it.topic}: ${it.masteryPercent}% mastery (${it.correct}/${it.attempts})"
+        }.ifBlank { "no topic-level mastery data yet" }
 
         val diagnosis = csv(profile.neurodivergentTypesCsv)
         val strengths = csv(profile.strengthsCsv)
@@ -56,6 +60,7 @@ object LearnerPersonalizationEngine {
             Current subject: $subject
             Observed answer accuracy across this profile: $accuracy
             Recent missed topics/signals: ${missed.ifBlank { "none recorded" }}
+            Topic-level mastery signals: $masterySummary
             Learned preferred explanation style: $preferredStyle
 
             PERSONALIZATION RULES:
@@ -65,10 +70,11 @@ object LearnerPersonalizationEngine {
             4. Offer choices of modality when useful: visual, verbal, example-first, hands-on, or step-by-step.
             5. Do not repeatedly use a style that appears ineffective. Change strategy after repeated misses or frustration.
             6. Increase challenge after demonstrated mastery; reduce complexity after repeated errors without shaming the learner.
-            7. Never diagnose, reinterpret, or medically infer a condition. Use declared information only as an accommodation signal.
-            8. Preserve the learner's agency: ask what they prefer when there is genuine uncertainty.
-            9. Avoid infantilizing older learners and avoid making younger learners feel behind.
-            10. Keep personalization focused on education, accessibility, engagement, and wellbeing—not advertising or manipulation.
+            7. Use topic-level mastery as an instructional signal, not as a diagnosis or fixed ability score.
+            8. Never diagnose, reinterpret, or medically infer a condition. Use declared information only as an accommodation signal.
+            9. Preserve the learner's agency: ask what they prefer when there is genuine uncertainty.
+            10. Avoid infantilizing older learners and avoid making younger learners feel behind.
+            11. Keep personalization focused on education, accessibility, engagement, and wellbeing—not advertising or manipulation.
         """.trimIndent()
     }
 
@@ -91,6 +97,15 @@ object LearnerPersonalizationEngine {
             .putInt(correctKey, correctCount)
             .putString(missedKey, missed)
             .apply()
+
+        // Persist the same event at topic granularity so future tutoring can
+        // distinguish a global accuracy score from mastery of a specific skill.
+        MasteryRepository.record(
+            context = context,
+            profileId = profileId,
+            topic = topic?.trim()?.ifBlank { subject } ?: subject,
+            correct = correct
+        )
     }
 
     fun recordPreferredStyle(context: Context, profileId: Long, style: String) {
