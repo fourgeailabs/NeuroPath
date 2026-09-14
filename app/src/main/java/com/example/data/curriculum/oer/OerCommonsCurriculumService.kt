@@ -1,6 +1,7 @@
 package com.example.data.curriculum.oer
 
 import android.util.Log
+import com.example.data.curriculum.CurriculumResolver
 import com.example.data.local.AppDatabase
 import com.example.data.local.entity.OerCurriculumEntity
 import com.example.data.model.EducationalSubject
@@ -167,6 +168,14 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             GradeLevel.HIGH_SCHOOL -> OerGradeBand.HIGH_SCHOOL
         }
 
+        val curriculumResolution = CurriculumResolver.resolve(
+            country = country,
+            stateOrProvince = "",
+            schoolDistrict = schoolDistrict,
+            stageOrGrade = studentGrade.displayName,
+            subject = inferredSubject?.title ?: "GENERAL"
+        )
+
         fun score(item: OerCommonsCurriculumItem): Int {
             if (inferredSubject != null && item.subject != inferredSubject) return Int.MIN_VALUE
             val searchable = buildString {
@@ -216,6 +225,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
 
             val formatted = """
                 [CURRICULUM ALIGNMENT REPOSITORIES]
+                Official jurisdiction resolution: ${curriculumResolution.contextText()}
                 ${if (ukDirectory.isNotBlank()) ukDirectory + "\n" else ""}
                 [OER COMMONS CURATED COLLECTIONS REPOSITORY BENCHMARK]
                 Source Database: OER Commons Curated Collections (https://oercommons.org/curated-collections)
@@ -242,6 +252,10 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             """.trimIndent()
 
             val citation = buildString {
+                append("Official curriculum authority: ${curriculumResolution.educationAuthority}; ")
+                if (curriculumResolution.officialSourceUrl.isNotBlank()) {
+                    append("${curriculumResolution.officialSourceUrl}; ")
+                }
                 if (ukDirectory.isNotBlank()) append("UK official curriculum registry; ")
                 append("OER Commons Curated Collections: ${matchedUnit.unitTitle} (${matchedUnit.standardCode}) [https://oercommons.org/curated-collections]")
             }
@@ -259,8 +273,8 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             OerTutorCurriculumContext(
                 matchedUnit = null,
                 formattedContextPrompt = if (ukDirectory.isNotBlank()) ukDirectory else "OER Commons K-12 Curated Collections standard alignment active (https://oercommons.org/curated-collections).",
-                citationSource = if (ukDirectory.isNotBlank()) "Official UK national curriculum registry" else "OER Commons Curated Collections (https://oercommons.org/curated-collections)",
-                standardCode = if (ukDirectory.isNotBlank()) "UK.DEVOLVED.CURRICULUM" else "OER.K12.STANDARD",
+                citationSource = if (curriculumResolution.officialSourceUrl.isNotBlank()) curriculumResolution.officialSourceUrl else "OER Commons Curated Collections (https://oercommons.org/curated-collections)",
+                standardCode = if (curriculumResolution.educationAuthority.isNotBlank()) "${curriculumResolution.jurisdictionId}.STANDARD" else "OER.K12.STANDARD",
                 inquiryPrompt = "What curriculum topic would you like to explore?"
             )
         }
