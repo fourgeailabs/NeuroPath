@@ -32,6 +32,7 @@ import com.example.speech.SpeechManager
 import com.example.ui.NeuroPathViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +66,9 @@ fun OerMultimediaPlayerContent(
     var answerCorrect by remember { mutableStateOf(false) }
     var mediaError by remember { mutableStateOf<String?>(null) }
     var audioPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    var videoView by remember { mutableStateOf<WebView?>(null) }
 
+    val isVideo = resource.mediaType == OerMediaType.VIDEO_LESSON || resource.mediaType == OerMediaType.SCIENCE_SIMULATION
     val total = resource.durationSeconds.coerceAtLeast(1)
     val transcriptLine = remember(position, resource.transcript) {
         resource.transcript.lastOrNull { it.timestampSeconds <= position }
@@ -75,30 +78,52 @@ fun OerMultimediaPlayerContent(
         onDispose {
             audioPlayer?.release()
             speechManager.stop()
+            videoView?.stopLoading()
+            videoView?.destroy()
         }
     }
 
-    LaunchedEffect(isPlaying, speed, resource.id) {
+    LaunchedEffect(isPlaying, speed, resource.id, isVideo) {
         while (isPlaying && position < total) {
-            delay((1000L / speed).toLong().coerceAtLeast(100L))
-            position++
-            val cp = resource.checkpoints.firstOrNull { it.timestampSeconds == position }
-            if (cp != null) {
-                checkpoint = cp
-                answered = false
-                isPlaying = false
-            }
-            if (resource.mediaType != OerMediaType.VIDEO_LESSON && transcriptLine != null && resource.audioUrl.isNullOrBlank()) {
-                speechManager.speak(transcriptLine.text)
+            delay(if (isVideo) 500L else (1000L / speed).toLong().coerceAtLeast(100L))
+            if (isVideo) {
+                videoView?.evaluateJavascript("(function(){var v=document.querySelector('video');return v ? v.currentTime : -1;})()") { raw ->
+                    val seconds = raw.trim('"').toDoubleOrNull()
+                    if (seconds != null && seconds >= 0) {
+                        position = seconds.roundToInt().coerceIn(0, total)
+                        if (position >= total) isPlaying = false
+                    }
+                }
+            } else {
+                position++
+                val cp = resource.checkpoints.firstOrNull { it.timestampSeconds == position }
+                if (cp != null) {
+                    checkpoint = cp
+                    answered = false
+                    isPlaying = false
+                }
+                if (transcriptLine != null && resource.audioUrl.isNullOrBlank()) speechManager.speak(transcriptLine.text)
             }
         }
         if (position >= total) isPlaying = false
     }
 
+    fun seekVideo(seconds: Int) {
+        if (!isVideo) return
+        position = seconds.coerceIn(0, total)
+        videoView?.evaluateJavascript("(function(){var v=document.querySelector('video');if(v){v.currentTime=${position};}})()", null)
+    }
+
+    fun setVideoPlaying(playing: Boolean) {
+        if (!isVideo) return
+        val action = if (playing) "play()" else "pause()"
+        videoView?.evaluateJavascript("(function(){var v=document.querySelector('video');if(v){v.$action;}})()", null)
+    }
+
     Column(modifier.fillMaxWidth().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                Icon(if (resource.mediaType == OerMediaType.VIDEO_LESSON) Icons.Default.Videocam else Icons.Default.Audiotrack, null)
+                Icon(if (isVideo) Icons.Default.Videocam else Icons.Default.Audiotrack, null)
                 Spacer(Modifier.width(8.dp))
                 Column {
                     Text(resource.title, fontWeight = FontWeight.Bold, maxLines = 2)
@@ -110,11 +135,12 @@ fun OerMultimediaPlayerContent(
 
         Spacer(Modifier.height(10.dp))
 
-        if (resource.mediaType == OerMediaType.VIDEO_LESSON || resource.mediaType == OerMediaType.SCIENCE_SIMULATION) {
+        if (isVideo) {
             AndroidView(
                 modifier = Modifier.fillMaxWidth().height(240.dp),
                 factory = {
                     WebView(it).apply {
+                        videoView = this
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.mediaPlaybackRequiresUserGesture = false
@@ -126,8 +152,10 @@ fun OerMultimediaPlayerContent(
                     }
                 },
                 update = { webView ->
+                    videoView = webView
                     val url = resource.videoUrl ?: resource.sourceUrl
                     if (url.isNotBlank() && webView.url != url) webView.loadUrl(url)
+                    if (!isPlaying) webView.evaluateJavascript("(function(){var v=document.querySelector('video');if(v){v.pause();}})()", null)
                 }
             )
         } else {
@@ -148,36 +176,57 @@ fun OerMultimediaPlayerContent(
         if (mediaError != null) Text(mediaError!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
 
         Spacer(Modifier.height(8.dp))
-        Slider(value = position.toFloat(), onValueChange = { position = it.toInt() }, valueRange = 0f..total.toFloat())
+        Slider(value = position.toFloat(), onValueChange = { seekVideo(it.toInt()); if (!isVideo) position = it.toInt() }, valueRange = 0f..total.toFloat())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(formatTime(position), fontSize = 11.sp)
             Text(formatTime(total), fontSize = 11.sp)
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { position = 0; isPlaying = false; speechManager.stop(); audioPlayer?.seekTo(0) }) { Icon(Icons.Default.Replay, "Restart") }
+            IconButton(onClick = {
+                position = 0
+                isPlaying = false
+                speechManager.stop()
+                audioPlayer?.seekTo(0)
+                if (isVideo) seekVideo(0)
+            }) { Icon(Icons.Default.Replay, "Restart") }
+
             IconButton(onClick = {
                 isPlaying = !isPlaying
-                if (!isPlaying) speechManager.stop()
-                if (isPlaying && resource.audioUrl != null && audioPlayer == null) {
-                    scope.launch {
-                        try {
-                            audioPlayer = MediaPlayer().apply {
-                                setDataSource(resource.audioUrl)
-                                prepare()
-                                start()
+                if (isVideo) {
+                    setVideoPlaying(isPlaying)
+                } else {
+                    if (!isPlaying) speechManager.stop()
+                    if (isPlaying && resource.audioUrl != null && audioPlayer == null) {
+                        scope.launch {
+                            try {
+                                audioPlayer = MediaPlayer().apply {
+                                    setDataSource(resource.audioUrl)
+                                    prepare()
+                                    setOnCompletionListener { isPlaying = false }
+                                    start()
+                                }
+                            } catch (e: Exception) {
+                                mediaError = "Unable to stream this audio source: ${e.message ?: "unknown error"}"
+                                audioPlayer?.release()
+                                audioPlayer = null
                             }
-                        } catch (e: Exception) {
-                            mediaError = "Unable to stream this audio source: ${e.message ?: "unknown error"}"
-                            audioPlayer?.release()
-                            audioPlayer = null
                         }
+                    } else if (resource.audioUrl != null) {
+                        if (isPlaying) audioPlayer?.start() else audioPlayer?.pause()
                     }
-                } else if (resource.audioUrl != null) {
-                    if (isPlaying) audioPlayer?.start() else audioPlayer?.pause()
                 }
             }) { Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (isPlaying) "Pause" else "Play") }
-            IconButton(onClick = { speed = when (speed) { 0.75f -> 1f; 1f -> 1.25f; 1.25f -> 1.5f; 1.5f -> 2f; else -> 0.75f } }) { Icon(Icons.Default.Speed, "Playback speed") }
+
+            IconButton(onClick = {
+                speed = when (speed) { 0.75f -> 1f; 1f -> 1.25f; 1.25f -> 1.5f; 1.5f -> 2f; else -> 0.75f }
+                if (isVideo) {
+                    val rate = speed
+                    videoView?.evaluateJavascript("(function(){var v=document.querySelector('video');if(v){v.playbackRate=$rate;}})()", null)
+                } else {
+                    audioPlayer?.let { player -> if (player.isPlaying) { player.pause(); player.start() } }
+                }
+            }) { Icon(Icons.Default.Speed, "Playback speed") }
             IconButton(onClick = { captions = !captions }) { Icon(Icons.Default.ClosedCaption, "Captions") }
         }
 
@@ -188,7 +237,11 @@ fun OerMultimediaPlayerContent(
         Spacer(Modifier.height(8.dp))
         LazyColumn(Modifier.weight(1f, fill = false).fillMaxWidth()) {
             items(resource.transcript) { line ->
-                TextButton(onClick = { position = line.timestampSeconds; isPlaying = true }) {
+                TextButton(onClick = {
+                    if (isVideo) seekVideo(line.timestampSeconds) else position = line.timestampSeconds
+                    isPlaying = true
+                    if (isVideo) setVideoPlaying(true)
+                }) {
                     Text("${formatTime(line.timestampSeconds)}  ${line.speaker}: ${line.text}", fontSize = 11.sp)
                 }
             }
@@ -211,7 +264,7 @@ fun OerMultimediaPlayerContent(
                         if (answered) Text(if (answerCorrect) "Correct! ${checkpoint!!.explanation}" else checkpoint!!.explanation)
                     }
                 },
-                confirmButton = { TextButton(enabled = answered, onClick = { checkpoint = null; isPlaying = true }) { Text("Continue") } }
+                confirmButton = { TextButton(enabled = answered, onClick = { checkpoint = null; isPlaying = true; if (isVideo) setVideoPlaying(true) }) { Text("Continue") } }
             )
         }
     }
