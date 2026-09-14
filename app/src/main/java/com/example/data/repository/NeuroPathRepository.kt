@@ -48,14 +48,16 @@ class NeuroPathRepository(private val db: AppDatabase) {
         studentGrade: GradeLevel,
         studentSubject: EducationalSubject? = null,
         schoolDistrict: String = "",
-        country: String = ""
+        country: String = "",
+        stateOrProvince: String = ""
     ): OerTutorCurriculumContext {
         return oerCurriculumService.retrieveCurriculumContextForTutor(
             query = query,
             studentGrade = studentGrade,
             studentSubject = studentSubject,
             schoolDistrict = schoolDistrict,
-            country = country
+            country = country,
+            stateOrProvince = stateOrProvince
         )
     }
 
@@ -83,8 +85,6 @@ class NeuroPathRepository(private val db: AppDatabase) {
         val existing = db.childProfileDao().getAllProfilesDirect().firstOrNull()
         if (existing != null) return existing
 
-        // Fresh install state - Square one! No pre-installed mock profiles.
-        // TTS is strictly OFF by default (readAnswersAloud = false)
         val freshProfile = ChildProfileEntity(
             id = 1,
             name = "",
@@ -107,8 +107,8 @@ class NeuroPathRepository(private val db: AppDatabase) {
             stateOrProvince = "California",
             city = "Los Angeles",
             schoolDistrict = "Los Angeles Unified School District (LAUSD)",
-            readAnswersAloud = false, // OFF by default
-            isInitialSetupComplete = false // Forces fresh setup screen on first launch
+            readAnswersAloud = false,
+            isInitialSetupComplete = false
         )
         val newId = db.childProfileDao().insertOrUpdateProfile(freshProfile)
         return freshProfile.copy(id = if (newId > 0) newId else 1)
@@ -179,7 +179,6 @@ class NeuroPathRepository(private val db: AppDatabase) {
         stateStandard: String,
         standardCode: String
     ) {
-        // Record in progress log
         db.progressLogDao().insertLog(
             ProgressLogEntity(
                 profileId = profileId,
@@ -194,7 +193,6 @@ class NeuroPathRepository(private val db: AppDatabase) {
             )
         )
 
-        // Update or insert lesson record
         val existingRecord = db.lessonRecordDao().getLessonRecord(lessonId)
         val newRecord = LessonRecordEntity(
             lessonId = lessonId,
@@ -210,7 +208,6 @@ class NeuroPathRepository(private val db: AppDatabase) {
         )
         db.lessonRecordDao().insertLessonRecord(newRecord)
 
-        // Award stars based on score
         val starsToAward = when {
             scorePercent >= 90 -> 5
             scorePercent >= 70 -> 3
@@ -239,7 +236,6 @@ class NeuroPathRepository(private val db: AppDatabase) {
         return CurriculumCatalog.getLessonsForSubjectAndGrade(subject, gradeLevel, state, themeId)
     }
 
-    // Chat History Persistence & Session Management
     fun getChatMessagesForSessionFlow(profileId: Long, sessionId: String): Flow<List<com.example.data.local.entity.ChatMessageEntity>> {
         return db.chatMessageDao().getMessagesForSession(profileId, sessionId)
     }
@@ -276,4 +272,3 @@ class NeuroPathRepository(private val db: AppDatabase) {
         db.chatMessageDao().clearAllMessages(profileId)
     }
 }
-
