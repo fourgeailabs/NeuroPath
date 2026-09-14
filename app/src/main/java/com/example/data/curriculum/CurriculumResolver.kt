@@ -30,7 +30,7 @@ object CurriculumResolver {
             appendLine("Education authority: $educationAuthority")
             appendLine("Stage/Grade: $stageOrGrade")
             appendLine("Subject: $subject")
-            appendLine("Authority source: $officialSourceUrl")
+            appendLine("Authority source: ${officialSourceUrl.ifBlank { "No verified official URL in the local registry" }}")
             appendLine("Resolution confidence: ${confidence.name}")
             appendLine("Source type: $sourceType")
             appendLine("Use the official authority as the source of truth for the current statutory curriculum.")
@@ -44,7 +44,7 @@ object CurriculumResolver {
         stageOrGrade: String,
         subject: String
     ): Resolution {
-        val normalizedCountry = country.trim()
+        val normalizedCountry = normalizeCountry(country)
         val normalizedSubnational = listOf(stateOrProvince.trim(), schoolDistrict.trim())
             .filter { it.isNotBlank() }
             .joinToString(" / ")
@@ -81,8 +81,17 @@ object CurriculumResolver {
         }
 
         val hasSubnationalSignal = stateOrProvince.isNotBlank() || schoolDistrict.isNotBlank()
+        val isKnownDecentralizedSystem = registry.educationAuthority.contains("state", ignoreCase = true) ||
+            registry.educationAuthority.contains("province", ignoreCase = true) ||
+            registry.educationAuthority.contains("territory", ignoreCase = true) ||
+            registry.educationAuthority.contains("cantonal", ignoreCase = true) ||
+            registry.educationAuthority.contains("federal states", ignoreCase = true) ||
+            registry.educationAuthority.contains("autonomous", ignoreCase = true) ||
+            registry.educationAuthority.contains("community", ignoreCase = true)
+
         val confidence = when {
-            hasSubnationalSignal && registry.educationAuthority.contains("state", ignoreCase = true) -> Resolution.Confidence.MEDIUM
+            hasSubnationalSignal && isKnownDecentralizedSystem -> Resolution.Confidence.MEDIUM
+            !hasSubnationalSignal && isKnownDecentralizedSystem -> Resolution.Confidence.ROUTING_ONLY
             registry.educationAuthority.contains("national", ignoreCase = true) ||
                 registry.educationAuthority.contains("ministry", ignoreCase = true) ||
                 registry.educationAuthority.contains("agency", ignoreCase = true) -> Resolution.Confidence.HIGH
@@ -97,7 +106,26 @@ object CurriculumResolver {
             officialSourceUrl = registry.officialCurriculumUrl,
             stageOrGrade = stageOrGrade,
             subject = subject,
-            confidence = confidence
+            confidence = confidence,
+            sourceType = if (isKnownDecentralizedSystem && !hasSubnationalSignal) {
+                "DECENTRALIZED_JURISDICTION_ENTRY_POINT"
+            } else {
+                "OFFICIAL_AUTHORITY_ENTRY_POINT"
+            }
         )
+    }
+
+    private fun normalizeCountry(country: String): String {
+        return when (country.trim().lowercase()) {
+            "us", "u.s.", "u.s.a.", "usa", "united states of america" -> "United States"
+            "uk", "u.k.", "great britain", "britain", "united kingdom of great britain and northern ireland" -> "United Kingdom"
+            "ca", "can" -> "Canada"
+            "au", "australia" -> "Australia"
+            "nz", "new zealand" -> "New Zealand"
+            "ie", "eire", "republic of ireland" -> "Ireland"
+            "kr", "republic of korea", "south korea" -> "South Korea"
+            "tr", "turkiye", "türkiye" -> "Türkiye"
+            else -> country.trim()
+        }
     }
 }
