@@ -15,13 +15,6 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
-/**
- * Hardware-accelerated local Gemma path.
- *
- * This is intentionally separate from the existing GGUF/llama.cpp manager. A backend is
- * reported as active only after LiteRT-LM successfully initializes it AND completes inference.
- * Failed accelerator initialization is never presented to the learner as active hardware.
- */
 data class LiteRtGemmaResult(
     val text: String,
     val backend: LocalAiBackend,
@@ -77,13 +70,12 @@ object LiteRtGemmaAccelerator {
         }
     }.getOrDefault(false)
 
-    /**
-     * Downloads the hardware-targeted Gemma 3 1B LiteRT-LM artifact. Gemma 3 is gated by
-     * the Gemma license, so an explicit Hugging Face token is required; the token is sent
-     * only in the download Authorization header and is never persisted by this class.
-     */
     suspend fun download(context: Context, hfToken: String): Result<File> = withContext(Dispatchers.IO) {
-        if (hfToken.isBlank()) return@withContext Result.failure(IllegalArgumentException("A Hugging Face token is required for the gated Gemma 3 LiteRT-LM model."))
+        if (hfToken.isBlank()) {
+            return@withContext Result.failure(
+                IllegalArgumentException("A Hugging Face token is required for the gated Gemma 3 LiteRT-LM model.")
+            )
+        }
         val destination = modelFile(context)
         if (isInstalled(context)) return@withContext Result.success(destination)
         destination.parentFile?.mkdirs()
@@ -124,10 +116,6 @@ object LiteRtGemmaAccelerator {
         }
     }
 
-    /**
-     * Tries NPU first when a vendor-targeted model exists, then GPU, then CPU. Each candidate
-     * is verified by a real model response before it is returned to the caller.
-     */
     suspend fun generate(
         context: Context,
         prompt: String,
@@ -135,16 +123,13 @@ object LiteRtGemmaAccelerator {
     ): LiteRtGemmaResult? = withContext(Dispatchers.IO) {
         if (!isInstalled(context) || prompt.isBlank()) return@withContext null
         val file = modelFile(context)
-        val candidateBackends = backendCandidates(file.name)
+        val candidateBackends = backendCandidates(context, file.name)
         var lastFailure: Throwable? = null
 
         for (backend in candidateBackends) {
             val loadStart = System.nanoTime()
             try {
-                val config = EngineConfig(
-                    modelPath = file.absolutePath,
-                    backend = backend
-                )
+                val config = EngineConfig(modelPath = file.absolutePath, backend = backend)
                 Engine(config).use { engine ->
                     engine.initialize()
                     val loadTimeMs = (System.nanoTime() - loadStart) / 1_000_000L
@@ -154,10 +139,7 @@ object LiteRtGemmaAccelerator {
                             if (systemPrompt.isNotBlank()) append(systemPrompt.trim()).append("\n\n")
                             append(prompt.trim())
                         }
-                        val response = conversation.sendMessage(
-                            fullPrompt,
-                            maxOutputToken = MAX_OUTPUT_TOKENS
-                        )
+                        val response = conversation.sendMessage(fullPrompt, maxOutputToken = MAX_OUTPUT_TOKENS)
                         val text = response.text.trim()
                         check(text.isNotBlank()) { "LiteRT-LM returned an empty response" }
                         val generationTimeMs = (System.nanoTime() - generationStart) / 1_000_000L
@@ -185,22 +167,14 @@ object LiteRtGemmaAccelerator {
         null
     }
 
-    private fun backendCandidates(modelName: String): List<Backend> {
+    private fun backendCandidates(context: Context, modelName: String): List<Backend> {
         val vendorTargetedNpu = modelName != GENERIC_GPU_MODEL
         return buildList {
-            if (vendorTargetedNpu) add(Backend.NPU(nativeLibraryDir = "__APP_NATIVE_LIB_DIR__"))
+            if (vendorTargetedNpu) {
+                add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
+            }
             add(Backend.GPU())
             add(Backend.CPU())
         }
-    }
-
-    /**
-     * Resolves the app native-library directory without leaking Context into backend ordering.
-     */
-    private fun Backend.withContext(context: Context): Backend = when (this) {
-        is Backend.NPU -> Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir)
-        is Backend.GPU -> Backend.GPU()
-        is Backend.CPU -> Backend.CPU()
-        else -> this
     }
 }
