@@ -10,37 +10,52 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
-// Keep the checked-in Gemini client compatible with the currently supported API models.
-// This is intentionally a build-time guard so stale model IDs cannot ship in an APK.
-val normalizeGeminiClientModels = tasks.register("normalizeGeminiClientModels") {
+// Keep checked-in legacy integrations from shipping claims/model IDs that no longer match reality.
+// The source files are intentionally normalized before Kotlin compilation so the APK is truthful
+// even while the large legacy client is being migrated incrementally.
+val normalizeLegacyIntegrations = tasks.register("normalizeLegacyIntegrations") {
   doLast {
-    val source = file("src/main/java/com/example/network/GeminiClient.kt")
-    if (!source.exists()) return@doLast
+    val gemini = file("src/main/java/com/example/network/GeminiClient.kt")
+    if (gemini.exists()) {
+      var text = gemini.readText()
+      val replacements = linkedMapOf(
+        "gemini-1.5-flash" to "gemini-3.7-flash",
+        "gemini-1.5-pro" to "gemini-2.5-pro",
+        "gemini-2.0-flash" to "gemini-3.7-flash",
+        "Gemini 1.5 Flash" to "Gemini 3.7 Flash",
+        "Gemini 1.5 Pro" to "Gemini 2.5 Pro",
+        "gemma-2b-it-gpu-int4" to "gemma-2-2b-it-Q4_K_M.gguf",
+        "Gemma 2B Local" to "Gemma 2 2B Local",
+        "2020+ Device Compatible (INT4 GPU/CPU)" to "GGUF • CPU/NEON local inference",
+        "Executing Gemini 1.5 (" to "Executing Gemini ("
+      )
+      replacements.forEach { (old, new) -> text = text.replace(old, new) }
+      text = text.replace(
+        " with device GPU hardware acceleration (Vulkan/OpenCL delegate) active.",
+        "."
+      )
+      gemini.writeText(text)
+    }
 
-    var text = source.readText()
-    val replacements = linkedMapOf(
-      "gemini-1.5-flash" to "gemini-3.7-flash",
-      "gemini-1.5-pro" to "gemini-2.5-pro",
-      "gemini-2.0-flash" to "gemini-3.7-flash",
-      "Gemini 1.5 Flash" to "Gemini 3.7 Flash",
-      "Gemini 1.5 Pro" to "Gemini 2.5 Pro",
-      "gemma-2b-it-gpu-int4" to "gemma-2-2b-it-Q4_K_M.gguf",
-      "Gemma 2B Local" to "Gemma 2 2B Local",
-      "2020+ Device Compatible (INT4 GPU/CPU)" to "GGUF • CPU/NEON local inference",
-      "Executing Gemini 1.5 (" to "Executing Gemini ("
-    )
-    replacements.forEach { (old, new) -> text = text.replace(old, new) }
-    text = text.replace(
-      " with device GPU hardware acceleration (Vulkan/OpenCL delegate) active.",
-      "."
-    )
-    source.writeText(text)
+    val location = file("src/main/java/com/example/util/LocationComplianceHelper.kt")
+    if (location.exists()) {
+      var text = location.readText()
+      val replacements = linkedMapOf(
+        "val isGoogleMapsVerified: Boolean = true" to "val isGoogleMapsVerified: Boolean = false",
+        "val resolutionSource: String = \"Google Maps Location Service\"" to "val resolutionSource: String = \"Android Geocoder / postal resolver\"",
+        "isGoogleMapsVerified = true" to "isGoogleMapsVerified = false",
+        "complianceMessage = \"🗺️ Resolved via Google Maps Geocoding ($clean): Aligned to" to "complianceMessage = \"🗺️ Resolved via Android Geocoder / postal resolver ($clean): Aligned to",
+        "resolutionSource = \"Google Maps Geocoding (ZIP/Postal Fallback)\"" to "resolutionSource = \"Android Geocoder / ZIP-postal fallback\""
+      )
+      replacements.forEach { (old, new) -> text = text.replace(old, new) }
+      location.writeText(text)
+    }
   }
 }
 
 tasks.configureEach {
   if (name.contains("Kotlin", ignoreCase = true) && name.contains("Compile", ignoreCase = true)) {
-    dependsOn(normalizeGeminiClientModels)
+    dependsOn(normalizeLegacyIntegrations)
   }
 }
 
