@@ -5,6 +5,7 @@ import com.example.data.local.AppDatabase
 import com.example.data.local.entity.OerCurriculumEntity
 import com.example.data.model.EducationalSubject
 import com.example.data.model.GradeLevel
+import com.example.data.curriculum.uk.UkNationalCurriculumCatalog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -90,10 +91,6 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             okHttpClient.newCall(request).execute().use { response ->
                 val isOnlineLive = response.isSuccessful
                 val responseCode = response.code
-
-                // The app's curated catalog remains the authoritative offline cache. A successful
-                // HTTP probe means the upstream collection is reachable; it does not mean that the
-                // entire remote catalog was downloaded or validated.
                 db.oerCurriculumDao().insertUnits(entities)
                 memoryCache = preinstalled
 
@@ -150,6 +147,9 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
     ): OerTutorCurriculumContext = withContext(Dispatchers.IO) {
         val all = getAllUnits()
         val q = query.trim().lowercase()
+        val ukDirectory = if (UkNationalCurriculumCatalog.isUnitedKingdom(country)) {
+            UkNationalCurriculumCatalog.directoryText(country, schoolDistrict)
+        } else ""
 
         val inferredSubject = studentSubject ?: when {
             q.contains("math") || q.contains("count") || q.contains("add") || q.contains("algebra") || q.contains("quad") || q.contains("fraction") || q.contains("geometry") || q.contains("trig") || q.contains("number") -> EducationalSubject.MATH
@@ -167,12 +167,8 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             GradeLevel.HIGH_SCHOOL -> OerGradeBand.HIGH_SCHOOL
         }
 
-        // Score units rather than accepting the first subject/grade match. This keeps the
-        // Learning Buddy anchored to the requested topic while still falling back to the
-        // student's grade when no strong topic match exists.
         fun score(item: OerCommonsCurriculumItem): Int {
             if (inferredSubject != null && item.subject != inferredSubject) return Int.MIN_VALUE
-
             val searchable = buildString {
                 append(item.unitTitle.lowercase()).append(' ')
                 append(item.collectionTitle.lowercase()).append(' ')
@@ -182,11 +178,9 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
                 append(item.vocabulary.joinToString(" ").lowercase()).append(' ')
                 append(item.learningObjectives.joinToString(" ").lowercase())
             }
-
             val queryTerms = q.split(Regex("[^a-z0-9]+"))
                 .filter { it.length >= 3 }
                 .distinct()
-
             val keywordScore = queryTerms.sumOf { term -> if (searchable.contains(term)) 3 else 0 }
             val exactTitleScore = if (q.isNotBlank() && item.unitTitle.lowercase().contains(q)) 12 else 0
             val gradeScore = when {
@@ -194,7 +188,6 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
                 item.gradeBand == gradeBand -> 4
                 else -> 0
             }
-
             return keywordScore + exactTitleScore + gradeScore
         }
 
@@ -222,6 +215,8 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             } else ""
 
             val formatted = """
+                [CURRICULUM ALIGNMENT REPOSITORIES]
+                ${if (ukDirectory.isNotBlank()) ukDirectory + "\n" else ""}
                 [OER COMMONS CURATED COLLECTIONS REPOSITORY BENCHMARK]
                 Source Database: OER Commons Curated Collections (https://oercommons.org/curated-collections)
                 Collection: ${matchedUnit.collectionTitle}
@@ -230,23 +225,26 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
                 Grade Band: ${matchedUnit.gradeBand.title} (Grade: ${matchedUnit.gradeLevel.displayName})
                 Direct Resource URL: ${matchedUnit.oerCommonsUrl}
                 License: ${matchedUnit.openLicense}
-                
+
                 Key Concepts & Vocabulary:
                 - Concepts: $conceptsStr
                 - Terms: ${matchedUnit.vocabulary.joinToString(", ")}
-                
+
                 Learning Objectives:
                 - $objectivesStr
-                
+
                 Socratic Inquiries & Guiding Scaffolding:
                 - $socraticStr
-                
+
                 Common Student Misconceptions to Address:
                 - $misconceptionsStr
                 ${if (sampleProblem != null) "\nSample OER Practice Problem: ${sampleProblem.questionPrompt}\nCorrect Solution: ${sampleProblem.correctAnswer} (${sampleProblem.stepByStepExplanation})\nSocratic Hint: ${sampleProblem.socraticClue}" else ""}$relatedSummary
             """.trimIndent()
 
-            val citation = "OER Commons Curated Collections: ${matchedUnit.unitTitle} (${matchedUnit.standardCode}) [https://oercommons.org/curated-collections]"
+            val citation = buildString {
+                if (ukDirectory.isNotBlank()) append("UK official curriculum registry; ")
+                append("OER Commons Curated Collections: ${matchedUnit.unitTitle} (${matchedUnit.standardCode}) [https://oercommons.org/curated-collections]")
+            }
             val inquiry = matchedUnit.socraticGuidingQuestions.firstOrNull()
                 ?: "What part of ${matchedUnit.unitTitle} would you like to explore step-by-step?"
 
@@ -260,9 +258,9 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         } else {
             OerTutorCurriculumContext(
                 matchedUnit = null,
-                formattedContextPrompt = "OER Commons K-12 Curated Collections standard alignment active (https://oercommons.org/curated-collections).",
-                citationSource = "OER Commons Curated Collections (https://oercommons.org/curated-collections)",
-                standardCode = "OER.K12.STANDARD",
+                formattedContextPrompt = if (ukDirectory.isNotBlank()) ukDirectory else "OER Commons K-12 Curated Collections standard alignment active (https://oercommons.org/curated-collections).",
+                citationSource = if (ukDirectory.isNotBlank()) "Official UK national curriculum registry" else "OER Commons Curated Collections (https://oercommons.org/curated-collections)",
+                standardCode = if (ukDirectory.isNotBlank()) "UK.DEVOLVED.CURRICULUM" else "OER.K12.STANDARD",
                 inquiryPrompt = "What curriculum topic would you like to explore?"
             )
         }
