@@ -31,7 +31,6 @@ val normalizeLegacyIntegrations = tasks.register("normalizeLegacyIntegrations") 
       replacements.forEach { (old, new) -> text = text.replace(old, new) }
       text = text.replace(" with device GPU hardware acceleration (Vulkan/OpenCL delegate) active.", ".")
 
-      // Replace the old request/response shim with the real stateful Gemini Live WebSocket client.
       val voiceStartMarker = "    /**\n     * Voice Conversations (Live API mode) with full curriculum access.\n     */"
       val voiceEndMarker = "    /**\n     * Generate Music for Soundscapes"
       val voiceStart = text.indexOf(voiceStartMarker)
@@ -68,6 +67,16 @@ val normalizeLegacyIntegrations = tasks.register("normalizeLegacyIntegrations") 
         text = text.substring(0, voiceStart) + liveMethod + text.substring(voiceEnd)
       }
       gemini.writeText(text)
+    }
+
+    val viewModel = file("src/main/java/com/example/ui/NeuroPathViewModel.kt")
+    if (viewModel.exists()) {
+      var text = viewModel.readText()
+      text = text.replace(
+        "lyriaMusicPlayer.playAudioFromBase64(result.audioBase64, \"Live Buddy Voice\", loop = false)",
+        "lyriaMusicPlayer.playPcm16FromBase64(result.audioBase64, \"Live Buddy Voice\", loop = false)"
+      )
+      viewModel.writeText(text)
     }
 
     val location = file("src/main/java/com/example/util/LocationComplianceHelper.kt")
