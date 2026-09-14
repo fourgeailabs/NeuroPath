@@ -120,6 +120,12 @@ fun OerMultimediaPlayerContent(
         videoView?.evaluateJavascript("(function(){var v=document.querySelector('video');if(v){v.$action;}})()", null)
     }
 
+    fun applyAudioSpeed(player: MediaPlayer?) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            player?.playbackParams = player.playbackParams.setSpeed(speed)
+        }
+    }
+
     Column(modifier.fillMaxWidth().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
@@ -204,6 +210,7 @@ fun OerMultimediaPlayerContent(
                                     setDataSource(resource.audioUrl)
                                     prepare()
                                     setOnCompletionListener { isPlaying = false }
+                                    applyAudioSpeed(this)
                                     start()
                                 }
                             } catch (e: Exception) {
@@ -214,6 +221,7 @@ fun OerMultimediaPlayerContent(
                         }
                     } else if (resource.audioUrl != null) {
                         if (isPlaying) audioPlayer?.start() else audioPlayer?.pause()
+                        applyAudioSpeed(audioPlayer)
                     }
                 }
             }) { Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (isPlaying) "Pause" else "Play") }
@@ -224,7 +232,7 @@ fun OerMultimediaPlayerContent(
                     val rate = speed
                     videoView?.evaluateJavascript("(function(){var v=document.querySelector('video');if(v){v.playbackRate=$rate;}})()", null)
                 } else {
-                    audioPlayer?.let { player -> if (player.isPlaying) { player.pause(); player.start() } }
+                    applyAudioSpeed(audioPlayer)
                 }
             }) { Icon(Icons.Default.Speed, "Playback speed") }
             IconButton(onClick = { captions = !captions }) { Icon(Icons.Default.ClosedCaption, "Captions") }
