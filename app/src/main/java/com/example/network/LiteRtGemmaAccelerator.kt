@@ -45,13 +45,15 @@ object LiteRtGemmaAccelerator {
     ): String {
         val model = socModel.lowercase()
         return when {
-            manufacturer.equals("Qualcomm", true) && model.contains("sm8550") -> "gemma3-1b-it_q4_ekv1280_sm8550.litertlm"
-            manufacturer.equals("Qualcomm", true) && model.contains("sm8650") -> "gemma3-1b-it_q4_ekv1280_sm8650.litertlm"
-            manufacturer.equals("Qualcomm", true) && model.contains("sm8750") -> "gemma3-1b-it_q4_ekv1280_sm8750.litertlm"
-            manufacturer.equals("Qualcomm", true) && model.contains("sm8850") -> "gemma3-1b-it_q4_ekv1280_sm8850.litertlm"
-            manufacturer.equals("MediaTek", true) && model.contains("mt6989") -> "gemma3-1b-it_q4_ekv1280_mt6989.litertlm"
-            manufacturer.equals("MediaTek", true) && model.contains("mt6991") -> "gemma3-1b-it_q4_ekv1280_mt6991.litertlm"
-            manufacturer.equals("MediaTek", true) && model.contains("mt6993") -> "gemma3-1b-it_q4_ekv1280_mt6993.litertlm"
+            manufacturer.equals("Qualcomm", true) && model.contains("sm8550") -> "Gemma3-1B-IT_q4_ekv1280_sm8550.litertlm"
+            manufacturer.equals("Qualcomm", true) && model.contains("sm8650") -> "Gemma3-1B-IT_q4_ekv1280_sm8650.litertlm"
+            manufacturer.equals("Qualcomm", true) && model.contains("sm8750") -> "Gemma3-1B-IT_q4_ekv1280_sm8750.litertlm"
+            manufacturer.equals("Qualcomm", true) && model.contains("sm8850") -> "Gemma3-1B-IT_q4_ekv1280_sm8850.litertlm"
+            manufacturer.equals("MediaTek", true) && model.contains("mt6989") -> "Gemma3-1B-IT_q4_ekv1280_mt6989.litertlm"
+            manufacturer.equals("MediaTek", true) && model.contains("mt6991") -> "Gemma3-1B-IT_q4_ekv1280_mt6991.litertlm"
+            manufacturer.equals("MediaTek", true) && model.contains("mt6993") -> "Gemma3-1B-IT_q4_ekv1280_mt6993.litertlm"
+            manufacturer.equals("Google", true) && model.contains("g5") -> "Gemma3-1B-IT_q8_ekv1280_Google_Tensor_G5.litertlm"
+            manufacturer.equals("Google", true) && model.contains("g6") -> "Gemma3-1B-IT_q8_ekv1280_Google_Tensor_G6.litertlm"
             else -> GENERIC_GPU_MODEL
         }
     }
@@ -170,9 +172,7 @@ object LiteRtGemmaAccelerator {
     private fun backendCandidates(context: Context, modelName: String): List<Backend> {
         val vendorTargetedNpu = modelName != GENERIC_GPU_MODEL
         return buildList {
-            if (vendorTargetedNpu) {
-                add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
-            }
+            if (vendorTargetedNpu) add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
             add(Backend.GPU())
             add(Backend.CPU())
         }
