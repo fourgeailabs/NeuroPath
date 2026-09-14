@@ -4,10 +4,6 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 
-/**
- * Describes hardware/runtime opportunities without claiming that an accelerator is active.
- * An accelerator becomes ACTIVE only after the inference runtime successfully initializes it.
- */
 enum class LocalAiBackend {
     NPU,
     GPU,
@@ -36,22 +32,20 @@ object LocalAiHardwareManager {
     fun inspect(context: Context): LocalAiHardwareCapabilities {
         val memoryInfo = ActivityManager.MemoryInfo()
         (context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.getMemoryInfo(memoryInfo)
+        val manufacturer = if (Build.VERSION.SDK_INT >= 31) Build.SOC_MANUFACTURER else Build.MANUFACTURER
+        val socModel = if (Build.VERSION.SDK_INT >= 31) Build.SOC_MODEL else ""
         return LocalAiHardwareCapabilities(
             cpuAvailable = Runtime.getRuntime().availableProcessors() > 0,
             armNeonAvailable = Build.SUPPORTED_ABIS.any { it == "arm64-v8a" || it == "armeabi-v7a" },
-            potentialNpuBackend = potentialNpuBackend(Build.SOC_MANUFACTURER, Build.SOC_MODEL),
-            // Presence of a GPU is not treated as proof that the LLM runtime can use it.
+            potentialNpuBackend = potentialNpuBackend(manufacturer, socModel),
+            // Hardware presence is not proof that an LLM runtime can use the GPU.
             gpuRuntimeAvailable = false,
             totalRamGb = memoryInfo.totalMem / (1024f * 1024f * 1024f),
-            manufacturer = Build.SOC_MANUFACTURER.ifBlank { Build.MANUFACTURER },
-            socModel = Build.SOC_MODEL
+            manufacturer = manufacturer,
+            socModel = socModel
         )
     }
 
-    /**
-     * Returns a known hardware-targeted LiteRT-LM backend family when one can be identified.
-     * This is a candidate only; the runtime must still successfully initialize the model.
-     */
     fun potentialNpuBackend(manufacturer: String, socModel: String): String? {
         val model = socModel.lowercase()
         return when {
@@ -66,10 +60,6 @@ object LocalAiHardwareManager {
         }
     }
 
-    /**
-     * Chooses the first backend that the actual runtime probe says initialized successfully.
-     * The method deliberately does not infer accelerator availability from device hardware alone.
-     */
     fun selectBackend(probes: List<LocalAiBackendProbe>, cloudAvailable: Boolean): LocalAiBackend {
         val priority = listOf(LocalAiBackend.NPU, LocalAiBackend.GPU, LocalAiBackend.CPU)
         priority.firstOrNull { backend -> probes.any { it.backend == backend && it.initialized } }?.let { return it }
