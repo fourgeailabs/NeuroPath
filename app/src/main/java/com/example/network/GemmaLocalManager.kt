@@ -38,7 +38,7 @@ data class GemmaDeviceCompatibility(
     val compatibilitySummary: String
 )
 
-/** Real GGUF Gemma downloader and llama.cpp on-device inference manager. */
+/** Real GGUF Gemma manager with a verified LiteRT-LM acceleration path. */
 object GemmaLocalManager {
     private const val TAG = "GemmaLocalManager"
     const val HUGGINGFACE_REPO_URL = "https://huggingface.co/google/gemma-2-2b"
@@ -100,16 +100,21 @@ object GemmaLocalManager {
         val summary = when {
             !isSupported2020 -> "❌ Android $apiVersion is below the recommended Android 10 baseline for local Gemma inference."
             !enoughRam -> "⚠️ Android $apiVersion with ${"%.1f".format(totalRamGb)}GB RAM may run Gemma 2 2B, but memory pressure can terminate inference."
-            else -> "✅ Compatible: Android $apiVersion with ${"%.1f".format(totalRamGb)}GB RAM. Gemma 2 2B will run locally with CPU/NEON llama.cpp."
+            else -> "✅ Compatible: Android $apiVersion with ${"%.1f".format(totalRamGb)}GB RAM. Gemma 2 2B will run locally; LiteRT-LM is preferred when its model/runtime is installed and verified, with llama.cpp as the CPU/NEON fallback."
         }
 
-        return GemmaDeviceCompatibility(isSupported2020, apiVersion, totalRamGb, false, summary)
+        return GemmaDeviceCompatibility(isSupported2020, apiVersion, totalRamGb, LiteRtGemmaAccelerator.isInstalled(context), summary)
     }
 
     suspend fun startGemmaDownload(context: Context, hfToken: String = "") = withContext(Dispatchers.IO) {
         val destinationFile = getGemmaModelFile(context)
         if (isGemmaInstalled(context)) {
             _downloadState.value = GemmaDownloadState.Installed(destinationFile.length(), destinationFile.absolutePath)
+            if (hfToken.isNotBlank() && !LiteRtGemmaAccelerator.isInstalled(context)) {
+                LiteRtGemmaAccelerator.download(context, hfToken).onFailure {
+                    Log.w(TAG, "Optional accelerated Gemma model was not installed: ${it.message}")
+                }
+            }
             return@withContext
         }
 
@@ -118,12 +123,9 @@ object GemmaLocalManager {
             tempFile.delete()
             _downloadState.value = GemmaDownloadState.Downloading(0f, 0L, MODEL_ESTIMATED_SIZE_BYTES)
 
-            // Always download GGUF. The official Gemma safetensors file is not
-            // compatible with the llama.cpp GGUF runtime, so a token must not
-            // silently switch this request to safetensors.
             val request = Request.Builder()
                 .url(PUBLIC_HUGGINGFACE_GGUF_URL)
-                .header("User-Agent", "NeuroPath-Android/1.25.00")
+                .header("User-Agent", "NeuroPath-Android/2.00.00")
                 .build()
 
             okHttpClient.newCall(request).execute().use { response ->
@@ -177,6 +179,11 @@ object GemmaLocalManager {
             }
             _downloadState.value = GemmaDownloadState.Installed(destinationFile.length(), destinationFile.absolutePath)
             Log.i(TAG, "Installed Gemma GGUF ${destinationFile.absolutePath} (${destinationFile.length()} bytes)")
+            if (hfToken.isNotBlank()) {
+                LiteRtGemmaAccelerator.download(context, hfToken).onFailure {
+                    Log.w(TAG, "Optional accelerated Gemma model was not installed: ${it.message}")
+                }
+            }
         } catch (e: Exception) {
             tempFile.delete()
             Log.e(TAG, "Gemma GGUF download failed", e)
@@ -228,10 +235,19 @@ object GemmaLocalManager {
             if (systemPrompt.isNotBlank()) append("\n$systemPrompt\n")
         }
 
-        // Gemma 2 2B GGUF does not advertise support for a separate system
-        // prompt, so include the teaching instructions in the user prompt rather
-        // than relying on the runtime to preserve a system role that the model ignores.
         val finalPrompt = "$grounding\n\nStudent question:\n$userPrompt"
+
+        // LiteRT-LM is the only path that can truthfully claim GPU/NPU acceleration here.
+        // It runs entirely on-device; if its model is not installed or a backend cannot
+        // initialize and complete inference, the existing GGUF CPU/NEON path remains intact.
+        runCatching {
+            LiteRtGemmaAccelerator.generate(context, finalPrompt)
+        }.onFailure { Log.w(TAG, "LiteRT-LM accelerated inference unavailable", it) }
+            .getOrNull()
+            ?.let { result ->
+                Log.i(TAG, "Using verified local accelerator ${result.backend} (${result.modelFile})")
+                return@withContext result.text
+            }
 
         try {
             val model = Llama.loadModel(
