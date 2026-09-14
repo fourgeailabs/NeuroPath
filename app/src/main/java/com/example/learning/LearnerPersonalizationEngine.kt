@@ -1,6 +1,7 @@
 package com.example.learning
 
 import android.content.Context
+import com.example.data.curriculum.CurriculumResolver
 import com.example.data.local.entity.ChildProfileEntity
 import java.util.Locale
 
@@ -48,13 +49,21 @@ object LearnerPersonalizationEngine {
 
         // Do not send the child's name to a cloud tutor. A local model may opt into
         // sensitive context, but the default cloud-safe profile uses a generic learner label.
-        val learnerLabel = if (includeSensitiveDiagnosis) profile.name.ifBlank { "Student" } else "Student"
+        val learnerLabel = "Student"
         val accessibility = buildString {
             append("dyslexiaFont=${profile.dyslexiaFontEnabled}; ")
             append("highContrast=${profile.highContrastMode}; ")
             append("readAloud=${profile.readAnswersAloud}; ")
             append("autoHighlight=${profile.autoHighlightWords}")
         }
+
+        val curriculumResolution = CurriculumResolver.resolve(
+            country = profile.country,
+            stateOrProvince = profile.stateOrProvince,
+            schoolDistrict = profile.schoolDistrict,
+            stageOrGrade = profile.gradeLevel,
+            subject = subjectKey
+        )
 
         return """
             LEARNER-CENTRED PERSONALIZATION PROFILE
@@ -72,6 +81,8 @@ object LearnerPersonalizationEngine {
             Observed answer accuracy in current subject: $subjectAccuracy
             Recent missed topics/signals: ${missed.ifBlank { "none recorded" }}
             Learned preferred explanation style: $preferredStyle
+
+            $curriculumResolution.contextText()
 
             PERSONALIZATION RULES:
             1. Adapt the explanation to this individual, not merely their age or diagnosis.
