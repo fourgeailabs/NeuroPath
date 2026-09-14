@@ -78,16 +78,17 @@ val normalizeLegacyIntegrations = tasks.register("normalizeLegacyIntegrations") 
       )
 
       // Inject the learner fingerprint into every main Learning Buddy chat request.
+      // Sensitive diagnosis labels remain on-device by default; cloud tutoring receives needs-based signals instead.
       val chatProfileAnchor = "val currentSubject = _selectedSubjectTag.value\n        val profile = _currentProfile.value\n        val activeSession = _currentSessionId.value"
       if (text.contains(chatProfileAnchor) && !text.contains("val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt")) {
         text = text.replace(
           chatProfileAnchor,
-          "val currentSubject = _selectedSubjectTag.value\n        val profile = _currentProfile.value\n        val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, currentSubject.id)\n        val activeSession = _currentSessionId.value"
+          "val currentSubject = _selectedSubjectTag.value\n        val profile = _currentProfile.value\n        val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, currentSubject.id, currentModel == ChatModelMode.GEMMA_LOCAL)\n        com.example.learning.LearnerPersonalizationEngine.recordPreferredStyle(getApplication(), profile.id, currentMode.id)\n        val activeSession = _currentSessionId.value"
         )
       }
       text = text.replace(
         "Learner profile accommodation considerations: ${profile.neurodivergentTypesCsv}.",
-        "Learner profile accommodation considerations: ${profile.neurodivergentTypesCsv}.\n                        $personalizationProfile"
+        "Learner profile accommodation signals: use the needs-based personalization profile below; diagnosis labels are not sent to cloud tutoring by default."
       )
       text = text.replace(
         "val basePrompt = getSystemPromptForProfile(profile, roleContext = \"tutor\")\n                    val systemPrompt = \"\"\"",
