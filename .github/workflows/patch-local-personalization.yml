@@ -18,7 +18,6 @@ jobs:
           p = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt')
           s = p.read_text()
 
-          # Remove duplicate local-prompt tail if present.
           duplicate = '''                        Theme world: ${theme.title} (${theme.buddyRole}).
                         Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
                         District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
@@ -26,7 +25,6 @@ jobs:
           if duplicate in s:
               s = s.replace(duplicate, '                    """.trimIndent()', 1)
 
-          # Cloud live voice must receive only the privacy-safe educational profile.
           live_marker = 'fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {'
           live_start = s.find(live_marker)
           live_end = s.find('// Lyria Music Generation', live_start)
@@ -42,17 +40,18 @@ jobs:
               live = live.replace(needle, needle + '            val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, _selectedSubjectTag.value.id, false)\n', 1)
               live = live.replace('                $basePrompt\n', '                $basePrompt\n                $personalizationProfile\n', 1)
 
-          # Add the selected subnational jurisdiction to the live OER lookup by line semantics.
           lines = live.splitlines()
           out = []
           added = False
-          for i, line in enumerate(lines):
+          for line in lines:
               out.append(line)
               if line.strip() == 'country = profile.country' and not added:
                   out[-1] = line + ','
                   indent = line[:len(line) - len(line.lstrip())]
                   out.append(indent + 'stateOrProvince = profile.stateOrProvince')
                   added = True
+          if not added:
+              raise SystemExit('live OER lookup country line not found')
           live = '\n'.join(out) + ('\n' if live.endswith('\n') else '')
           s = s[:live_start] + live + s[live_end:]
           p.write_text(s)
@@ -62,10 +61,10 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt').read_text()
-          assert 'Accommodations: ${profile.neurodivergentTypesCsv}' not in s
           live_start = s.find('fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {')
           live_end = s.find('// Lyria Music Generation', live_start)
           live = s[live_start:live_end]
+          assert 'Accommodations: ${profile.neurodivergentTypesCsv}' not in live
           assert '$personalizationProfile' in live
           assert 'stateOrProvince = profile.stateOrProvince' in live
           chat_start = s.find('if (currentModel == ChatModelMode.GEMMA_LOCAL) {')
@@ -74,7 +73,7 @@ jobs:
           assert '$personalizationProfile' in chat
           assert chat.count('Theme world: ${theme.title} (${theme.buddyRole}).') == 1
           assert chat.count('Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).') == 1
-          print('Tutoring privacy, personalization, and jurisdiction checks passed.')
+          print('Scoped tutoring privacy, personalization, and jurisdiction checks passed.')
           PY
       - name: Commit patch
         run: |
