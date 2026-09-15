@@ -18,7 +18,7 @@ jobs:
           p = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt')
           s = p.read_text()
 
-          # Remove the duplicate tail left by the first local-prompt patch.
+          # Remove duplicate local-prompt tail if present.
           duplicate = '''                        Theme world: ${theme.title} (${theme.buddyRole}).
                         Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
                         District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
@@ -26,26 +26,34 @@ jobs:
           if duplicate in s:
               s = s.replace(duplicate, '                    """.trimIndent()', 1)
 
-          # The live voice tutor is cloud-backed, so use the privacy-safe profile and never raw diagnosis labels.
+          # Cloud live voice must receive only the privacy-safe educational profile.
           live_marker = 'fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {'
           live_start = s.find(live_marker)
-          if live_start < 0:
-              raise SystemExit('live voice function not found')
           live_end = s.find('// Lyria Music Generation', live_start)
-          if live_end < 0:
-              raise SystemExit('live voice function end not found')
+          if live_start < 0 or live_end < 0:
+              raise SystemExit('live voice function not found')
           live = s[live_start:live_end]
-          live = live.replace('                Accommodations: ${profile.neurodivergentTypesCsv}.\n', '                $personalizationProfile\n', 1)
           if 'Accommodations: ${profile.neurodivergentTypesCsv}' in live:
-              raise SystemExit('raw diagnosis label still present in live voice prompt')
+              live = live.replace('                Accommodations: ${profile.neurodivergentTypesCsv}.', '                $personalizationProfile', 1)
           if '$personalizationProfile' not in live:
               needle = '            val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")\n'
               if needle not in live:
                   raise SystemExit('live voice base prompt not found')
               live = live.replace(needle, needle + '            val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, _selectedSubjectTag.value.id, false)\n', 1)
               live = live.replace('                $basePrompt\n', '                $basePrompt\n                $personalizationProfile\n', 1)
-          # Missing jurisdiction on the live OER lookup.
-          live = live.replace('                schoolDistrict = profile.schoolDistrict,\n                country = profile.country\n', '                schoolDistrict = profile.schoolDistrict,\n                country = profile.country,\n                stateOrProvince = profile.stateOrProvince\n', 1)
+
+          # Add the selected subnational jurisdiction to the live OER lookup by line semantics.
+          lines = live.splitlines()
+          out = []
+          added = False
+          for i, line in enumerate(lines):
+              out.append(line)
+              if line.strip() == 'country = profile.country' and not added:
+                  out[-1] = line + ','
+                  indent = line[:len(line) - len(line.lstrip())]
+                  out.append(indent + 'stateOrProvince = profile.stateOrProvince')
+                  added = True
+          live = '\n'.join(out) + ('\n' if live.endswith('\n') else '')
           s = s[:live_start] + live + s[live_end:]
           p.write_text(s)
           PY
