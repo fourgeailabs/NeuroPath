@@ -66,6 +66,7 @@ object LearnerPersonalizationEngine {
             subject = subjectKey
         )
         val topicMastery = topicMasterySummary(context, id)
+        val strategy = recommendedInstructionalStrategy(context, id)
 
         return """
             LEARNER-CENTRED PERSONALIZATION PROFILE
@@ -84,6 +85,7 @@ object LearnerPersonalizationEngine {
             Topic mastery signals: $topicMastery
             Recent missed topics/signals: ${missed.ifBlank { "none recorded" }}
             Learned preferred explanation style: $preferredStyle
+            Current instructional strategy: $strategy
 
             ${curriculumResolution.contextText()}
 
@@ -161,15 +163,40 @@ object LearnerPersonalizationEngine {
             val correct = prefs.getInt(KEY_TOPIC_CORRECT_PREFIX + profileId + "_" + key, 0)
             val lastCorrect = prefs.getBoolean(KEY_TOPIC_LAST_RESULT_PREFIX + profileId + "_" + key, false)
             val mastery = if (attempts == 0) 0 else (correct * 100) / attempts
-            val confidence = when {
-                attempts == 0 -> 0
-                attempts < 3 -> mastery
-                lastCorrect && mastery >= 70 -> (mastery + 10).coerceAtMost(100)
-                !lastCorrect -> (mastery - 10).coerceAtLeast(0)
-                else -> mastery
-            }
+            val confidence = confidenceFor(mastery, attempts, lastCorrect)
             "$topic=${mastery}% mastery, ${confidence}% confidence signal over $attempts attempts"
         }
+    }
+
+    /**
+     * Turns the observed learner evidence into an explicit next-step teaching strategy.
+     * This is deterministic, local, and deliberately conservative: the learner model
+     * changes the path to mastery, never the curriculum objective itself.
+     */
+    fun recommendedInstructionalStrategy(context: Context, profileId: Long): String {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val attempts = prefs.getInt(KEY_ATTEMPTS_PREFIX + profileId, 0)
+        val correct = prefs.getInt(KEY_CORRECT_PREFIX + profileId, 0)
+        val accuracy = if (attempts == 0) null else (correct * 100) / attempts
+        val missed = prefs.getString(KEY_MISSED_PREFIX + profileId, "") ?: ""
+        val recentMisses = missed.split("|").filter { it.isNotBlank() }.takeLast(3)
+
+        return when {
+            attempts == 0 -> "Start with a short diagnostic-friendly explanation, one concrete example, and a low-pressure check for understanding."
+            accuracy != null && accuracy < 55 -> "Use high scaffolding: one concept at a time, worked example, short steps, frequent checks, and an alternate explanation if the first attempt does not land."
+            recentMisses.size >= 2 -> "Target recent struggle topics first; use retrieval practice, misconception checks, and smaller steps before increasing difficulty."
+            accuracy != null && accuracy < 75 -> "Use moderate scaffolding: explain, model, then ask the learner to complete the next step with a hint available."
+            accuracy >= 90 -> "Use mastery progression: reduce scaffolding, increase transfer/application, and introduce a slightly harder problem while checking for durable understanding."
+            else -> "Use adaptive instruction: concise explanation, concrete example, guided practice, then a quick retrieval check."
+        }
+    }
+
+    private fun confidenceFor(mastery: Int, attempts: Int, lastCorrect: Boolean): Int = when {
+        attempts == 0 -> 0
+        attempts < 3 -> mastery
+        lastCorrect && mastery >= 70 -> (mastery + 10).coerceAtMost(100)
+        !lastCorrect -> (mastery - 10).coerceAtLeast(0)
+        else -> mastery
     }
 
     private fun normalizeTopic(value: String): String = value.trim().lowercase(Locale.US)
