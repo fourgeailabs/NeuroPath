@@ -452,6 +452,63 @@ A successful historical build does not automatically validate later commits; cur
 
 ---
 
+# 🛠️ Getting Started / Development Setup
+
+## Prerequisites
+
+- **JDK 21** (required by Gradle 9.3.1 and AGP 9.1.1)
+- **Android SDK** with API level 36 (targetSdk) and build-tools
+- **Gradle 9.3.1** (managed via wrapper)
+
+## Local Build
+
+```bash
+# Clone the repository
+git clone https://github.com/fourgeailabs/NeuroPath.git
+cd NeuroPath
+
+# Ensure debug keystore exists (for debug signing)
+# The repo includes debug.keystore.base64 which CI decodes;
+# for local builds, copy it or generate your own:
+cp debug.keystore_test debug.keystore
+
+# Create .env file for secrets (Gemini API key)
+cp .env.example .env
+# Edit .env and add your GEMINI_API_KEY
+
+# Build debug APK
+./gradlew.bat assembleDebug
+# On Linux/macOS: ./gradlew assembleDebug
+```
+
+## CI / GitHub Actions
+
+The repository includes a GitHub Actions workflow (`.github/workflows/build.yml`) that:
+
+- Sets up JDK 21 and Gradle 9.3.1
+- Decodes `debug.keystore.base64` for debug signing
+- Runs `assembleDebug` and `testDebugUnitTest`
+- Uploads `neuropath-debug-apk` artifact
+- Creates releases on tags
+
+Required repository secrets for CI:
+- `KEYSTORE_PATH` (for release signing)
+- `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`
+- `GEMINI_API_KEY` (or configured via `.env`)
+
+## Configuration Files
+
+| File | Purpose | Tracked? |
+|------|---------|----------|
+| `.env` | Runtime secrets (API keys) | ❌ (in `.gitignore`) |
+| `.env.example` | Template for `.env` | ✅ |
+| `debug.keystore` | Debug signing key | ❌ (in `.gitignore`) |
+| `debug.keystore.base64` | Base64-encoded debug keystore for CI | ✅ |
+| `app/google-services.json` | Firebase config (placeholder included) | ✅ |
+| `local.properties` | SDK/NDK paths | ❌ (in `.gitignore`) |
+
+---
+
 # 🧰 Technology Stack
 
 - Kotlin
