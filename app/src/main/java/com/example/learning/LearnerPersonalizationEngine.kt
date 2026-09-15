@@ -18,6 +18,9 @@ object LearnerPersonalizationEngine {
     private const val KEY_PREFERRED_STYLE_PREFIX = "style_"
     private const val KEY_SUBJECT_ATTEMPTS_PREFIX = "subject_attempts_"
     private const val KEY_SUBJECT_CORRECT_PREFIX = "subject_correct_"
+    private const val KEY_TOPIC_ATTEMPTS_PREFIX = "topic_attempts_"
+    private const val KEY_TOPIC_CORRECT_PREFIX = "topic_correct_"
+    private const val KEY_TOPIC_LAST_RESULT_PREFIX = "topic_last_"
 
     fun buildPrompt(
         context: Context,
@@ -47,8 +50,6 @@ object LearnerPersonalizationEngine {
             "Declared learning-difference details: kept on-device by default; use needs, strengths and accessibility signals below."
         }
 
-        // Do not send the child's name to a cloud tutor. A local model may opt into
-        // sensitive context, but the default cloud-safe profile uses a generic learner label.
         val learnerLabel = "Student"
         val accessibility = buildString {
             append("dyslexiaFont=${profile.dyslexiaFontEnabled}; ")
@@ -64,6 +65,7 @@ object LearnerPersonalizationEngine {
             stageOrGrade = profile.gradeLevel,
             subject = subjectKey
         )
+        val topicMastery = topicMasterySummary(context, id)
 
         return """
             LEARNER-CENTRED PERSONALIZATION PROFILE
@@ -79,6 +81,7 @@ object LearnerPersonalizationEngine {
             Current subject: $subjectKey
             Observed answer accuracy across this profile: $accuracy
             Observed answer accuracy in current subject: $subjectAccuracy
+            Topic mastery signals: $topicMastery
             Recent missed topics/signals: ${missed.ifBlank { "none recorded" }}
             Learned preferred explanation style: $preferredStyle
 
@@ -91,10 +94,11 @@ object LearnerPersonalizationEngine {
             4. Offer choices of modality when useful: visual, verbal, example-first, hands-on, or step-by-step.
             5. Do not repeatedly use a style that appears ineffective. Change strategy after repeated misses or frustration.
             6. Increase challenge after demonstrated mastery; reduce complexity after repeated errors without shaming the learner.
-            7. Never diagnose, reinterpret, or medically infer a condition. Use declared information only as an accommodation signal.
-            8. Preserve the learner's agency: ask what they prefer when there is genuine uncertainty.
-            9. Avoid infantilizing older learners and avoid making younger learners feel behind.
-            10. Keep personalization focused on education, accessibility, engagement, and wellbeing—not advertising or manipulation.
+            7. Treat topic mastery as an evidence signal, not a permanent judgment. More attempts with consistent success increase confidence; recent errors lower confidence and should trigger scaffolding.
+            8. Never diagnose, reinterpret, or medically infer a condition. Use declared information only as an accommodation signal.
+            9. Preserve the learner's agency: ask what they prefer when there is genuine uncertainty.
+            10. Avoid infantilizing older learners and avoid making younger learners feel behind.
+            11. Keep personalization focused on education, accessibility, engagement, and wellbeing—not advertising or manipulation.
         """.trimIndent()
     }
 
@@ -110,6 +114,13 @@ object LearnerPersonalizationEngine {
         val correctCount = prefs.getInt(correctKey, 0) + if (correct) 1 else 0
         val subjectAttempts = prefs.getInt(subjectAttemptsKey, 0) + 1
         val subjectCorrect = prefs.getInt(subjectCorrectKey, 0) + if (correct) 1 else 0
+
+        val editor = prefs.edit()
+            .putInt(attemptsKey, attempts)
+            .putInt(correctKey, correctCount)
+            .putInt(subjectAttemptsKey, subjectAttempts)
+            .putInt(subjectCorrectKey, subjectCorrect)
+
         var missed = prefs.getString(missedKey, "") ?: ""
         if (!correct && !topic.isNullOrBlank()) {
             val entries = missed.split("|").filter { it.isNotBlank() }.toMutableList()
@@ -117,13 +128,18 @@ object LearnerPersonalizationEngine {
             entries.add(topic)
             missed = entries.takeLast(8).joinToString("|")
         }
-        prefs.edit()
-            .putInt(attemptsKey, attempts)
-            .putInt(correctKey, correctCount)
-            .putInt(subjectAttemptsKey, subjectAttempts)
-            .putInt(subjectCorrectKey, subjectCorrect)
-            .putString(missedKey, missed)
-            .apply()
+
+        if (!topic.isNullOrBlank()) {
+            val topicKey = normalizeTopic(topic)
+            val topicAttemptsKey = KEY_TOPIC_ATTEMPTS_PREFIX + profileId + "_" + topicKey
+            val topicCorrectKey = KEY_TOPIC_CORRECT_PREFIX + profileId + "_" + topicKey
+            val topicLastResultKey = KEY_TOPIC_LAST_RESULT_PREFIX + profileId + "_" + topicKey
+            editor.putInt(topicAttemptsKey, prefs.getInt(topicAttemptsKey, 0) + 1)
+                .putInt(topicCorrectKey, prefs.getInt(topicCorrectKey, 0) + if (correct) 1 else 0)
+                .putBoolean(topicLastResultKey, correct)
+        }
+
+        editor.putString(missedKey, missed).apply()
     }
 
     fun recordPreferredStyle(context: Context, profileId: Long, style: String) {
@@ -131,6 +147,36 @@ object LearnerPersonalizationEngine {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString(KEY_PREFERRED_STYLE_PREFIX + profileId, style.lowercase(Locale.US)).apply()
     }
+
+    /** Returns compact topic evidence suitable for a tutoring prompt. */
+    fun topicMasterySummary(context: Context, profileId: Long): String {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val missed = prefs.getString(KEY_MISSED_PREFIX + profileId, "") ?: ""
+        val topics = missed.split("|").filter { it.isNotBlank() }.takeLast(8)
+        if (topics.isEmpty()) return "none recorded"
+
+        return topics.joinToString("; ") { topic ->
+            val key = normalizeTopic(topic)
+            val attempts = prefs.getInt(KEY_TOPIC_ATTEMPTS_PREFIX + profileId + "_" + key, 0)
+            val correct = prefs.getInt(KEY_TOPIC_CORRECT_PREFIX + profileId + "_" + key, 0)
+            val lastCorrect = prefs.getBoolean(KEY_TOPIC_LAST_RESULT_PREFIX + profileId + "_" + key, false)
+            val mastery = if (attempts == 0) 0 else (correct * 100) / attempts
+            val confidence = when {
+                attempts == 0 -> 0
+                attempts < 3 -> mastery
+                lastCorrect && mastery >= 70 -> (mastery + 10).coerceAtMost(100)
+                !lastCorrect -> (mastery - 10).coerceAtLeast(0)
+                else -> mastery
+            }
+            "$topic=${mastery}% mastery, ${confidence}% confidence signal over $attempts attempts"
+        }
+    }
+
+    private fun normalizeTopic(value: String): String = value.trim().lowercase(Locale.US)
+        .replace(Regex("[^a-z0-9]+"), "_")
+        .trim('_')
+        .take(80)
+        .ifBlank { "general" }
 
     private fun csv(value: String): List<String> = value.split(",").map { it.trim() }.filter { it.isNotBlank() }
 }
