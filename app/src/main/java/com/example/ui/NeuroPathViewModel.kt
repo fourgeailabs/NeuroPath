@@ -1501,7 +1501,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     studentGrade = studentGrade,
                     studentSubject = _selectedSubject.value,
                     schoolDistrict = profile.schoolDistrict,
-                    country = profile.country
+                    country = profile.country,
+                    stateOrProvince = profile.stateOrProvince
                 )
                 val currSummary = oerTutorContext.formattedContextPrompt.ifBlank {
                     latestCurriculum.value?.curriculumSummary
@@ -1545,7 +1546,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         Personalized Explanation Style: ${currentMode.title}
                         Style Directive: ${currentMode.promptDirective}
                         District requirements context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
-                        Learner profile accommodation considerations: ${profile.neurodivergentTypesCsv}.
+                        Learner accommodation and accessibility signals: use the privacy-safe personalization profile above; do not request or infer diagnosis labels.
                         Curriculum Framework: ${profile.stateStandard} (${profile.schoolDistrict}).
                         
                         Core Tutoring Rules:
