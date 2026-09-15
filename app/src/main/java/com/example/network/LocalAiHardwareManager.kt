@@ -55,7 +55,6 @@ object LocalAiHardwareManager {
             manufacturer.equals("Qualcomm", true) && model.contains("sm8850") -> "QUALCOMM_QNN"
             manufacturer.equals("MediaTek", true) && (model.contains("mt6989") || model.contains("mt6991") || model.contains("mt6993")) -> "MEDIATEK"
             manufacturer.equals("Google", true) && (model.contains("tensor") || model.contains("g5") || model.contains("g6")) -> "GOOGLE_TENSOR"
-            manufacturer.equals("Samsung", true) && model.contains("exynos") -> "SAMSUNG_EXYNOS"
             else -> null
         }
     }
