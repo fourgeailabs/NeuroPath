@@ -4,9 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LocalAiHardwareManagerTest {
-    // Import the data classes from the main source
-    import com.example.network.LocalAiBackend
-    import com.example.network.LocalAiBackendProbe
     @Test
     fun npuCandidateIsIdentifiedWithoutClaimingItIsActive() {
         assertEquals("QUALCOMM_QNN", LocalAiHardwareManager.potentialNpuBackend("Qualcomm", "SM8650"))
