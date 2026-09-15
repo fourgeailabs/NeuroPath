@@ -11,40 +11,34 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Patch tutoring context
+      - name: Patch live OER jurisdiction
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt')
           s = p.read_text()
-
-          duplicate = '''                        Theme world: ${theme.title} (${theme.buddyRole}).
-                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
-                        District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
-                    """.trimIndent()'''
-          if duplicate in s:
-              s = s.replace(duplicate, '                    """.trimIndent()', 1)
-
           live_marker = 'fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {'
           live_start = s.find(live_marker)
           live_end = s.find('// Lyria Music Generation', live_start)
           if live_start < 0 or live_end < 0:
               raise SystemExit('live voice function not found')
           live = s[live_start:live_end]
-
-          declaration = '            val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, _selectedSubjectTag.value.id, false)\n'
-          if 'val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt' not in live:
-              needle = '            val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")\n'
-              if needle not in live:
-                  raise SystemExit('live voice base prompt not found')
-              live = live.replace(needle, declaration + needle, 1)
-
-          if 'stateOrProvince = profile.stateOrProvince' not in live:
-              live = live.replace('country = profile.country', 'country = profile.country,\n                stateOrProvince = profile.stateOrProvince', 1)
+          old = '''                schoolDistrict = profile.schoolDistrict,
+                country = profile.country
+            )
+            val currContext ='''
+          new = '''                schoolDistrict = profile.schoolDistrict,
+                country = profile.country,
+                stateOrProvince = profile.stateOrProvince
+            )
+            val currContext ='''
+          if old not in live:
+              raise SystemExit('live OER lookup target not found')
+          live = live.replace(old, new, 1)
           s = s[:live_start] + live + s[live_end:]
           p.write_text(s)
           PY
-      - name: Verify tutoring context
+      - name: Verify patch
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -52,11 +46,10 @@ jobs:
           live_start = s.find('fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {')
           live_end = s.find('// Lyria Music Generation', live_start)
           live = s[live_start:live_end]
-          assert 'Accommodations: ${profile.neurodivergentTypesCsv}' not in live
+          assert 'schoolDistrict = profile.schoolDistrict,\n                country = profile.country,\n                stateOrProvince = profile.stateOrProvince' in live
           assert 'val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt' in live
-          assert '$personalizationProfile' in live
-          assert 'stateOrProvince = profile.stateOrProvince' in live
-          print('Live voice privacy, personalization, and OER jurisdiction checks passed.')
+          assert 'Accommodations: ${profile.neurodivergentTypesCsv}' not in live
+          print('Live voice OER jurisdiction and privacy checks passed.')
           PY
       - name: Commit patch
         run: |
@@ -67,6 +60,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Patch already applied.'
           else
-            git commit -m 'fix: define live voice personalization and jurisdiction'
+            git commit -m 'fix: pass subnational jurisdiction to live OER tutor'
             git push
           fi
