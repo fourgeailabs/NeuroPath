@@ -1,5 +1,7 @@
 name: Patch local Gemma personalization
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -45,13 +47,17 @@ jobs:
           PY
       - name: Verify patch
         run: |
-          grep -F 'LearnerPersonalizationEngine.buildPrompt' app/src/main/java/com/example/ui/NeuroPathViewModel.kt
           grep -F '$personalizationProfile' app/src/main/java/com/example/ui/NeuroPathViewModel.kt
+          test "$(grep -F -c 'Local Tutoring Rules:' app/src/main/java/com/example/ui/NeuroPathViewModel.kt)" -eq 1
       - name: Commit patch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add app/src/main/java/com/example/ui/NeuroPathViewModel.kt
           git diff --cached --check
-          git commit -m 'fix: feed privacy-safe personalization into local Gemma'
-          git push
+          if git diff --cached --quiet; then
+            echo 'Patch already applied.'
+          else
+            git commit -m 'fix: feed privacy-safe personalization into local Gemma'
+            git push
+          fi
