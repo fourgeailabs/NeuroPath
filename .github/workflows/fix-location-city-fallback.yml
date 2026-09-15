@@ -1,0 +1,40 @@
+name: Fix location city fallback
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove invented city fallback for GPS
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/main/java/com/example/util/LocationComplianceHelper.kt')
+          s = p.read_text()
+          old = '            detectedCity = foundCity ?: matchedLocale.city,\n'
+          # The postal resolver should still use its resolved city. This occurrence is unique to that resolver.
+          # For GPS, the later fallback must not substitute a catalog city when reverse geocoding did not return one.
+          marker = '    suspend fun detectAndVerifyHomeCountry(context: Context) = withContext(Dispatchers.IO) {'
+          # The actual signature includes the result type; use the exact block boundary instead.
+          gps_marker = '    suspend fun detectAndVerifyHomeCountry(context: Context): LocationComplianceResult = withContext(Dispatchers.IO) {'
+          if gps_marker not in s:
+              raise SystemExit('GPS method marker not found')
+          before, after = s.split(gps_marker, 1)
+          old_gps = '            detectedCity = detectedCity ?: matchedLocale.city,\n'
+          if old_gps not in after:
+              raise SystemExit('GPS city fallback not found')
+          after = after.replace(old_gps, '            detectedCity = detectedCity,\n', 1)
+          p.write_text(before + gps_marker + after)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/java/com/example/util/LocationComplianceHelper.kt
+          git commit -m 'fix: never invent GPS city from educational locale'
+          git push
+          git rm .github/workflows/fix-location-city-fallback.yml
+          git commit -m 'chore: remove temporary location city workflow'
+          git push
