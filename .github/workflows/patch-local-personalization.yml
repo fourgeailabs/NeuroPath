@@ -18,30 +18,35 @@ jobs:
           p = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt')
           s = p.read_text()
 
-          marker = 'if (currentModel == ChatModelMode.GEMMA_LOCAL) {'
-          start = s.find(marker)
-          end = s.find('} else if (currentModel != ChatModelMode.OFFLINE)', start)
-          if start < 0 or end < 0:
-              raise SystemExit('local Gemma branch not found')
-          block = s[start:end]
+          # Remove the duplicate tail left by the first local-prompt patch.
           duplicate = '''                        Theme world: ${theme.title} (${theme.buddyRole}).
                         Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
                         District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
                     """.trimIndent()'''
-          if duplicate in block:
-              block = block.replace(duplicate, '                    """.trimIndent()', 1)
-          if '$personalizationProfile' not in block:
-              raise SystemExit('local personalization missing after prior patch')
-          s = s[:start] + block + s[end:]
+          if duplicate in s:
+              s = s.replace(duplicate, '                    """.trimIndent()', 1)
 
-          # Ensure every tutor OER retrieval carries the selected subnational jurisdiction.
-          target = '''schoolDistrict = profile.schoolDistrict,
-                    country = profile.country'''
-          replacement = '''schoolDistrict = profile.schoolDistrict,
-                    country = profile.country,
-                    stateOrProvince = profile.stateOrProvince'''
-          if target in s:
-              s = s.replace(target, replacement)
+          # The live voice tutor is cloud-backed, so use the privacy-safe profile and never raw diagnosis labels.
+          live_marker = 'fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {'
+          live_start = s.find(live_marker)
+          if live_start < 0:
+              raise SystemExit('live voice function not found')
+          live_end = s.find('// Lyria Music Generation', live_start)
+          if live_end < 0:
+              raise SystemExit('live voice function end not found')
+          live = s[live_start:live_end]
+          live = live.replace('                Accommodations: ${profile.neurodivergentTypesCsv}.\n', '                $personalizationProfile\n', 1)
+          if 'Accommodations: ${profile.neurodivergentTypesCsv}' in live:
+              raise SystemExit('raw diagnosis label still present in live voice prompt')
+          if '$personalizationProfile' not in live:
+              needle = '            val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")\n'
+              if needle not in live:
+                  raise SystemExit('live voice base prompt not found')
+              live = live.replace(needle, needle + '            val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, _selectedSubjectTag.value.id, false)\n', 1)
+              live = live.replace('                $basePrompt\n', '                $basePrompt\n                $personalizationProfile\n', 1)
+          # Missing jurisdiction on the live OER lookup.
+          live = live.replace('                schoolDistrict = profile.schoolDistrict,\n                country = profile.country\n', '                schoolDistrict = profile.schoolDistrict,\n                country = profile.country,\n                stateOrProvince = profile.stateOrProvince\n', 1)
+          s = s[:live_start] + live + s[live_end:]
           p.write_text(s)
           PY
       - name: Verify tutoring context
@@ -49,15 +54,19 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt').read_text()
-          start = s.find('if (currentModel == ChatModelMode.GEMMA_LOCAL) {')
-          end = s.find('} else if (currentModel != ChatModelMode.OFFLINE)', start)
-          block = s[start:end]
-          assert '$personalizationProfile' in block
-          assert block.count('Theme world: ${theme.title} (${theme.buddyRole}).') == 1
-          assert block.count('Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).') == 1
-          assert 'Local Tutoring Rules:' in block
-          assert 'stateOrProvince = profile.stateOrProvince' in s
-          print('Local personalization and OER jurisdiction propagation verified.')
+          assert 'Accommodations: ${profile.neurodivergentTypesCsv}' not in s
+          live_start = s.find('fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {')
+          live_end = s.find('// Lyria Music Generation', live_start)
+          live = s[live_start:live_end]
+          assert '$personalizationProfile' in live
+          assert 'stateOrProvince = profile.stateOrProvince' in live
+          chat_start = s.find('if (currentModel == ChatModelMode.GEMMA_LOCAL) {')
+          chat_end = s.find('} else if (currentModel != ChatModelMode.OFFLINE)', chat_start)
+          chat = s[chat_start:chat_end]
+          assert '$personalizationProfile' in chat
+          assert chat.count('Theme world: ${theme.title} (${theme.buddyRole}).') == 1
+          assert chat.count('Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).') == 1
+          print('Tutoring privacy, personalization, and jurisdiction checks passed.')
           PY
       - name: Commit patch
         run: |
@@ -68,6 +77,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Patch already applied.'
           else
-            git commit -m 'fix: clean local tutoring context and pass OER jurisdiction'
+            git commit -m 'fix: harden live voice privacy and OER jurisdiction'
             git push
           fi
