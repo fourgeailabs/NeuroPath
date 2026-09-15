@@ -15,27 +15,21 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt')
           s = p.read_text()
-          live_marker = 'fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {'
-          live_start = s.find(live_marker)
-          live_end = s.find('// Lyria Music Generation', live_start)
-          if live_start < 0 or live_end < 0:
+          marker = 'fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {'
+          start = s.find(marker)
+          end = s.find('// Lyria Music Generation', start)
+          if start < 0 or end < 0:
               raise SystemExit('live voice function not found')
-          live = s[live_start:live_end]
-          old = '''                schoolDistrict = profile.schoolDistrict,
-                country = profile.country
-            )
-            val currContext ='''
-          new = '''                schoolDistrict = profile.schoolDistrict,
-                country = profile.country,
-                stateOrProvince = profile.stateOrProvince
-            )
-            val currContext ='''
-          if old not in live:
-              raise SystemExit('live OER lookup target not found')
-          live = live.replace(old, new, 1)
-          s = s[:live_start] + live + s[live_end:]
+          live = s[start:end]
+          pattern = re.compile(r'(schoolDistrict\s*=\s*profile\.schoolDistrict,\s*\n\s*country\s*=\s*profile\.country)(\s*\n\s*\))')
+          replacement = r'\1,\n                stateOrProvince = profile.stateOrProvince\2'
+          live, count = pattern.subn(replacement, live, count=1)
+          if count != 1:
+              raise SystemExit('live OER jurisdiction target not found')
+          s = s[:start] + live + s[end:]
           p.write_text(s)
           PY
       - name: Verify patch
@@ -43,10 +37,10 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt').read_text()
-          live_start = s.find('fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {')
-          live_end = s.find('// Lyria Music Generation', live_start)
-          live = s[live_start:live_end]
-          assert 'schoolDistrict = profile.schoolDistrict,\n                country = profile.country,\n                stateOrProvince = profile.stateOrProvince' in live
+          start = s.find('fun sendLiveVoiceTurn(userVoiceWav: ByteArray? = null, userText: String? = null) {')
+          end = s.find('// Lyria Music Generation', start)
+          live = s[start:end]
+          assert 'stateOrProvince = profile.stateOrProvince' in live
           assert 'val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt' in live
           assert 'Accommodations: ${profile.neurodivergentTypesCsv}' not in live
           print('Live voice OER jurisdiction and privacy checks passed.')
