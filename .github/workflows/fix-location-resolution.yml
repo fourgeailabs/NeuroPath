@@ -1,6 +1,7 @@
 name: Fix location resolution
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
 permissions:
   contents: write
 jobs:
@@ -14,57 +15,43 @@ jobs:
           from pathlib import Path
           p = Path('app/src/main/java/com/example/util/LocationComplianceHelper.kt')
           s = p.read_text()
-
           old = '''        var foundCountry = "United States"\n        var foundCountryCode = "US"\n        var foundState: String? = null\n        var foundCity: String? = null\n\n        // Try Geocoder reverse lookup first for precise postal resolution\n        try {\n            val geocoder = Geocoder(context, Locale.getDefault())\n            @Suppress("DEPRECATION")\n            val addresses = geocoder.getFromLocationName(clean, 1)\n            if (!addresses.isNullOrEmpty()) {\n                val addr = addresses[0]\n                addr.countryName?.let { foundCountry = it }\n                addr.countryCode?.let { foundCountryCode = it.uppercase() }\n                addr.adminArea?.let { foundState = it }\n                addr.locality?.let { foundCity = it }\n            }\n        } catch (_: Exception) {\n            // Fallback to pattern matching\n        }\n'''
-          new = '''        var foundCountry = "United States"\n        var foundCountryCode = "US"\n        var foundState: String? = null\n        var foundCity: String? = null\n\n        // Known postal-code mappings take precedence over Android Geocoder.\n        // Geocoder is intentionally not authoritative for ZIP-code-to-city because\n        // providers can return a nearby metro/county label (for example Phoenix\n        // for a Surprise ZIP). The educational jurisdiction must follow the\n        // learner's explicit postal code when we have a verified mapping.\n        val knownUsZip = mapKnownUsZip(clean)\n        if (knownUsZip != null) {\n            foundCountry = "United States"\n            foundCountryCode = "US"\n            foundState = knownUsZip.first\n            foundCity = knownUsZip.second\n        } else {\n            try {\n                val geocoder = Geocoder(context, Locale.getDefault())\n                @Suppress("DEPRECATION")\n                val addresses = geocoder.getFromLocationName(clean, 1)\n                if (!addresses.isNullOrEmpty()) {\n                    val addr = addresses[0]\n                    addr.countryName?.let { foundCountry = it }\n                    addr.countryCode?.let { foundCountryCode = it.uppercase() }\n                    addr.adminArea?.let { foundState = it }\n                    addr.locality?.let { foundCity = it }\n                }\n            } catch (_: Exception) {\n                // Continue to deterministic postal-prefix fallback below.\n            }\n        }\n'''
-          if old not in s:
-              raise SystemExit('postal resolver anchor not found')
+          new = '''        var foundCountry = "United States"\n        var foundCountryCode = "US"\n        var foundState: String? = null\n        var foundCity: String? = null\n\n        // Known postal mappings take precedence over Android Geocoder because\n        // geocoders may collapse a ZIP into a nearby metro label.\n        val knownUsZip = mapKnownUsZip(clean)\n        if (knownUsZip != null) {\n            foundCountry = "United States"\n            foundCountryCode = "US"\n            foundState = knownUsZip.first\n            foundCity = knownUsZip.second\n        } else {\n            try {\n                val geocoder = Geocoder(context, Locale.getDefault())\n                @Suppress("DEPRECATION")\n                val addresses = geocoder.getFromLocationName(clean, 1)\n                if (!addresses.isNullOrEmpty()) {\n                    val addr = addresses[0]\n                    addr.countryName?.let { foundCountry = it }\n                    addr.countryCode?.let { foundCountryCode = it.uppercase() }\n                    addr.adminArea?.let { foundState = it }\n                    addr.locality?.let { foundCity = it }\n                }\n            } catch (_: Exception) {\n                // Continue to deterministic postal-prefix fallback below.\n            }\n        }\n'''
+          if old not in s: raise SystemExit('postal resolver anchor not found')
           s = s.replace(old, new, 1)
 
           old = '''        var detectedCountryName = "United States"\n        var detectedCountryCode = "US"\n        var detectedState: String? = "Arizona"\n        var detectedCity: String? = "Surprise"\n        var isFromGps = false\n'''
           new = '''        var detectedCountryName = "United States"\n        var detectedCountryCode = "US"\n        var detectedState: String? = null\n        var detectedCity: String? = null\n        var isFromGps = false\n'''
-          if old not in s:
-              raise SystemExit('GPS default anchor not found')
+          if old not in s: raise SystemExit('GPS default anchor not found')
           s = s.replace(old, new, 1)
 
           old = '''                if (lastLocation != null) {\n                    // Check if GPS coordinates are in Arizona (Lat 31.3..37.0, Lon -114.8..-109.0)\n                    if (lastLocation.latitude in 31.3..37.0 && lastLocation.longitude in -114.8..-109.0) {\n                        detectedState = "Arizona"\n                        detectedCity = if (lastLocation.latitude in 33.5..33.8 && lastLocation.longitude in -112.5..-112.2) "Surprise" else "Phoenix"\n                        isFromGps = true\n                    }\n\n                    val geocoder = Geocoder(context, Locale.getDefault())\n'''
-          new = '''                if (lastLocation != null) {\n                    // GPS coordinates are never converted into a guessed city by\n                    // bounding-box math. Reverse geocoding is the source of truth\n                    // for city/state when the device provides a usable location.\n                    val geocoder = Geocoder(context, Locale.getDefault())\n'''
-          if old not in s:
-              raise SystemExit('GPS bounding-box anchor not found')
+          new = '''                if (lastLocation != null) {\n                    // Never guess Phoenix/Surprise from a broad coordinate box.\n                    // Reverse geocoding supplies the actual city/state.\n                    val geocoder = Geocoder(context, Locale.getDefault())\n'''
+          if old not in s: raise SystemExit('GPS bounding-box anchor not found')
           s = s.replace(old, new, 1)
 
           old = '''                            val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality\n                            if (!reportedCity.isNullOrBlank()) {\n                                detectedCity = reportedCity\n                            }\n                            isFromGps = true\n'''
-          new = '''                            val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality\n                            if (!reportedCity.isNullOrBlank()) {\n                                detectedCity = reportedCity\n                                isFromGps = true\n                            } else if (!detectedState.isNullOrBlank() && !detectedCountryCode.isNullOrBlank()) {\n                                // State/country alone is useful for curriculum routing,\n                                // but it is not sufficient evidence to invent a city.\n                                isFromGps = true\n                            }\n'''
-          if s.count(old) < 2:
-              raise SystemExit(f'expected 2 reverse-geocoder city blocks, found {s.count(old)}')
+          new = '''                            val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality\n                            if (!reportedCity.isNullOrBlank()) {\n                                detectedCity = reportedCity\n                                isFromGps = true\n                            } else if (!detectedState.isNullOrBlank()) {\n                                isFromGps = true\n                            }\n'''
+          if s.count(old) != 2: raise SystemExit(f'expected 2 reverse-geocoder blocks, found {s.count(old)}')
           s = s.replace(old, new, 2)
 
-          # Insert deterministic ZIP helper immediately before resolvePostalOrZipCode.
           marker = '''    suspend fun resolvePostalOrZipCode(context: Context, inputPostal: String): LocationComplianceResult = withContext(Dispatchers.IO) {'''
           helper = '''    private fun mapKnownUsZip(clean: String): Pair<String, String>? {\n        val zip = clean.take(5)\n        return when (zip) {\n            "85374", "85378", "85379", "85387", "85388" -> "Arizona" to "Surprise"\n            "90210", "90211", "90212" -> "California" to "Beverly Hills"\n            else -> null\n        }\n    }\n\n'''
           if helper.strip() not in s:
-              if marker not in s:
-                  raise SystemExit('resolver marker not found')
+              if marker not in s: raise SystemExit('resolver marker not found')
               s = s.replace(marker, helper + marker, 1)
-
           p.write_text(s)
 
-          # Add a regression test for the two failure modes reported by the user.
           t = Path('app/src/test/java/com/example/util/LocationComplianceHelperTest.kt')
           t.parent.mkdir(parents=True, exist_ok=True)
-          t.write_text('''package com.example.util\n\nimport org.junit.Assert.assertEquals\nimport org.junit.Test\n\nclass LocationComplianceHelperTest {\n    @Test\n    fun knownSurpriseZipDoesNotDriftToPhoenix() {\n        val method = LocationComplianceHelper::class.java.getDeclaredMethod("mapKnownUsZip", String::class.java)\n        method.isAccessible = true\n        @Suppress("UNCHECKED_CAST")\n        val result = method.invoke(LocationComplianceHelper, "85379") as Pair<String, String>?\n        assertEquals("Arizona", result?.first)\n        assertEquals("Surprise", result?.second)\n    }\n\n    @Test\n    fun unknownZipIsNotAssignedAnInventedCityByKnownMapping() {\n        val method = LocationComplianceHelper::class.java.getDeclaredMethod("mapKnownUsZip", String::class.java)\n        method.isAccessible = true\n        val result = method.invoke(LocationComplianceHelper, "99999")\n        assertEquals(null, result)\n    }\n}\n''')
-
-          # Keep this workflow temporary: it will be removed after the patch commit.
-      - name: Commit patch
+          t.write_text('''package com.example.util\n\nimport org.junit.Assert.assertEquals\nimport org.junit.Test\n\nclass LocationComplianceHelperTest {\n    @Test\n    fun knownSurpriseZipDoesNotDriftToPhoenix() {\n        val method = LocationComplianceHelper::class.java.getDeclaredMethod("mapKnownUsZip", String::class.java)\n        method.isAccessible = true\n        val result = method.invoke(LocationComplianceHelper, "85379") as Pair<*, *>?\n        assertEquals("Arizona", result?.first)\n        assertEquals("Surprise", result?.second)\n    }\n\n    @Test\n    fun unknownZipHasNoKnownCityMapping() {\n        val method = LocationComplianceHelper::class.java.getDeclaredMethod("mapKnownUsZip", String::class.java)\n        method.isAccessible = true\n        assertEquals(null, method.invoke(LocationComplianceHelper, "99999"))\n    }\n}\n''')
+      - name: Commit patch and remove workflow
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/src/main/java/com/example/util/LocationComplianceHelper.kt app/src/test/java/com/example/util/LocationComplianceHelperTest.kt
           git commit -m "fix: trust resolved learner location over Phoenix fallback"
           git push
-      - name: Remove temporary workflow
-        if: always()
-        run: |
-          git rm .github/workflows/fix-location-resolution.yml || true
-          git commit -m "chore: remove temporary location patch workflow" || true
-          git push || true
+          git rm .github/workflows/fix-location-resolution.yml
+          git commit -m "chore: remove temporary location patch workflow"
+          git push
