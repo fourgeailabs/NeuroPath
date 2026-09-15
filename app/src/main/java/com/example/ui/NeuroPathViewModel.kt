@@ -1517,6 +1517,21 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
                     val systemPrompt = """
                         $basePrompt
+                        $personalizationProfile
+                        Theme world: ${theme.title} (${theme.buddyRole}).
+                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
+                        Personalized Explanation Style: ${currentMode.title}
+                        Style Directive: ${currentMode.promptDirective}
+                        District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
+                        Curriculum Framework: ${profile.stateStandard} (${profile.schoolDistrict}).
+
+                        Local Tutoring Rules:
+                        1. Adapt to the learner profile and observed mastery above; never treat a diagnosis as an identity label.
+                        2. Prefer the learner's recorded explanation style, but change strategy when it is not working.
+                        3. Use strengths and interests to make difficult ideas concrete.
+                        4. Keep accessibility and accommodation signals in mind without diagnosing or inferring conditions.
+                        5. Ground teaching in the supplied curriculum context when relevant.
+                        6. Preserve learner agency and use a Socratic approach rather than doing assessed work for the learner.
                         Theme world: ${theme.title} (${theme.buddyRole}).
                         Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
                         District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
