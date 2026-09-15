@@ -15,35 +15,33 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt')
           s = p.read_text()
-          old = '''                    val systemPrompt = """
-                        $basePrompt
-                        Theme world: ${theme.title} (${theme.buddyRole}).
-                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
-                        District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
-                    """.trimIndent()'''
-          new = '''                    val systemPrompt = """
-                        $basePrompt
-                        $personalizationProfile
-                        Theme world: ${theme.title} (${theme.buddyRole}).
-                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
-                        Personalized Explanation Style: ${currentMode.title}
-                        Style Directive: ${currentMode.promptDirective}
-                        District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
-                        Curriculum Framework: ${profile.stateStandard} (${profile.schoolDistrict}).
+          pattern = re.compile(r'''(?P<indent>\s+)val systemPrompt = """\n(?P=indent)    \$basePrompt\n(?P=indent)    Theme world: \$\{theme\.title\} \(\$\{theme\.buddyRole\}\)\.\n(?P=indent)    Active Subject Focus: \$\{currentSubject\.title\} \(\$\{currentSubject\.id\}\)\.\n(?P=indent)    District context: \$\{profile\.schoolDistrict\} in \$\{profile\.city\}, \$\{profile\.stateOrProvince\}, \$\{profile\.country\}\.\n(?P=indent)"""\.trimIndent\(\)''')
+          replacement = '''{indent}val systemPrompt = """
+{indent}    $basePrompt
+{indent}    $personalizationProfile
+{indent}    Theme world: ${{theme.title}} (${{theme.buddyRole}}).
+{indent}    Active Subject Focus: ${{currentSubject.title}} (${{currentSubject.id}}).
+{indent}    Personalized Explanation Style: ${{currentMode.title}}
+{indent}    Style Directive: ${{currentMode.promptDirective}}
+{indent}    District context: ${{profile.schoolDistrict}} in ${{profile.city}}, ${{profile.stateOrProvince}}, ${{profile.country}}.
+{indent}    Curriculum Framework: ${{profile.stateStandard}} (${{profile.schoolDistrict}}).
 
-                        Local Tutoring Rules:
-                        1. Adapt to the learner profile and observed mastery above; never treat a diagnosis as an identity label.
-                        2. Prefer the learner's recorded explanation style, but change strategy when it is not working.
-                        3. Use strengths and interests to make difficult ideas concrete.
-                        4. Keep accessibility and accommodation signals in mind without diagnosing or inferring conditions.
-                        5. Ground teaching in the supplied curriculum context when relevant.
-                        6. Preserve learner agency and use a Socratic approach rather than doing assessed work for the learner.
-                    """.trimIndent()'''
-          if old not in s:
-              raise SystemExit('expected local Gemma prompt block not found')
-          p.write_text(s.replace(old, new, 1))
+{indent}    Local Tutoring Rules:
+{indent}    1. Adapt to the learner profile and observed mastery above; never treat a diagnosis as an identity label.
+{indent}    2. Prefer the learner's recorded explanation style, but change strategy when it is not working.
+{indent}    3. Use strengths and interests to make difficult ideas concrete.
+{indent}    4. Keep accessibility and accommodation signals in mind without diagnosing or inferring conditions.
+{indent}    5. Ground teaching in the supplied curriculum context when relevant.
+{indent}    6. Preserve learner agency and use a Socratic approach rather than doing assessed work for the learner.
+{indent}""".trimIndent()'''
+          matches = list(pattern.finditer(s))
+          if len(matches) != 1:
+              raise SystemExit(f'expected exactly one local Gemma prompt block, found {len(matches)}')
+          m = matches[0]
+          p.write_text(s[:m.start()] + replacement.format(indent=m.group('indent')) + s[m.end():])
           PY
       - name: Verify patch
         run: |
