@@ -7,6 +7,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Update
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.local.entity.ChildProfileEntity
 import com.example.data.local.entity.ChatMessageEntity
 import com.example.data.local.entity.DownloadedCurriculumEntity
@@ -171,6 +173,19 @@ interface SensorySessionDao {
     suspend fun insertSensorySession(session: SensorySessionEntity)
 }
 
+// Room Migrations to prevent data loss on schema changes
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        // Migration from v9 to v10: Add any new columns or tables safely
+        // ChildProfileEntity already has all current fields
+        // This migration ensures future schema changes don't trigger destructive migration
+        database.execSQL("PRAGMA foreign_keys=ON;")
+    }
+}
+
+// Future migrations can be added here:
+// val MIGRATION_10_11 = object : Migration(10, 11) { ... }
+
 @Database(
     entities = [
         ChildProfileEntity::class,
@@ -181,8 +196,8 @@ interface SensorySessionDao {
         OerCurriculumEntity::class,
         ChatMessageEntity::class
     ],
-    version = 9,
-    exportSchema = false
+    version = 10,
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun childProfileDao(): ChildProfileDao
@@ -192,5 +207,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun sensorySessionDao(): SensorySessionDao
     abstract fun oerCurriculumDao(): OerCurriculumDao
     abstract fun chatMessageDao(): ChatMessageDao
+
+    companion object {
+        val MIGRATIONS = listOf(MIGRATION_9_10)
+    }
 }
 

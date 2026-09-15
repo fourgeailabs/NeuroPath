@@ -1,0 +1,195 @@
+# Detekt Configuration for NeuroPath
+# https://detekt.dev/docs/intro/
+
+build:
+  maxIssues: 0
+  weights:
+    complexity: 2
+    LongParameterList: 1
+    style: 1
+    comments: 1
+
+config:
+  validation: true
+  warnsAsErrors: false
+  exclude:
+    - '.*/build/.*'
+    - '.*/generated/.*'
+    - '.*/resources/.*'
+    - '.*/test/.*'
+
+console-reports:
+  active: true
+  exclude:
+    - ProjectStatisticsReport
+    - ComplexityReport
+    - NotificationReport
+    - FindBugsReport
+    - FileBasedFindBugsReport
+
+output-reports:
+  active: true
+  exclude:
+    - ProjectStatisticsReport
+    - ComplexityReport
+    - NotificationReport
+    - FindBugsReport
+    - FileBasedFindBugsReport
+
+# Rules Configuration
+comments:
+  CommentOverPrivateFunction: false
+  CommentOverPrivateProperty: false
+  EndOfSentenceFormat: '.'
+  active: true
+
+complexity:
+  ComplexCondition: 5
+  ComplexInterface: 10
+  ComplexMethod: 15
+  LabeledExpression: false
+  LongMethod: 60
+  LongParameterList: 7
+  MethodOverloading: 6
+  NamedArguments: false
+  Nesting: 4
+  TooManyFunctions: 11
+  active: true
+
+exceptions:
+  InstanceOfCheckForException: true
+  NotImplementedDeclaration: false
+  PrintStackTrace: true
+  PrintToStdOutOrErr: false
+  ReturnFromFinally: false
+  SwallowedException:
+    allowedExceptionNameRegex: 'Exception|Throwable'
+  TooGenericExceptionCaught:
+    allowedExceptionNameRegex: 'Exception|Throwable'
+  ThrowingExceptionFromFinally: false
+  ThrowingExceptionsWithoutMessageOrCause: false
+  ThrowingNewInstanceOfSameException: false
+  active: true
+
+formatting:
+  FinalNewline: true
+  Indentation: 4
+  MaximumLineLength: 120
+  NoConsecutiveBlankLines: true
+  NoEmptyFirstLineInMethodBlock: true
+  NoMultipleSpaces: true
+  NoTrailingSpaces: true
+  NoWildcardImports: true
+  PackageImportLayout:
+    groups:
+      - 'android.*'
+      - 'androidx.*'
+      - 'com.google.*'
+      - 'com.example.*'
+      - 'kotlin.*'
+      - 'org.*'
+      - 'java.*'
+      - 'javax.*'
+      - 'kotlinx.*'
+      - 'okhttp3.*'
+      - 'retrofit2.*'
+    groupSeparator: blankLine
+  active: true
+
+naming:
+  ClassNaming: '^[A-Z][a-zA-Z0-9]*$'
+  FunctionNaming: '^[a-z][a-zA-Z0-9]*$'
+  MemberName: '^[a-z][a-zA-Z0-9]*$'
+  TopLevelPropertyNaming: '^[a-z][a-zA-Z0-9]*$'
+  active: true
+
+potential-bugs:
+  CoroutineCreationDuringComposable: true
+  CoroutinesGlobalScopeUsage: true
+  DoubleMutabilityForCollection: false
+  EachBlockNotNeeded: false
+  ExplicitGarbageCollectionCall: false
+  InvalidPackageDeclaration: false
+  LateinitUsage: true
+  NullSafeCallOnNullableReceiver: true
+  ParameterNameEqualsDeclaredName: false
+  PrematureViewDestruction: true
+  ReturnCount: 7
+  SpreadOperator: false
+  UnreachableCode: true
+  active: true
+
+style:
+  BooleanPropertyNaming: true
+  CompanionObject: true
+  DataClassContainsFunctions: true
+  DestructuringDeclarationWithTooManyEntries: 5
+  EqualsNullCall: true
+  ExplicitCollectionElementAccessMethod: true
+  ExplicitItLambdaParameter: false
+  ExpressionBodySyntax: false
+  ForbiddenAnnotation: false
+  ForbiddenComment: false
+  ForbiddenImport:
+    imports:
+      - 'java.util.Date'
+      - 'java.util.Calendar'
+      - 'kotlin.properties.Delegates.notNull'
+      - 'kotlin.random.Random.Default'
+  ForbiddenPublicDataClass: false
+  ForbiddenSuppress: false
+  ForbiddenVoid: false
+  FunctionOnlyReturningConstant: true
+  FunctionParameterNaming: true
+  IfCanBeSwitch: true
+  MagicNumber:
+    ignoredNumbers: '-1,0,1,2,10,100,1000'
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreFunctionCall: true
+    ignoreNamedArgument: true
+  MandatoryBracesIfStatements: true
+  MaxChainedCallsOnSameLine: 5
+  MemberOrdering:
+    order:
+      - INTERFACES
+      - COMPANION_OBJECT
+      - CONSTANTS
+      - ENUMS
+      - FIELDS
+      - CONSTRUCTORS
+      - INIT_BLOCKS
+      - INTERNAL_FUNCTIONS
+      - PUBLIC_FUNCTIONS
+      - PRIVATE_FUNCTIONS
+      - INNER_CLASSES
+      - EXTENSION_FUNCTIONS
+  NamedArguments: true
+  NestedClassesHierarchyDepth: 3
+  NewLineAtEndOfFile: true
+  NoEmptyBlock: true
+  NoEmptyClassBody: false
+  ObjectLiteralToLambda: true
+  OptionalAbstractKeyword: true
+  OptionalUnit: true
+  OptionalWhenBraces: true
+  ProtectedMemberInFinalClass: true
+  RedundantExplicitType: true
+  RedundantHigherOrderFunctionUsage: false
+  RedundantLambda: true
+  ReturnCount: 7
+  SafeCast: true
+  SingleExpressionFunction: true
+  StringLiteralDuplication: 3
+  ThrowsCount: 3
+  TrailingWhitespace: true
+  UnnecessaryAnnotationUseSiteTarget: true
+  UnnecessaryApply: true
+  UnnecessaryInheritance: true
+  UnnecessaryLet: true
+  UnnecessaryParentheses: true
+  UtilityClassWithPublicConstructor: true
+  VarCouldBeVal: true
+  WildcardImport: true
+  active: true

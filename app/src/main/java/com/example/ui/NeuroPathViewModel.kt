@@ -125,7 +125,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         application.applicationContext,
         AppDatabase::class.java,
         "neuropath_database.db"
-    ).fallbackToDestructiveMigration().build()
+    ).addMigrations(*AppDatabase.MIGRATIONS.toTypedArray()).build()
 
     val repository = NeuroPathRepository(db)
     val speechManager = SpeechManager(application.applicationContext)
@@ -631,7 +631,9 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                     repository.saveDownloadedCurriculum(entity)
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e("NeuroPathViewModel", "Failed to sync curriculum for locale", e)
+                speechManager.speak("Curriculum sync failed. Please check your connection and try again.")
             } finally {
                 _isDownloadingCurriculum.value = false
             }
@@ -649,11 +651,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun initiateOfflineCurriculumSync() {
         if (_isDownloadingCurriculum.value) return
-        _isDownloadingCurriculum.value = true
-        viewModelScope.launch {
-            delay(15000)
-            _isDownloadingCurriculum.value = false
-        }
+        syncDailyCurriculumForLocale(forceRefresh = false)
     }
 
     fun syncOerCommonsCurriculum() {
@@ -665,12 +663,14 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 _oerSyncResult.value = result
                 speechManager.speak("OER Commons curriculum synchronized successfully.")
             } catch (e: Exception) {
+                Log.e("NeuroPathViewModel", "Failed to sync OER Commons curriculum", e)
                 _oerSyncResult.value = OerSyncResult(
-                    isSuccess = true,
+                    isSuccess = false,
                     sourceTitle = "OER Commons Curated Collections",
                     totalUnitsCount = oerCurriculumUnits.value.size,
-                    message = "Pre-installed OER Commons K-12 collection active."
+                    message = "Sync failed: ${e.message}. Using pre-installed collection."
                 )
+                speechManager.speak("OER sync failed. Using pre-installed curriculum.")
             } finally {
                 _isOerSyncing.value = false
             }
@@ -787,10 +787,31 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val navigationBackStack = mutableListOf<AppScreen>()
 
+    private val NAV_BACK_STACK_KEY = "nav_back_stack"
+
+    private fun saveBackStack() {
+        val prefs = application.applicationContext.getSharedPreferences("neuropath_nav", 0)
+        prefs.edit().putString(NAV_BACK_STACK_KEY, navigationBackStack.joinToString(",")).apply()
+    }
+
+    private fun loadBackStack() {
+        val prefs = application.applicationContext.getSharedPreferences("neuropath_nav", 0)
+        val saved = prefs.getString(NAV_BACK_STACK_KEY, "")
+        if (saved.isNotBlank()) {
+            navigationBackStack.clear()
+            navigationBackStack.addAll(saved.split(",").map { AppScreen.valueOf(it.trim()) })
+        }
+    }
+
+    init {
+        loadBackStack()
+    }
+
     fun navigateTo(screen: AppScreen, addToBackStack: Boolean = true) {
         speechManager.stop()
         if (addToBackStack && _currentScreen.value != screen) {
             navigationBackStack.add(_currentScreen.value)
+            saveBackStack()
         }
         if (screen == AppScreen.BREATHING_GUIDE) {
             startBreathingSession()
@@ -805,6 +826,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         stopBreathingSession()
         if (navigationBackStack.isNotEmpty()) {
             val previous = navigationBackStack.removeAt(navigationBackStack.size - 1)
+            saveBackStack()
             _currentScreen.value = previous
             return true
         } else if (_currentScreen.value != AppScreen.HOME && _currentProfile.value.isInitialSetupComplete) {
@@ -1717,7 +1739,13 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private fun verifyPin() {
         val entered = _pinInput.value
         val actual = _currentProfile.value.parentPin
-        val validPin = if (actual.isNotBlank()) actual else allProfiles.value.firstOrNull { it.parentPin.isNotBlank() }?.parentPin ?: "1234"
+        val validPin = if (actual.isNotBlank()) actual else allProfiles.value.firstOrNull { it.parentPin.isNotBlank() }?.parentPin
+        if (validPin.isNullOrBlank()) {
+            _pinError.value = true
+            _pinInput.value = ""
+            speechManager.speak("No PIN configured. Please set up a parent PIN in settings first.")
+            return
+        }
         if (entered == validPin) {
             _pinInput.value = ""
             _pinError.value = false

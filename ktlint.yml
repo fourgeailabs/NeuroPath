@@ -1,0 +1,31 @@
+# ktlint Configuration for NeuroPath
+# https://github.com/pinterest/ktlint
+
+# Use standard Kotlin style
+standard:
+  style: "default"
+
+# Exclude generated files
+exclude:
+  - "**/build/**"
+  - "**/generated/**"
+  - "**/resources/**"
+
+# Editor config integration
+editorconfig:
+  enabled: true
+
+# Android-specific rules
+android: true
+
+# Experimental rules
+experimental: false
+
+# Output format
+reporters:
+  - type: plain
+  - type: checkstyle
+    output: build/reports/ktlint/ktlint.xml
+
+# Severity
+relative-path: true

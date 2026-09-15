@@ -676,8 +676,8 @@ object GeminiClient {
                 officialSourceAgency = officialAgency,
                 officialSourceUrl = officialUrl,
                 gradesSummary = "Pre-K, Kindergarten, Elementary (1-5), Middle School (6-8), High School (9-12)",
-                curriculumSummary = "Curriculum synchronized from OER Commons Curated Collections (https://oercommons.org/curated-collections) across all grades (K-12 & High School 9-12). Covered domains: Algebra I & II, Geometry, Literature & Rhetoric, Biology & Physics, Civics & Economics, and Executive Functioning for $schoolDistrict ($stateOrProvince, $country).",
-                isOnlineSynced = true
+                curriculumSummary = "Offline mode: Curriculum based on OER Commons Curated Collections (https://oercommons.org/curated-collections) standards for $schoolDistrict ($stateOrProvince, $country). Configure a valid Gemini API key for AI-enhanced curriculum sync.",
+                isOnlineSynced = false
             )
         }
 
@@ -724,13 +724,14 @@ object GeminiClient {
                 curriculumSummary = text,
                 isOnlineSynced = true
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("GeminiClient", "Failed to download curriculum for locale", e)
             DownloadedCurriculumResult(
                 officialSourceAgency = officialAgency,
                 officialSourceUrl = officialUrl,
                 gradesSummary = "Pre-K through High School (Grades 9-12)",
-                curriculumSummary = "Accredited K-12 and High School standards active from OER Commons Curated Collections (https://oercommons.org/curated-collections) for $schoolDistrict ($stateOrProvince, $country) under $standardTitle.",
-                isOnlineSynced = true
+                curriculumSummary = "Sync failed: ${e.message}. Using offline curriculum based on OER Commons Curated Collections (https://oercommons.org/curated-collections) for $schoolDistrict ($stateOrProvince, $country) under $standardTitle.",
+                isOnlineSynced = false
             )
         }
     }

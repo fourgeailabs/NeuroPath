@@ -8,6 +8,8 @@ plugins {
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
+  id("io.gitlab.arturbosch.detekt") version "1.23.6"
+  id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
 }
 
 android {
@@ -65,6 +67,37 @@ android {
   dependenciesInfo { includeInApk = false; includeInBundle = true }
 }
 
+// Detekt configuration
+detekt {
+  config = files("$rootDir/detekt.yml")
+  baseline = file("$rootDir/detekt-baseline.xml")
+  buildUponDefaultConfig = true
+  reports {
+    html.enabled = true
+    html.destination = file("$buildDir/reports/detekt/detekt.html")
+    xml.enabled = true
+    xml.destination = file("$buildDir/reports/detekt/detekt.xml")
+    txt.enabled = true
+    txt.destination = file("$buildDir/reports/detekt/detekt.txt")
+    sarif.enabled = true
+    sarif.destination = file("$buildDir/reports/detekt/detekt.sarif")
+  }
+}
+
+// Ktlint configuration
+ktlint {
+  config = file("$rootDir/ktlint.yml")
+  outputToConsole = true
+  reporters {
+    plainReporter {
+      outputToConsole = true
+    }
+    checkstyleReporter {
+      outputFile = file("$buildDir/reports/ktlint/ktlint.xml")
+    }
+  }
+}
+
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
@@ -75,7 +108,6 @@ googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.W
 
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
-  implementation(platform(libs.firebase.bom))
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
@@ -90,8 +122,6 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.converter.moshi)
-  implementation(libs.firebase.ai)
-  implementation(libs.firebase.appcheck.recaptcha)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
