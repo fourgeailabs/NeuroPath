@@ -13,6 +13,7 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.nio.charset.Charsets
 import java.util.concurrent.TimeUnit
 
 data class LiteRtGemmaResult(
