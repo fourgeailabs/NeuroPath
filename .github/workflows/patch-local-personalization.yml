@@ -31,14 +31,13 @@ jobs:
           if live_start < 0 or live_end < 0:
               raise SystemExit('live voice function not found')
           live = s[live_start:live_end]
-          if 'Accommodations: ${profile.neurodivergentTypesCsv}' in live:
-              live = live.replace('Accommodations: ${profile.neurodivergentTypesCsv}.', '$personalizationProfile', 1)
-          if '$personalizationProfile' not in live:
+
+          declaration = '            val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, _selectedSubjectTag.value.id, false)\n'
+          if 'val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt' not in live:
               needle = '            val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")\n'
               if needle not in live:
                   raise SystemExit('live voice base prompt not found')
-              live = live.replace(needle, needle + '            val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, _selectedSubjectTag.value.id, false)\n', 1)
-              live = live.replace('                $basePrompt\n', '                $basePrompt\n                $personalizationProfile\n', 1)
+              live = live.replace(needle, declaration + needle, 1)
 
           if 'stateOrProvince = profile.stateOrProvince' not in live:
               live = live.replace('country = profile.country', 'country = profile.country,\n                stateOrProvince = profile.stateOrProvince', 1)
@@ -54,9 +53,10 @@ jobs:
           live_end = s.find('// Lyria Music Generation', live_start)
           live = s[live_start:live_end]
           assert 'Accommodations: ${profile.neurodivergentTypesCsv}' not in live
+          assert 'val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt' in live
           assert '$personalizationProfile' in live
           assert 'stateOrProvince = profile.stateOrProvince' in live
-          print('Live voice privacy and jurisdiction checks passed.')
+          print('Live voice privacy, personalization, and OER jurisdiction checks passed.')
           PY
       - name: Commit patch
         run: |
@@ -67,6 +67,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Patch already applied.'
           else
-            git commit -m 'fix: finalize live voice privacy and OER jurisdiction'
+            git commit -m 'fix: define live voice personalization and jurisdiction'
             git push
           fi
