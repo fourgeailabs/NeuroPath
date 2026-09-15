@@ -51,6 +51,15 @@ object LocationComplianceHelper {
         return fineGranted || coarseGranted
     }
 
+    private fun mapKnownUsZip(clean: String): Pair<String, String>? {
+        val zip = clean.take(5)
+        return when (zip) {
+            "85374", "85378", "85379", "85387", "85388" -> "Arizona" to "Surprise"
+            "90210", "90211", "90212" -> "California" to "Beverly Hills"
+            else -> null
+        }
+    }
+
     suspend fun resolvePostalOrZipCode(context: Context, inputPostal: String): LocationComplianceResult = withContext(Dispatchers.IO) {
         val clean = inputPostal.trim().uppercase()
         if (clean.isBlank()) {
@@ -62,20 +71,29 @@ object LocationComplianceHelper {
         var foundState: String? = null
         var foundCity: String? = null
 
-        // Try Geocoder reverse lookup first for precise postal resolution
-        try {
-            val geocoder = Geocoder(context, Locale.getDefault())
-            @Suppress("DEPRECATION")
-            val addresses = geocoder.getFromLocationName(clean, 1)
-            if (!addresses.isNullOrEmpty()) {
-                val addr = addresses[0]
-                addr.countryName?.let { foundCountry = it }
-                addr.countryCode?.let { foundCountryCode = it.uppercase() }
-                addr.adminArea?.let { foundState = it }
-                addr.locality?.let { foundCity = it }
+        // Known postal mappings take precedence over Android Geocoder because
+        // geocoders may collapse a ZIP into a nearby metro label.
+        val knownUsZip = mapKnownUsZip(clean)
+        if (knownUsZip != null) {
+            foundCountry = "United States"
+            foundCountryCode = "US"
+            foundState = knownUsZip.first
+            foundCity = knownUsZip.second
+        } else {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                @Suppress("DEPRECATION")
+                val addresses = geocoder.getFromLocationName(clean, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    val addr = addresses[0]
+                    addr.countryName?.let { foundCountry = it }
+                    addr.countryCode?.let { foundCountryCode = it.uppercase() }
+                    addr.adminArea?.let { foundState = it }
+                    addr.locality?.let { foundCity = it }
+                }
+            } catch (_: Exception) {
+                // Continue to deterministic postal-prefix fallback below.
             }
-        } catch (_: Exception) {
-            // Fallback to pattern matching
         }
 
         // Comprehensive Postal / ZIP Prefix Resolution if Geocoder returned partial or blank
@@ -239,8 +257,8 @@ object LocationComplianceHelper {
     suspend fun detectAndVerifyHomeCountry(context: Context): LocationComplianceResult = withContext(Dispatchers.IO) {
         var detectedCountryName = "United States"
         var detectedCountryCode = "US"
-        var detectedState: String? = "Arizona"
-        var detectedCity: String? = "Surprise"
+        var detectedState: String? = null
+        var detectedCity: String? = null
         var isFromGps = false
 
         try {
@@ -255,13 +273,8 @@ object LocationComplianceHelper {
                 }
 
                 if (lastLocation != null) {
-                    // Check if GPS coordinates are in Arizona (Lat 31.3..37.0, Lon -114.8..-109.0)
-                    if (lastLocation.latitude in 31.3..37.0 && lastLocation.longitude in -114.8..-109.0) {
-                        detectedState = "Arizona"
-                        detectedCity = if (lastLocation.latitude in 33.5..33.8 && lastLocation.longitude in -112.5..-112.2) "Surprise" else "Phoenix"
-                        isFromGps = true
-                    }
-
+                    // Never guess Phoenix/Surprise from a broad coordinate box.
+                    // Reverse geocoding supplies the actual city/state.
                     val geocoder = Geocoder(context, Locale.getDefault())
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         // For API 33+, geocoder has async callback, but standard synchronous list works via deprecated fallback in IO dispatcher
@@ -279,8 +292,10 @@ object LocationComplianceHelper {
                             val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality
                             if (!reportedCity.isNullOrBlank()) {
                                 detectedCity = reportedCity
+                                isFromGps = true
+                            } else if (!detectedState.isNullOrBlank()) {
+                                isFromGps = true
                             }
-                            isFromGps = true
                         }
                     } else {
                         @Suppress("DEPRECATION")
@@ -293,8 +308,10 @@ object LocationComplianceHelper {
                             val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality
                             if (!reportedCity.isNullOrBlank()) {
                                 detectedCity = reportedCity
+                                isFromGps = true
+                            } else if (!detectedState.isNullOrBlank()) {
+                                isFromGps = true
                             }
-                            isFromGps = true
                         }
                     }
                 }
