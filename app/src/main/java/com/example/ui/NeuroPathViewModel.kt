@@ -1252,7 +1252,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             val systemPrompt = """
                 $basePrompt
                 Theme: ${theme.title} (${theme.buddyRole}).
-                Accommodations: ${profile.neurodivergentTypesCsv}.
+                $personalizationProfile
                 District Standards Context: ${profile.schoolDistrict}, ${profile.stateOrProvince}, ${profile.country}.
             """.trimIndent()
 
