@@ -21,7 +21,7 @@ If you discover a security vulnerability in NeuroPath, please report it responsi
 
 ### Do
 
-**Email the maintainers directly** at: security@fourgeailabs.com
+**Email the maintainers directly** at: fourgeailabs@gmail.com
 
 Include:
 - Description of the vulnerability
@@ -96,5 +96,5 @@ NeuroPath implements several security measures:
 
 ## Contact
 
-For security concerns: security@fourgeailabs.com
+For security concerns: fourgeailabs@gmail.com
 For general questions: GitHub Issues
