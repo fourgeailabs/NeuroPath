@@ -1237,7 +1237,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 studentGrade = studentGrade,
                 studentSubject = _selectedSubject.value,
                 schoolDistrict = profile.schoolDistrict,
-                country = profile.country
+                country = profile.country,
+                stateOrProvince = profile.stateOrProvince
             )
             val currContext = oerTutorContext.formattedContextPrompt.ifBlank {
                 latestCurriculum.value?.curriculumSummary
