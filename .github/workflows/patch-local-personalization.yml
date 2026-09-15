@@ -15,38 +15,39 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
           p = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt')
           s = p.read_text()
-          pattern = re.compile(r'''(?P<indent>\s+)val systemPrompt = """\n(?P=indent)    \$basePrompt\n(?P=indent)    Theme world: \$\{theme\.title\} \(\$\{theme\.buddyRole\}\)\.\n(?P=indent)    Active Subject Focus: \$\{currentSubject\.title\} \(\$\{currentSubject\.id\}\)\.\n(?P=indent)    District context: \$\{profile\.schoolDistrict\} in \$\{profile\.city\}, \$\{profile\.stateOrProvince\}, \$\{profile\.country\}\.\n(?P=indent)"""\.trimIndent\(\)''')
-          replacement = '''{indent}val systemPrompt = """
-{indent}    $basePrompt
-{indent}    $personalizationProfile
-{indent}    Theme world: ${{theme.title}} (${{theme.buddyRole}}).
-{indent}    Active Subject Focus: ${{currentSubject.title}} (${{currentSubject.id}}).
-{indent}    Personalized Explanation Style: ${{currentMode.title}}
-{indent}    Style Directive: ${{currentMode.promptDirective}}
-{indent}    District context: ${{profile.schoolDistrict}} in ${{profile.city}}, ${{profile.stateOrProvince}}, ${{profile.country}}.
-{indent}    Curriculum Framework: ${{profile.stateStandard}} (${{profile.schoolDistrict}}).
-
-{indent}    Local Tutoring Rules:
-{indent}    1. Adapt to the learner profile and observed mastery above; never treat a diagnosis as an identity label.
-{indent}    2. Prefer the learner's recorded explanation style, but change strategy when it is not working.
-{indent}    3. Use strengths and interests to make difficult ideas concrete.
-{indent}    4. Keep accessibility and accommodation signals in mind without diagnosing or inferring conditions.
-{indent}    5. Ground teaching in the supplied curriculum context when relevant.
-{indent}    6. Preserve learner agency and use a Socratic approach rather than doing assessed work for the learner.
-{indent}""".trimIndent()'''
-          matches = list(pattern.finditer(s))
-          if len(matches) != 1:
-              raise SystemExit(f'expected exactly one local Gemma prompt block, found {len(matches)}')
-          m = matches[0]
-          p.write_text(s[:m.start()] + replacement.format(indent=m.group('indent')) + s[m.end():])
+          marker = 'if (currentModel == ChatModelMode.GEMMA_LOCAL) {'
+          start = s.find(marker)
+          if start < 0:
+              raise SystemExit('local Gemma branch not found')
+          end = s.find('} else if (currentModel != ChatModelMode.OFFLINE)', start)
+          if end < 0:
+              raise SystemExit('end of local Gemma branch not found')
+          block = s[start:end]
+          if '$personalizationProfile' in block:
+              print('Local personalization already present.')
+          else:
+              needle = '$basePrompt\n'
+              pos = block.find(needle)
+              if pos < 0:
+                  raise SystemExit('base prompt line not found in local branch')
+              insertion = needle + '                        $personalizationProfile\n                        Theme world: ${theme.title} (${theme.buddyRole}).\n                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).\n                        Personalized Explanation Style: ${currentMode.title}\n                        Style Directive: ${currentMode.promptDirective}\n                        District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.\n                        Curriculum Framework: ${profile.stateStandard} (${profile.schoolDistrict}).\n\n                        Local Tutoring Rules:\n                        1. Adapt to the learner profile and observed mastery above; never treat a diagnosis as an identity label.\n                        2. Prefer the learner\'s recorded explanation style, but change strategy when it is not working.\n                        3. Use strengths and interests to make difficult ideas concrete.\n                        4. Keep accessibility and accommodation signals in mind without diagnosing or inferring conditions.\n                        5. Ground teaching in the supplied curriculum context when relevant.\n                        6. Preserve learner agency and use a Socratic approach rather than doing assessed work for the learner.\n'
+              block = block.replace(needle, insertion, 1)
+              p.write_text(s[:start] + block + s[end:])
           PY
       - name: Verify patch
         run: |
-          grep -F '$personalizationProfile' app/src/main/java/com/example/ui/NeuroPathViewModel.kt
-          test "$(grep -F -c 'Local Tutoring Rules:' app/src/main/java/com/example/ui/NeuroPathViewModel.kt)" -eq 1
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt').read_text()
+          start = s.find('if (currentModel == ChatModelMode.GEMMA_LOCAL) {')
+          end = s.find('} else if (currentModel != ChatModelMode.OFFLINE)', start)
+          block = s[start:end]
+          assert '$personalizationProfile' in block
+          assert 'Local Tutoring Rules:' in block
+          print('Local Gemma personalization verified.')
+          PY
       - name: Commit patch
         run: |
           git config user.name 'github-actions[bot]'
