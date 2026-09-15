@@ -218,9 +218,10 @@ object GemmaLocalManager {
             if (curriculumContext.isNotBlank()) append("Curriculum context: $curriculumContext. ")
             if (systemPrompt.isNotBlank()) append("\n$systemPrompt\n")
         }
-        val finalPrompt = "<start_of_turn>user\n$grounding$historyBlock\nCurrent student question:\n$userPrompt<end_of_turn>\n<start_of_turn>model\n"
+        val liteRtPrompt = "$grounding$historyBlock\nCurrent student question:\n$userPrompt"
+        val llamaPrompt = "<start_of_turn>user\n$grounding$historyBlock\nCurrent student question:\n$userPrompt<end_of_turn>\n<start_of_turn>model\n"
 
-        runCatching { LiteRtGemmaAccelerator.generate(context, finalPrompt) }
+        runCatching { LiteRtGemmaAccelerator.generate(context, liteRtPrompt) }
             .onFailure { Log.w(TAG, "LiteRT-LM accelerated inference unavailable", it) }
             .getOrNull()
             ?.let { result ->
@@ -234,7 +235,7 @@ object GemmaLocalManager {
                 config = LlamaConfig(contextSize = DEFAULT_CONTEXT_SIZE, threads = Runtime.getRuntime().availableProcessors().coerceIn(2, 6))
             )
             val result = try {
-                Llama.complete(model, prompt = finalPrompt, systemPrompt = "", maxTokens = DEFAULT_MAX_TOKENS)
+                Llama.complete(model, prompt = llamaPrompt, systemPrompt = "", maxTokens = DEFAULT_MAX_TOKENS)
             } finally {
                 Llama.releaseModel(model)
             }
