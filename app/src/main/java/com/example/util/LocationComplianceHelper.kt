@@ -365,7 +365,7 @@ object LocationComplianceHelper {
             detectedCountry = normalizedCountry,
             detectedCountryCode = detectedCountryCode,
             detectedStateOrProvince = detectedState ?: matchedLocale.stateOrProvince,
-            detectedCity = detectedCity ?: matchedLocale.city,
+            detectedCity = detectedCity,
             matchedEducationalLocale = matchedLocale,
             isVerified = true,
             complianceMessage = complianceMsg,
