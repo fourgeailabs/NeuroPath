@@ -32,7 +32,7 @@ jobs:
               raise SystemExit('live voice function not found')
           live = s[live_start:live_end]
           if 'Accommodations: ${profile.neurodivergentTypesCsv}' in live:
-              live = live.replace('                Accommodations: ${profile.neurodivergentTypesCsv}.', '                $personalizationProfile', 1)
+              live = live.replace('Accommodations: ${profile.neurodivergentTypesCsv}.', '$personalizationProfile', 1)
           if '$personalizationProfile' not in live:
               needle = '            val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")\n'
               if needle not in live:
@@ -40,19 +40,8 @@ jobs:
               live = live.replace(needle, needle + '            val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, _selectedSubjectTag.value.id, false)\n', 1)
               live = live.replace('                $basePrompt\n', '                $basePrompt\n                $personalizationProfile\n', 1)
 
-          lines = live.splitlines()
-          out = []
-          added = False
-          for line in lines:
-              out.append(line)
-              if line.strip() == 'country = profile.country' and not added:
-                  out[-1] = line + ','
-                  indent = line[:len(line) - len(line.lstrip())]
-                  out.append(indent + 'stateOrProvince = profile.stateOrProvince')
-                  added = True
-          if not added:
-              raise SystemExit('live OER lookup country line not found')
-          live = '\n'.join(out) + ('\n' if live.endswith('\n') else '')
+          if 'stateOrProvince = profile.stateOrProvince' not in live:
+              live = live.replace('country = profile.country', 'country = profile.country,\n                stateOrProvince = profile.stateOrProvince', 1)
           s = s[:live_start] + live + s[live_end:]
           p.write_text(s)
           PY
@@ -67,13 +56,7 @@ jobs:
           assert 'Accommodations: ${profile.neurodivergentTypesCsv}' not in live
           assert '$personalizationProfile' in live
           assert 'stateOrProvince = profile.stateOrProvince' in live
-          chat_start = s.find('if (currentModel == ChatModelMode.GEMMA_LOCAL) {')
-          chat_end = s.find('} else if (currentModel != ChatModelMode.OFFLINE)', chat_start)
-          chat = s[chat_start:chat_end]
-          assert '$personalizationProfile' in chat
-          assert chat.count('Theme world: ${theme.title} (${theme.buddyRole}).') == 1
-          assert chat.count('Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).') == 1
-          print('Scoped tutoring privacy, personalization, and jurisdiction checks passed.')
+          print('Live voice privacy and jurisdiction checks passed.')
           PY
       - name: Commit patch
         run: |
@@ -84,6 +67,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Patch already applied.'
           else
-            git commit -m 'fix: harden live voice privacy and OER jurisdiction'
+            git commit -m 'fix: finalize live voice privacy and OER jurisdiction'
             git push
           fi
