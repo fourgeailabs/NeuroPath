@@ -218,7 +218,7 @@ object GemmaLocalManager {
             if (curriculumContext.isNotBlank()) append("Curriculum context: $curriculumContext. ")
             if (systemPrompt.isNotBlank()) append("\n$systemPrompt\n")
         }
-        val finalPrompt = "$grounding$historyBlock\nCurrent student question:\n$userPrompt"
+        val finalPrompt = "<start_of_turn>user\n$grounding$historyBlock\nCurrent student question:\n$userPrompt<end_of_turn>\n<start_of_turn>model\n"
 
         runCatching { LiteRtGemmaAccelerator.generate(context, finalPrompt) }
             .onFailure { Log.w(TAG, "LiteRT-LM accelerated inference unavailable", it) }
