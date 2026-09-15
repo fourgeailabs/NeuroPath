@@ -11,32 +11,40 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Patch local Gemma prompt
+      - name: Patch tutoring context
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('app/src/main/java/com/example/ui/NeuroPathViewModel.kt')
           s = p.read_text()
+
           marker = 'if (currentModel == ChatModelMode.GEMMA_LOCAL) {'
           start = s.find(marker)
-          if start < 0:
-              raise SystemExit('local Gemma branch not found')
           end = s.find('} else if (currentModel != ChatModelMode.OFFLINE)', start)
-          if end < 0:
-              raise SystemExit('end of local Gemma branch not found')
+          if start < 0 or end < 0:
+              raise SystemExit('local Gemma branch not found')
           block = s[start:end]
-          if '$personalizationProfile' in block:
-              print('Local personalization already present.')
-          else:
-              needle = '$basePrompt\n'
-              pos = block.find(needle)
-              if pos < 0:
-                  raise SystemExit('base prompt line not found in local branch')
-              insertion = needle + '                        $personalizationProfile\n                        Theme world: ${theme.title} (${theme.buddyRole}).\n                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).\n                        Personalized Explanation Style: ${currentMode.title}\n                        Style Directive: ${currentMode.promptDirective}\n                        District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.\n                        Curriculum Framework: ${profile.stateStandard} (${profile.schoolDistrict}).\n\n                        Local Tutoring Rules:\n                        1. Adapt to the learner profile and observed mastery above; never treat a diagnosis as an identity label.\n                        2. Prefer the learner\'s recorded explanation style, but change strategy when it is not working.\n                        3. Use strengths and interests to make difficult ideas concrete.\n                        4. Keep accessibility and accommodation signals in mind without diagnosing or inferring conditions.\n                        5. Ground teaching in the supplied curriculum context when relevant.\n                        6. Preserve learner agency and use a Socratic approach rather than doing assessed work for the learner.\n'
-              block = block.replace(needle, insertion, 1)
-              p.write_text(s[:start] + block + s[end:])
+          duplicate = '''                        Theme world: ${theme.title} (${theme.buddyRole}).
+                        Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
+                        District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
+                    """.trimIndent()'''
+          if duplicate in block:
+              block = block.replace(duplicate, '                    """.trimIndent()', 1)
+          if '$personalizationProfile' not in block:
+              raise SystemExit('local personalization missing after prior patch')
+          s = s[:start] + block + s[end:]
+
+          # Ensure every tutor OER retrieval carries the selected subnational jurisdiction.
+          target = '''schoolDistrict = profile.schoolDistrict,
+                    country = profile.country'''
+          replacement = '''schoolDistrict = profile.schoolDistrict,
+                    country = profile.country,
+                    stateOrProvince = profile.stateOrProvince'''
+          if target in s:
+              s = s.replace(target, replacement)
+          p.write_text(s)
           PY
-      - name: Verify patch
+      - name: Verify tutoring context
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -45,8 +53,11 @@ jobs:
           end = s.find('} else if (currentModel != ChatModelMode.OFFLINE)', start)
           block = s[start:end]
           assert '$personalizationProfile' in block
+          assert block.count('Theme world: ${theme.title} (${theme.buddyRole}).') == 1
+          assert block.count('Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).') == 1
           assert 'Local Tutoring Rules:' in block
-          print('Local Gemma personalization verified.')
+          assert 'stateOrProvince = profile.stateOrProvince' in s
+          print('Local personalization and OER jurisdiction propagation verified.')
           PY
       - name: Commit patch
         run: |
@@ -57,6 +68,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Patch already applied.'
           else
-            git commit -m 'fix: feed privacy-safe personalization into local Gemma'
+            git commit -m 'fix: clean local tutoring context and pass OER jurisdiction'
             git push
           fi
