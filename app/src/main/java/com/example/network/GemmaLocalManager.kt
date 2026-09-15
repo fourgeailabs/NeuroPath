@@ -43,6 +43,8 @@ object GemmaLocalManager {
     private const val GGUF_MAGIC = 0x46554747
     private const val DEFAULT_CONTEXT_SIZE = 2048
     private const val DEFAULT_MAX_TOKENS = 384
+    private const val MAX_HISTORY_TURNS = 6
+    private const val MAX_HISTORY_CHARS_PER_TURN = 900
     private const val PUBLIC_HUGGINGFACE_GGUF_URL = "https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf?download=true"
 
     private val _downloadState = MutableStateFlow<GemmaDownloadState>(GemmaDownloadState.NotInstalled)
@@ -189,6 +191,25 @@ object GemmaLocalManager {
         val userPrompt = prompt.trim()
         if (userPrompt.isBlank()) return@withContext "💎 [Gemma 2-2B Local Engine]: Please ask me a learning question."
 
+        val recentHistory = conversationHistory
+            .asSequence()
+            .filter { it.first.equals("user", ignoreCase = true) || it.first.equals("model", ignoreCase = true) }
+            .map { role, text -> role.lowercase() to text.trim() }
+            .filter { it.second.isNotBlank() }
+            .takeLast(MAX_HISTORY_TURNS)
+            .map { (role, text) ->
+                val bounded = text.take(MAX_HISTORY_CHARS_PER_TURN)
+                val label = if (role == "user") "Student" else "Learning Buddy"
+                "$label: $bounded"
+            }
+            .toList()
+
+        val historyBlock = if (recentHistory.isNotEmpty()) {
+            "\nRecent conversation (use this for continuity; do not repeat it verbatim):\n${recentHistory.joinToString("\n")}\n"
+        } else {
+            ""
+        }
+
         val grounding = buildString {
             append("You are NeuroPath's local educational Learning Buddy. Be patient, encouraging, concise, and age-appropriate. Use a Socratic teaching style: guide the learner instead of simply doing their work for them. ")
             if (schoolDistrict.isNotBlank()) append("The learner's school district is $schoolDistrict. ")
@@ -197,7 +218,7 @@ object GemmaLocalManager {
             if (curriculumContext.isNotBlank()) append("Curriculum context: $curriculumContext. ")
             if (systemPrompt.isNotBlank()) append("\n$systemPrompt\n")
         }
-        val finalPrompt = "$grounding\n\nStudent question:\n$userPrompt"
+        val finalPrompt = "$grounding$historyBlock\nCurrent student question:\n$userPrompt"
 
         runCatching { LiteRtGemmaAccelerator.generate(context, finalPrompt) }
             .onFailure { Log.w(TAG, "LiteRT-LM accelerated inference unavailable", it) }
