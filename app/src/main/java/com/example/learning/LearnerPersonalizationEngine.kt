@@ -186,7 +186,7 @@ object LearnerPersonalizationEngine {
             accuracy != null && accuracy < 55 -> "Use high scaffolding: one concept at a time, worked example, short steps, frequent checks, and an alternate explanation if the first attempt does not land."
             recentMisses.size >= 2 -> "Target recent struggle topics first; use retrieval practice, misconception checks, and smaller steps before increasing difficulty."
             accuracy != null && accuracy < 75 -> "Use moderate scaffolding: explain, model, then ask the learner to complete the next step with a hint available."
-            accuracy >= 90 -> "Use mastery progression: reduce scaffolding, increase transfer/application, and introduce a slightly harder problem while checking for durable understanding."
+            accuracy != null && accuracy >= 90 -> "Use mastery progression: reduce scaffolding, increase transfer/application, and introduce a slightly harder problem while checking for durable understanding."
             else -> "Use adaptive instruction: concise explanation, concrete example, guided practice, then a quick retrieval check."
         }
     }
