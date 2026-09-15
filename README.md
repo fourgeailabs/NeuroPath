@@ -23,7 +23,7 @@ NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner person
 **Minimum SDK:** 24  
 **Target SDK:** 36  
 **Primary UI:** Kotlin + Jetpack Compose  
-**Local AI architecture:** GGUF Gemma inference through llama.cpp Android integration  
+**Local AI architecture:** GGUF Gemma inference through llama.cpp with an optional LiteRT-LM accelerated Gemma path  
 
 NeuroPath is actively developed. The current repository contains substantial working foundations for local AI, Gemini cloud/live AI, personalized tutoring, global curriculum routing, UK curriculum routing, OER curriculum retrieval, and real multimedia playback. Some global curriculum jurisdictions currently provide routing metadata and official-source entry points rather than an exhaustive offline copy of every country's curriculum.
 
@@ -54,27 +54,29 @@ The goal is not simply to teach a generic lesson to every child of the same age.
 
 ## 🤖 Local Gemma AI
 
-NeuroPath now uses real local GGUF inference instead of the previous hard-coded/fake Gemma responses.
+NeuroPath uses real local GGUF inference rather than hard-coded/fake Gemma responses.
 
 Current implementation includes:
 
 - llama.cpp Android integration
-- `llama-android` dependency
+- LiteRT-LM accelerated inference path when a compatible model/backend is installed
 - ARM64 support
 - Gemma 2 2B instruction model in GGUF format
 - `gemma-2-2b-it-Q4_K_M.gguf`
-- Automatic model downloading
-- Temporary-download handling before installation
-- GGUF validation
-- Download progress reporting
-- Device compatibility reporting
-- Android API and RAM reporting
-- CPU/NEON local inference
-- Actual model loading and completion
-- Model cleanup/release
-- Safe model/download error handling
+- optional Gemma 3 1B LiteRT-LM models selected by supported hardware/model targets
+- automatic model downloading
+- temporary-download handling before installation
+- GGUF/LiteRT-LM model validation
+- download progress reporting
+- device compatibility reporting
+- CPU/NEON local inference fallback
+- GPU/NPU-capable LiteRT-LM backend selection with real inference verification
+- backend fallback to CPU when an accelerator is unavailable
+- actual model loading and completion
+- model cleanup/release
+- safe model/download error handling
 
-The selected Android llama.cpp integration is CPU/NEON based. NeuroPath therefore avoids falsely presenting this implementation as GPU-accelerated Gemma inference.
+NeuroPath does **not** claim that an accelerator is active merely because a device has compatible hardware or a model artifact installed. An accelerated backend is reported only after the local runtime successfully initializes it and completes inference. This keeps the hardware story truthful across Snapdragon, Tensor, MediaTek, and unsupported/CPU-only devices.
 
 ---
 
@@ -98,7 +100,7 @@ Legacy Gemini 1.5/2.0 identifiers are being migrated out of the large legacy cli
 
 ## 🎙️ Real Gemini Live API
 
-NeuroPath now contains a real Gemini Live WebSocket client rather than relying on simulated live conversation behavior.
+NeuroPath contains a real Gemini Live WebSocket client rather than relying on simulated live conversation behavior.
 
 Implemented capabilities include:
 
@@ -140,7 +142,7 @@ The system also distinguishes between online curriculum synchronization and curr
 
 # 🌍 Global Curriculum Jurisdiction Architecture
 
-NeuroPath now includes a global curriculum jurisdiction registry designed to route a learner to the education system that actually applies to them.
+NeuroPath includes a global curriculum jurisdiction registry designed to route a learner to the education system that actually applies to them.
 
 The architecture recognizes that a country is not always the final curriculum authority.
 
@@ -216,9 +218,10 @@ The model can incorporate:
 - active learning theme
 - current subject
 - historical answer accuracy
+- topic-level attempts and correctness
 - recent struggles
-- successful instructional strategies
-- local learning signals
+- confidence signals
+- deterministic instructional strategy selection
 
 The objective is to move from generic personalization to **individualized instructional adaptation**.
 
@@ -226,7 +229,7 @@ The objective is to move from generic personalization to **individualized instru
 
 # 📈 Adaptive Learning Signals
 
-NeuroPath can record real learning outcomes and use them to influence future instruction.
+NeuroPath records real learning outcomes and uses them to influence future instruction.
 
 Examples include:
 
@@ -235,9 +238,12 @@ Examples include:
 - repeated struggles → modified explanations
 - successful modalities → increased use of those modalities
 - performance patterns → changes to difficulty and pacing
+- topic mastery evidence → confidence and strategy changes
 - recent outcomes → changes to support level
 
-This creates a feedback loop between learning performance and future tutoring.
+The learner model now produces an explicit next-step instructional strategy: diagnostic-friendly onboarding for new learners, high scaffolding after low performance, targeted retrieval and misconception checks after repeated misses, moderate scaffolding during developing mastery, and reduced scaffolding with harder transfer tasks after strong performance.
+
+The curriculum objective remains stable; the path to mastery adapts.
 
 ---
 
@@ -411,7 +417,8 @@ NeuroPath is designed to retain useful learning functionality when cloud service
 Local capabilities include:
 
 - local Gemma inference
-- local learner signals
+- hardware-accelerated local inference when a supported runtime/model is actually available
+- local learner signals and mastery evidence
 - locally available curriculum resources
 - offline Socratic tutoring/fallback behavior
 - local multimedia resources when available
@@ -435,6 +442,7 @@ The workflow supports:
 - debug signing setup
 - release builds from tags
 - APK artifact upload
+- JVM unit tests
 
 The debug artifact is published as:
 
@@ -452,7 +460,8 @@ A successful historical build does not automatically validate later commits; cur
 - Gradle
 - Kotlin Coroutines
 - llama.cpp Android / GGUF inference
-- Gemma 2 2B
+- LiteRT-LM accelerated local inference
+- Gemma models
 - Google Gemini API
 - Gemini Live API
 - Android WebView
@@ -476,6 +485,7 @@ Examples include:
 - obsolete Gemini identifiers → current model architecture
 - false Google Maps verification → truthful Android Geocoder/postal resolution
 - false online curriculum synchronization → explicit online/offline state
+- unverified accelerator claims → backend activation reported only after successful local inference
 
 API keys and secrets should never be committed to source code.
 
@@ -490,9 +500,10 @@ NeuroPath is actively evolving. The following areas remain under development:
 - expanding detailed official curriculum ingestion across countries and subnational jurisdictions
 - building additional jurisdiction-specific curriculum adapters
 - maintaining curriculum-source freshness/version metadata
-- completing long-term learner mastery persistence and visualization
+- expanding long-term learner mastery persistence and visualization
 - further auditing legacy Gemini prompt construction for sensitive-data minimization
 - deeper synchronization between app-level multimedia controls and embedded WebView controls
+- physical-device verification across representative Snapdragon, Tensor, MediaTek, and CPU-only hardware
 - continued automated build and runtime verification
 
 These are intentionally documented as ongoing work rather than being presented as completed functionality.
@@ -536,12 +547,15 @@ NeuroPath is created and maintained by **FourgeAI LABS**.
 The current development line includes the major architecture work described above, including:
 
 - real local Gemma GGUF inference
+- optional LiteRT-LM accelerated local inference
 - Gemini model modernization
 - Gemini Live API architecture
 - global curriculum jurisdiction routing
 - UK four-nation curriculum routing
 - learner personalization
-- adaptive learning signals
+- persistent adaptive learning signals
+- topic-level mastery and confidence evidence
+- deterministic instructional strategy selection
 - privacy-aware learner context handling
 - real video and audio playback
 - OER curriculum matching improvements
