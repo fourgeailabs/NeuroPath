@@ -1248,6 +1248,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 (if (it.sender == "USER") "user" else "model") to it.text
             }
 
+            val personalizationProfile = com.example.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), profile, _selectedSubjectTag.value.id, false)
             val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
             val systemPrompt = """
                 $basePrompt
