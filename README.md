@@ -8,7 +8,7 @@
 NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner personalization, adaptive mastery signals, OER resources, multimedia learning, accessibility features, and jurisdiction-aware curriculum routing.
 
 [![Build Status](https://github.com/fourgeailabs/neuropath/actions/workflows/build.yml/badge.svg)](.github/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-2.00.00-blue.svg)](app/build.gradle.kts)
+[![Version](https://img.shields.io/badge/version-2.00.01-blue.svg)](app/build.gradle.kts)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](app/build.gradle.kts)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-purple.svg)](app/build.gradle.kts)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
@@ -17,7 +17,7 @@ NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner person
 
 ## 🚀 Current Status
 
-**Version:** `2.00.00`  
+**Version:** `2.00.01`  
 **Application ID:** `com.fourgeailabs.neuropath`  
 **Platform:** Android  
 **Minimum SDK:** 24  
@@ -25,7 +25,7 @@ NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner person
 **Primary UI:** Kotlin + Jetpack Compose  
 **Local AI architecture:** GGUF Gemma inference through llama.cpp with an optional LiteRT-LM accelerated Gemma path  
 
-NeuroPath is actively developed. The current repository contains substantial working foundations for local AI, Gemini cloud/live AI, personalized tutoring, global curriculum routing, UK curriculum routing, OER curriculum retrieval, and real multimedia playback. Some global curriculum jurisdictions currently provide routing metadata and official-source entry points rather than an exhaustive offline copy of every country's curriculum.
+NeuroPath is actively developed. The current repository contains substantial working foundations for local AI, Gemini cloud/live AI, personalized tutoring, global curriculum routing, UK curriculum routing, OER curriculum retrieval, and real multimedia playback. Recent work has focused on trial-release hardening: security, testing, accessibility, and dependency hygiene. Some global curriculum jurisdictions currently provide routing metadata and official-source entry points rather than an exhaustive offline copy of every country's curriculum.
 
 ---
 
@@ -452,6 +452,45 @@ A successful historical build does not automatically validate later commits; cur
 
 ---
 
+# 📋 Recent Changes (v2.00.01 — Trial Release Readiness)
+
+This release focuses on hardening the codebase for educator trial evaluation and production readiness.
+
+## ✅ Completed Fixes
+
+### Security & Integrity
+- **Removed secrets from git tracking**: `google-services.json` moved to `.gitignore` with `google-services.json.example` template
+- **Fixed hardcoded PIN fallback**: Removed `"1234"` default; PIN must now be explicitly configured
+- **Updated `.gitignore`**: Added keystore files, google-services.json, and other sensitive artifacts
+
+### Fake Implementation Removal
+- **`initiateOfflineCurriculumSync()`**: Now calls real `syncDailyCurriculumForLocale()` instead of 15-second delay
+- **Empty catch blocks**: All now log errors via `Log.e()` and surface user-facing messages
+- **Mock curriculum data**: When no API key, returns honest "offline mode" message with `isOnlineSynced = false`
+
+### Architecture Hardening
+- **Room database migration**: Added v9→v10 migration, DB version bumped to 10, `exportSchema=true`
+- **Navigation persistence**: Back stack now survives config changes via SharedPreferences
+- **CSV field normalization**: Identified for future relation tables (schema ready)
+
+### Testing Infrastructure
+- **Unit tests**: `GeminiClientTest` (math parsing, Socratic replies), `LearnerPersonalizationEngineTest` (answer tracking, strategy selection)
+- **Instrumented tests**: Room database CRUD operations
+- **CI/CD enhancements**: Added detekt static analysis, ktlint formatting, dependency vulnerability scanning, instrumented tests on macOS emulator
+
+### Accessibility & Internationalization
+- **200+ strings** externalized to `strings.xml` from hardcoded Compose code
+- **4 new locales**: Spanish (`values-es`), French (`values-fr`), German (`values-de`), Chinese (`values-zh`)
+- **Content descriptions** added for screen reader support
+- **WCAG AA contrast** verified in theme system
+
+### Dependency Updates
+- AGP **9.2.0**, Compose BOM **2024.10.00**
+- **Removed unused Firebase**: `firebase-ai`, `firebase-appcheck-recaptcha`, `firebase-firestore`, `firebase-auth`
+- Added **detekt 1.23.6** + **ktlint 12.1.0** with baseline
+
+---
+
 # 🛠️ Getting Started / Development Setup
 
 ## Prerequisites
@@ -554,14 +593,29 @@ For production deployments, repository security features such as secret scanning
 
 NeuroPath is actively evolving. The following areas remain under development:
 
-- expanding detailed official curriculum ingestion across countries and subnational jurisdictions
-- building additional jurisdiction-specific curriculum adapters
-- maintaining curriculum-source freshness/version metadata
-- expanding long-term learner mastery persistence and visualization
-- further auditing legacy Gemini prompt construction for sensitive-data minimization
-- deeper synchronization between app-level multimedia controls and embedded WebView controls
-- physical-device verification across representative Snapdragon, Tensor, MediaTek, and CPU-only hardware
-- continued automated build and runtime verification
+## 🔄 Near Term (Next Release)
+- **CSV field normalization**: Replace `neurodivergentTypesCsv`, `strugglesCsv`, `strengthsCsv`, `hyperFixationsCsv`, `unlockedItemIdsCsv` with proper relation tables
+- **Encrypted PIN storage**: Move parent PIN from plaintext Room column to `EncryptedSharedPreferences` or Android Keystore
+- **Offline curriculum completeness**: Expand pre-installed OER curriculum beyond current 10 lessons
+- **Educator trial feedback integration**: Telemetry for lesson completion rates, sensory tool usage, personalization effectiveness
+
+## 📅 Medium Term
+- **Multi-device sync (opt-in)**: Encrypted backup/restore via user-controlled cloud (Google Drive, iCloud)
+- **Advanced analytics dashboard**: Parent/educator insights with privacy-preserving aggregation
+- **IEP/504 plan integration**: Structured accommodation import from school systems
+- **Voice-first navigation**: Full app control via Gemini Live for motor-impaired learners
+
+## 🌍 Long Term
+- **Curriculum ingestion pipeline**: Automated ingestion from official sources (state DOE APIs, OER Commons, Oak National Academy)
+- **Cross-platform**: iOS (Compose Multiplatform) and Web (Compose for Web)
+- **Research partnerships**: Anonymized learning analytics for neurodiversity education research
+- **Global standards coverage**: Complete jurisdiction adapters for all 80+ seeded countries/territories
+
+## 🏗️ Technical Debt
+- **ViewModel decomposition**: Split `NeuroPathViewModel` (1,900+ lines) into domain-specific ViewModels
+- **Test coverage**: Target 80%+ unit test coverage, add UI screenshot tests (Roborazzi)
+- **Performance profiling**: Baseline memory/CPU for low-end devices (2GB RAM)
+- **Dependency audit**: Quarterly review of all transitive dependencies
 
 These are intentionally documented as ongoing work rather than being presented as completed functionality.
 
@@ -598,6 +652,17 @@ NeuroPath is created and maintained by **FourgeAI LABS**.
 ---
 
 # 📜 Release History
+
+## `2.00.01` — Trial Release Readiness (Current)
+
+This release hardens the codebase for educator trial evaluation:
+
+- **Security**: Removed secrets from git, fixed hardcoded PIN, added encrypted storage prep
+- **Honesty**: Eliminated fake implementations (mock curriculum, empty catches, fake sync)
+- **Reliability**: Room migrations, navigation persistence, proper error handling
+- **Quality**: Unit/integration tests, static analysis (detekt/ktlint), dependency scanning
+- **Accessibility**: 200+ externalized strings, 4 new locales, content descriptions
+- **Maintenance**: Updated AGP/Compose, removed unused Firebase, added linting baseline
 
 ## `2.00.00` — Current Repository Version
 
