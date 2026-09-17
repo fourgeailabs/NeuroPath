@@ -192,9 +192,8 @@ object GemmaLocalManager {
         if (userPrompt.isBlank()) return@withContext "💎 [Gemma 2-2B Local Engine]: Please ask me a learning question."
 
         val recentHistory = conversationHistory
-            .asSequence()
             .filter { it.first.equals("user", ignoreCase = true) || it.first.equals("model", ignoreCase = true) }
-            .map { role, text -> role.lowercase() to text.trim() }
+            .map { (role, text) -> role.lowercase() to text.trim() }
             .filter { it.second.isNotBlank() }
             .takeLast(MAX_HISTORY_TURNS)
             .map { (role, text) ->
@@ -202,7 +201,6 @@ object GemmaLocalManager {
                 val label = if (role == "user") "Student" else "Learning Buddy"
                 "$label: $bounded"
             }
-            .toList()
 
         val historyBlock = if (recentHistory.isNotEmpty()) {
             "\nRecent conversation (use this for continuity; do not repeat it verbatim):\n${recentHistory.joinToString("\n")}\n"

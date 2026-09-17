@@ -786,7 +786,7 @@ object GeminiClient {
         val finalResult: Long
     )
 
-    private fun parseAndEvaluateMath(input: String): MathExprResult? {
+    fun parseAndEvaluateMath(input: String): MathExprResult? {
         val lower = input.lowercase()
         var normalized = lower
             .replace("plus", "+")

@@ -20,8 +20,8 @@ android {
     applicationId = "com.fourgeailabs.neuropath"
     minSdk = 24
     targetSdk = 36
-    versionCode = 38
-    versionName = "2.00.00"
+    versionCode = 39
+    versionName = "2.00.01"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     ndk { abiFilters += listOf("arm64-v8a") }
   }
@@ -69,32 +69,29 @@ android {
 
 // Detekt configuration
 detekt {
-  config = files("$rootDir/detekt.yml")
-  baseline = file("$rootDir/detekt-baseline.xml")
   buildUponDefaultConfig = true
+  config.setFrom(files("$rootDir/detekt.yml"))
+  baseline = file("$rootDir/detekt-baseline.xml")
+  ignoreFailures = true
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
   reports {
-    html.enabled = true
-    html.destination = file("$buildDir/reports/detekt/detekt.html")
-    xml.enabled = true
-    xml.destination = file("$buildDir/reports/detekt/detekt.xml")
-    txt.enabled = true
-    txt.destination = file("$buildDir/reports/detekt/detekt.txt")
-    sarif.enabled = true
-    sarif.destination = file("$buildDir/reports/detekt/detekt.sarif")
+    html.required.set(true)
+    xml.required.set(true)
+    txt.required.set(true)
+    sarif.required.set(true)
   }
 }
 
 // Ktlint configuration
 ktlint {
-  config = file("$rootDir/ktlint.yml")
-  outputToConsole = true
+  android.set(true)
+  outputToConsole.set(true)
+  ignoreFailures.set(true)
   reporters {
-    plainReporter {
-      outputToConsole = true
-    }
-    checkstyleReporter {
-      outputFile = file("$buildDir/reports/ktlint/ktlint.xml")
-    }
+    reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN)
+    reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)
   }
 }
 

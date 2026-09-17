@@ -790,16 +790,21 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private val NAV_BACK_STACK_KEY = "nav_back_stack"
 
     private fun saveBackStack() {
-        val prefs = application.applicationContext.getSharedPreferences("neuropath_nav", 0)
+        val app = getApplication<Application>()
+        val prefs = app.getSharedPreferences("neuropath_nav", Context.MODE_PRIVATE)
         prefs.edit().putString(NAV_BACK_STACK_KEY, navigationBackStack.joinToString(",")).apply()
     }
 
     private fun loadBackStack() {
-        val prefs = application.applicationContext.getSharedPreferences("neuropath_nav", 0)
+        val app = getApplication<Application>()
+        val prefs = app.getSharedPreferences("neuropath_nav", Context.MODE_PRIVATE)
         val saved = prefs.getString(NAV_BACK_STACK_KEY, "")
-        if (saved.isNotBlank()) {
+        if (!saved.isNullOrBlank()) {
             navigationBackStack.clear()
-            navigationBackStack.addAll(saved.split(",").map { AppScreen.valueOf(it.trim()) })
+            navigationBackStack.addAll(
+                saved.split(",")
+                    .mapNotNull { name -> runCatching { AppScreen.valueOf(name.trim()) }.getOrNull() }
+            )
         }
     }
 

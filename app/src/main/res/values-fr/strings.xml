@@ -4,7 +4,7 @@
     <string name="select_language">Veuillez sélectionner votre langue et région</string>
     <string name="language_label">Langue et Région</string>
     <string name="continue_btn">Continuer</string>
-    <string name="parent_console">Console Parents & Éducateurs</string>
+    <string name="parent_console">Console Parents &amp; Éducateurs</string>
     <string name="child_name">Prénom de l\'enfant</string>
     <string name="grade_level">Niveau Scolaire</string>
     <string name="country">Pays</string>
@@ -13,11 +13,11 @@
     <string name="school_district">Académie / District Scolaire</string>
     <string name="read_aloud">Lire les Questions et Réponses à Voix Haute (TTS)</string>
     <string name="daily_inspiration">Inspiration du Jour</string>
-    <string name="math">Mathématiques & Logique</string>
+    <string name="math">Mathématiques &amp; Logique</string>
     <string name="reading">Lecture et Phonie</string>
     <string name="science">Sciences et Nature</string>
-    <string name="social_studies">Histoire, Géo & Citoyenneté</string>
-    <string name="emotional_skills">Régulation Émotionnelle & Compétences</string>
+    <string name="social_studies">Histoire, Géo &amp; Citoyenneté</string>
+    <string name="emotional_skills">Régulation Émotionnelle &amp; Compétences</string>
     <string name="stars">Étoiles</string>
     <string name="gems">Gemmes</string>
     <string name="streak">Jours Consécutifs</string>

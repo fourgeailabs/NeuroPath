@@ -109,11 +109,12 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Create Release and Upload APK
-        if: startsWith(github.ref, 'refs/tags/') && success()
+        if: (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && success()
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/debug/app-debug.apk
-          name: "NeuroPath Release ${{ github.ref_name }}"
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.00.01' }}
+          name: "NeuroPath Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.00.01' }}"
           body_path: README.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

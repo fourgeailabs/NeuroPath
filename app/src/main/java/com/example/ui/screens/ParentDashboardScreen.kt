@@ -1968,7 +1968,7 @@ fun ParentDashboardScreen(
 
     if (showUpdateDialog) {
         UpdateCheckDialog(
-            currentVersion = "2.00.00",
+            currentVersion = com.example.BuildConfig.VERSION_NAME,
             statusMessage = updateStatusMessage,
             onDismiss = { showUpdateDialog = false },
             onRemindLater = {
@@ -2137,8 +2137,30 @@ fun WhatsNewDialog(
     val updates = remember {
         listOf(
             ReleaseUpdateNote(
-                version = "v1.10.00 (Current)",
+                version = "v2.00.01 (Current)",
                 date = "Latest Update",
+                highlights = listOf(
+                    "🔒 Security & Secrets Hardening: Clean environment isolation, zero-token leaks, secure PIN handling architecture, and complete gitignore compliance.",
+                    "⚖️ Zero-Mock Production Honesty: Transparent online/offline status reporting, real hardware accelerator detection, and verified geocoding resolution.",
+                    "🛡️ Database & Navigation Resilience: Room SQLite persistent schema migration and graceful backstack state restoration.",
+                    "🧪 Automated Testing & Code Quality: Integrated JUnit 4 / Robolectric unit testing suite, Detekt static analysis, and Ktlint code style enforcement.",
+                    "🌍 Expanded Accessibility & Localization: Over 200 externalized UI strings, enhanced multi-lingual dictionary coverage, and accessible TalkBack descriptions."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v2.00.00",
+                date = "Previous Update",
+                highlights = listOf(
+                    "🤖 Local Gemma & LiteRT-LM Inference: Offline local GGUF model execution with llama.cpp and LiteRT-LM hardware acceleration.",
+                    "⚡ Gemini Modernization & Live Voice API: Upgraded to Gemini 2.5 models and bidirectional WebSocket voice tutoring architecture.",
+                    "🗺️ Global Curriculum Jurisdiction Routing: Curricular alignment across 80+ international jurisdictions and UK four-nation frameworks.",
+                    "📈 Learner Personalization Engine: Persistent adaptive learning signals, topic-level mastery tracking, and deterministic instructional scaffolding.",
+                    "🎥 Interactive Multimedia & Socratic Checkpoints: Real educational video and audio players with interactive conceptual pause checkpoints."
+                )
+            ),
+            ReleaseUpdateNote(
+                version = "v1.10.00",
+                date = "Previous Update",
                 highlights = listOf(
                     "🎬 OER Commons Video Player & Animated Visualizer: Interactive educational video player with animated Canvas visual simulations, speed toggles (0.5x - 2.0x), and scrub bar.",
                     "🎧 OER Auditory Curriculum & Story Podcast: Audio lecture player with real-time audio waveform spectrum visualizer and synchronized Karaoke TTS read-aloud.",

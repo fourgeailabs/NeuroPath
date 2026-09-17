@@ -3,12 +3,17 @@ package com.example.learning
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class LearnerPersonalizationEngineTest {
     
-    private val context = ApplicationProvider.getApplicationContext<Context>()
+    private val context: Context get() = ApplicationProvider.getApplicationContext<Context>()
     private val testProfileId = 999999L
     
     @Test
@@ -94,7 +99,6 @@ class LearnerPersonalizationEngineTest {
     
     @Test
     fun buildPrompt_excludesDiagnosisByDefault() = runBlocking {
-        val repo = com.example.data.repository.NeuroPathRepository.getInstance(context)
         val profile = com.example.data.local.entity.ChildProfileEntity(
             id = testProfileId,
             name = "Test",

@@ -2,7 +2,10 @@ package com.example.network
 
 import com.example.data.model.AppLanguage
 import kotlinx.coroutines.runBlocking
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GeminiClientTest {
@@ -11,51 +14,57 @@ class GeminiClientTest {
     fun parseAndEvaluateMath_handlesSimpleAddition() = runBlocking {
         val result = GeminiClient.parseAndEvaluateMath("2 + 3")
         assertNotNull(result)
-        assertEquals("2 + 3", result.originalDisplay)
-        assertEquals(5L, result.finalResult)
-        assertEquals(1, result.steps.size)
-        assertEquals("2 + 3 = 5", result.steps.first())
+        val res = checkNotNull(result)
+        assertEquals("2 + 3", res.originalDisplay)
+        assertEquals(5L, res.finalResult)
+        assertEquals(1, res.steps.size)
+        assertEquals("2 + 3 = 5", res.steps.first())
     }
     
     @Test
     fun parseAndEvaluateMath_handlesSubtraction() = runBlocking {
         val result = GeminiClient.parseAndEvaluateMath("10 - 4")
         assertNotNull(result)
-        assertEquals(6L, result.finalResult)
-        assertEquals("10 - 4 = 6", result.steps.first())
+        val res = checkNotNull(result)
+        assertEquals(6L, res.finalResult)
+        assertEquals("10 - 4 = 6", res.steps.first())
     }
     
     @Test
     fun parseAndEvaluateMath_handlesMultiplication() = runBlocking {
         val result = GeminiClient.parseAndEvaluateMath("6 * 7")
         assertNotNull(result)
-        assertEquals(42L, result.finalResult)
-        assertEquals("6 × 7 = 42", result.steps.first())
+        val res = checkNotNull(result)
+        assertEquals(42L, res.finalResult)
+        assertEquals("6 × 7 = 42", res.steps.first())
     }
     
     @Test
     fun parseAndEvaluateMath_handlesDivision() = runBlocking {
         val result = GeminiClient.parseAndEvaluateMath("20 / 4")
         assertNotNull(result)
-        assertEquals(5L, result.finalResult)
-        assertEquals("20 ÷ 4 = 5", result.steps.first())
+        val res = checkNotNull(result)
+        assertEquals(5L, res.finalResult)
+        assertEquals("20 ÷ 4 = 5", res.steps.first())
     }
     
     @Test
     fun parseAndEvaluateMath_handlesOrderOfOperations() = runBlocking {
         val result = GeminiClient.parseAndEvaluateMath("2 + 3 * 4")
         assertNotNull(result)
-        assertEquals(14L, result.finalResult)
-        assertEquals(2, result.steps.size)
-        assertEquals("3 × 4 = 12", result.steps[0])
-        assertEquals("2 + 12 = 14", result.steps[1])
+        val res = checkNotNull(result)
+        assertEquals(14L, res.finalResult)
+        assertEquals(2, res.steps.size)
+        assertEquals("3 × 4 = 12", res.steps[0])
+        assertEquals("2 + 12 = 14", res.steps[1])
     }
     
     @Test
     fun parseAndEvaluateMath_handlesNaturalLanguage() = runBlocking {
         val result = GeminiClient.parseAndEvaluateMath("5 plus 3")
         assertNotNull(result)
-        assertEquals(8L, result.finalResult)
+        val res = checkNotNull(result)
+        assertEquals(8L, res.finalResult)
     }
     
     @Test
