@@ -12,6 +12,9 @@ jobs:
     name: Build, Test & Analyze
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # The release step publishes the debug APK to a GitHub Release.
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Code
@@ -113,8 +116,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/debug/app-debug.apk
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.04.00' }}
-          name: "NeuroPath Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.04.00' }}"
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.05.00' }}
+          name: "NeuroPath Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.05.00' }}"
           body_path: README.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
