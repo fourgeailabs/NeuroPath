@@ -1175,6 +1175,12 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun unlockAvatarItem(itemId: String, starCost: Int, gemCost: Int) {
         viewModelScope.launch {
+            val owned = _currentProfile.value.unlockedItemIdsCsv
+                .split(",").any { it.trim() == itemId }
+            if (owned) {
+                speechManager.speak("You already own that item!")
+                return@launch
+            }
             val success = repository.unlockItem(_currentProfile.value.id, itemId, starCost, gemCost)
             if (success) {
                 triggerHapticSuccess()

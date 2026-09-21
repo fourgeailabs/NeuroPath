@@ -2298,7 +2298,7 @@ fun WhatsNewDialog(
                 version = "v1.01.00",
                 date = "Previous Update",
                 highlights = listOf(
-                    "🎵 Google Lyria AI Music Generation: Real-time procedural ambient soundscapes tailored to student sensory needs.",
+                    "🎵 Procedural ambient soundscapes tailored to student sensory needs.",
                     "📖 Dyslexia-friendly typography & high contrast sensory modes."
                 )
             ),

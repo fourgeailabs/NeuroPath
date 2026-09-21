@@ -21,7 +21,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.VIDEO_LESSON,
                         durationSeconds = 120,
                         description = "Watch how five dots on the top row and two dots on the bottom row combine to make seven without recount.",
-                        creatorOrSource = "OER Commons Early Numeracy Initiative",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         visualSceneKey = "DEFAULT",
                         transcript = listOf(
                             OerTranscriptLine(0, "Teacher Leo", "Welcome to the ten-frame garden! Let's count our friendly ladybugs."),
@@ -54,7 +54,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.AUDIO_LECTURE,
                         durationSeconds = 90,
                         description = "Catchy rhythmic audio podcast guiding little learners through quick visual counting games.",
-                        creatorOrSource = "OER Commons Early Audio Stories",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         transcript = listOf(
                             OerTranscriptLine(0, "Audio Buddy", "Clap your hands and count with me! 1, 2, 3, 4, 5!"),
                             OerTranscriptLine(30, "Audio Buddy", "Close your eyes, open them wide! Look at the three stars smiling in the sky!"),
@@ -76,7 +76,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.VIDEO_LESSON,
                         durationSeconds = 140,
                         description = "Decomposing numbers into friendly tens to make mental addition easy and fast.",
-                        creatorOrSource = "OER Commons Elementary Math Project",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         visualSceneKey = "DEFAULT",
                         transcript = listOf(
                             OerTranscriptLine(0, "Instructor Maya", "Today we unlock the superpower of the number 10!"),
@@ -111,7 +111,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.VIDEO_LESSON,
                         durationSeconds = 180,
                         description = "Deep dive into Earth's lithospheric plates, mantle convection currents, subduction zones, and rift valleys.",
-                        creatorOrSource = "OER Earth Science Open Initiative",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         visualSceneKey = "PLATE_TECTONICS",
                         transcript = listOf(
                             OerTranscriptLine(0, "Dr. Alvarez", "Welcome beneath Earth's crust! Today we investigate the heat engine driving our continents."),
@@ -144,7 +144,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.AUDIO_LECTURE,
                         durationSeconds = 150,
                         description = "Audio documentary exploring the Pacific Ring of Fire, seismic wave detection, and volcanic eruption forecasting.",
-                        creatorOrSource = "OER Commons Geosciences Audio",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         transcript = listOf(
                             OerTranscriptLine(0, "Host Sarah", "Beneath the Pacific Ocean lies the most seismically active zone on our planet: The Ring of Fire."),
                             OerTranscriptLine(45, "Host Sarah", "Seismographs measure P-waves (primary compressional waves) and S-waves (secondary shear waves)."),
@@ -166,7 +166,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.VIDEO_LESSON,
                         durationSeconds = 200,
                         description = "Visual exploration of quadratic parabolic trajectories, vertex coordinates (-b/2a), and real-world projectile physics.",
-                        creatorOrSource = "OER OpenStax Math & Khan Open Curriculum",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         visualSceneKey = "QUADRATIC_PARABOLA",
                         transcript = listOf(
                             OerTranscriptLine(0, "Prof. Jenkins", "Welcome to High School Algebra! Today we explore parabolic curves."),
@@ -201,7 +201,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.VIDEO_LESSON,
                         durationSeconds = 190,
                         description = "Interactive visualization of electronegativity differences, valence octet rules, and Lewis electron dot sharing.",
-                        creatorOrSource = "OER Commons Physical Chemistry Lab",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         visualSceneKey = "CHEMISTRY_BONDING",
                         transcript = listOf(
                             OerTranscriptLine(0, "Dr. Vance", "Why do atoms bond? They bond to achieve stable full valence electron shells!"),
@@ -237,7 +237,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.VIDEO_LESSON,
                         durationSeconds = 150,
                         description = "Interactive OER Commons curated video lesson with animated visual diagrams and step-by-step concept walkthroughs.",
-                        creatorOrSource = "OER Commons Curated Video Lab",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         visualSceneKey = "DEFAULT",
                         transcript = listOf(
                             OerTranscriptLine(0, "Instructor", "Welcome to this OER Commons Curated Lesson! Let's explore the core concepts step-by-step."),
@@ -269,7 +269,7 @@ object PreinstalledOerMediaCatalog {
                         mediaType = OerMediaType.AUDIO_LECTURE,
                         durationSeconds = 120,
                         description = "Auditory curriculum guide with clear vocal explanations, acoustic pacing, and synchronized read-along transcript.",
-                        creatorOrSource = "OER Commons Auditory Curriculum Series",
+                        creatorOrSource = "NeuroPath built-in curriculum",
                         transcript = listOf(
                             OerTranscriptLine(0, "Auditory Narrator", "Hello learner! Relax, take a deep breath, and listen to today's core learning summary."),
                             OerTranscriptLine(35, "Auditory Narrator", "As we explore this subject, consider how each key concept fits into the bigger picture."),

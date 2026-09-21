@@ -191,9 +191,11 @@ interface ChildProfileDao {
     suspend fun updateStreak(profileId: Long, streakDays: Int, lastActiveDate: String)
 
     /**
-     * Atomic conditional unlock: the balance check and the debit happen in a single
-     * statement, so two concurrent unlocks cannot both spend the same stars/gems.
-     * Returns the number of rows updated (0 = insufficient balance or unknown profile).
+     * Atomic conditional unlock: the balance check, the already-owned check, and the debit
+     * happen in a single statement, so two concurrent unlocks cannot both spend the same
+     * stars/gems, and re-unlocking an owned item never charges again.
+     * Returns the number of rows updated (0 = insufficient balance, already unlocked,
+     * or unknown profile).
      */
     @Query(
         """UPDATE child_profiles
@@ -201,10 +203,12 @@ interface ChildProfileDao {
             totalGems = totalGems - :gemCost,
             unlockedItemIdsCsv = CASE
                 WHEN unlockedItemIdsCsv = '' THEN :itemId
-                WHEN instr(',' || unlockedItemIdsCsv || ',', ',' || :itemId || ',') > 0 THEN unlockedItemIdsCsv
                 ELSE unlockedItemIdsCsv || ',' || :itemId
             END
-        WHERE id = :profileId AND totalStars >= :starCost AND totalGems >= :gemCost"""
+        WHERE id = :profileId
+            AND totalStars >= :starCost
+            AND totalGems >= :gemCost
+            AND instr(',' || unlockedItemIdsCsv || ',', ',' || :itemId || ',') = 0"""
     )
     suspend fun tryUnlockItem(profileId: Long, itemId: String, starCost: Int, gemCost: Int): Int
 }

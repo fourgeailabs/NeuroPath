@@ -241,8 +241,10 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
                 [CURRICULUM ALIGNMENT REPOSITORIES]
                 Official jurisdiction resolution: ${curriculumResolution.contextText()}
                 ${if (ukDirectory.isNotBlank()) ukDirectory + "\n" else ""}
-                [OER COMMONS CURATED COLLECTIONS REPOSITORY BENCHMARK]
-                Source Database: OER Commons Curated Collections (https://oercommons.org/curated-collections)
+                [BUILT-IN CURRICULUM LIBRARY]
+                Source: NeuroPath built-in curriculum units (study guides aligned with OER Commons
+                curated collections: https://oercommons.org/curated-collections). These summaries
+                are written for this app; they are not verbatim OER Commons resources.
                 Collection: ${matchedUnit.collectionTitle}
                 Unit: ${matchedUnit.unitTitle}
                 Standard Code: ${matchedUnit.standardCode}
