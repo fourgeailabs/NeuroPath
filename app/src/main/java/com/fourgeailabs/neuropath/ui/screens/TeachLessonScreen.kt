@@ -39,6 +39,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,7 +75,7 @@ fun TeachLessonScreen(
     var activeMediaResource by remember { mutableStateOf<OerMediaResource?>(null) }
 
     if (activeLesson == null) {
-        viewModel.navigateTo(AppScreen.HOME)
+        LaunchedEffect(Unit) { viewModel.navigateTo(AppScreen.HOME) }
         return
     }
 

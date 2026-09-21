@@ -72,6 +72,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import com.fourgeailabs.neuropath.util.rememberReducedMotion
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -582,16 +583,21 @@ private fun LiveScreenSimulationView(
     cardColor: Color
 ) {
     val scrollState = rememberScrollState()
-    val infiniteTransition = rememberInfiniteTransition(label = "theme_ambient_pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.75f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "ambient_alpha"
-    )
+    val reducedMotion = rememberReducedMotion()
+    val pulseAlpha = if (reducedMotion) {
+        0.55f
+    } else {
+        val infiniteTransition = rememberInfiniteTransition(label = "theme_ambient_pulse")
+        infiniteTransition.animateFloat(
+            initialValue = 0.35f,
+            targetValue = 0.75f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2400, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "ambient_alpha"
+        ).value
+    }
 
     Column(
         modifier = Modifier

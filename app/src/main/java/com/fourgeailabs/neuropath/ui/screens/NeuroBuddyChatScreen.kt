@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import com.fourgeailabs.neuropath.util.rememberReducedMotion
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -190,16 +191,21 @@ private fun VoiceConversationStage(
     val isTranscribing by viewModel.isTranscribingAudio.collectAsState()
     val profile by viewModel.currentProfile.collectAsState()
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = if (isLiveActive || isRecording) 1.25f else 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
+    val reducedMotion = rememberReducedMotion()
+    val pulseScale = if (reducedMotion) {
+        1.0f
+    } else {
+        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+        infiniteTransition.animateFloat(
+            initialValue = 1.0f,
+            targetValue = if (isLiveActive || isRecording) 1.25f else 1.05f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseScale"
+        ).value
+    }
 
     Column(
         modifier = modifier
