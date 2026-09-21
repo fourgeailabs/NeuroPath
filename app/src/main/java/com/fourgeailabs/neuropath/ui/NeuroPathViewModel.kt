@@ -1201,7 +1201,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     // Voice Assist Speech-To-Text
     fun startVoiceAssistForChat(onTextReceived: (String) -> Unit) {
         speechManager.startListening(
-            onTextReceived = { text ->
+            onTextRecognized = { text ->
                 onTextReceived(text)
             },
             onError = { error ->

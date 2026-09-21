@@ -343,7 +343,7 @@ fun HomeScreen(
 
                         IconButton(
                             onClick = { viewModel.refreshDailyQuote() },
-                            modifier = Modifier.testTag("refresh_quote_btn").size(36.dp)
+                            modifier = Modifier.testTag("refresh_quote_btn").size(48.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Autorenew,

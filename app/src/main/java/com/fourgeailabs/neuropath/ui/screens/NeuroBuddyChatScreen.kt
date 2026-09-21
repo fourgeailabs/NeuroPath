@@ -334,7 +334,7 @@ private fun VoiceConversationStage(
                     .clickable {
                         if (isRecording) {
                             viewModel.stopAudioRecordingAndTranscribe { spokenText ->
-                                viewModel.sendLiveVoiceTurn(userText = spokenText)
+                                viewModel.sendLiveVoiceTurn(rawText = spokenText)
                             }
                         } else if (!isLiveActive && !isTranscribing) {
                             viewModel.startAudioRecording()

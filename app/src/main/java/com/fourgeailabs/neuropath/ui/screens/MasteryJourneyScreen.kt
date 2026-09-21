@@ -315,7 +315,7 @@ fun MasteryJourneyScreen(
                         // Dedicated option read-aloud TTS button
                         IconButton(
                             onClick = { viewModel.readSingleOption(optIndex) },
-                            modifier = Modifier.size(32.dp).testTag("read_option_${optIndex}_btn")
+                            modifier = Modifier.size(48.dp).testTag("read_option_${optIndex}_btn")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.VolumeUp,

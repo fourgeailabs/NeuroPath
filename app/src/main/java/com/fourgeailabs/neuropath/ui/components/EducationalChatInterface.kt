@@ -362,7 +362,7 @@ fun EducationalChatInterface(
                                 showNewSessionDialog = true
                             },
                             modifier = Modifier
-                                .size(34.dp)
+                                .size(48.dp)
                                 .testTag("chat_new_topic_btn")
                         ) {
                             Icon(
@@ -1319,7 +1319,7 @@ private fun EducationalChatHistorySheet(
 
                                         IconButton(
                                             onClick = { viewModel.deleteChatSession(session.sessionId) },
-                                            modifier = Modifier.size(32.dp)
+                                            modifier = Modifier.size(48.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Close,
