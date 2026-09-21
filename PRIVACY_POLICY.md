@@ -39,8 +39,8 @@ The following data is generated during App usage and remains stored strictly on 
 * **No Location Tracking:** We do **not** track location in the background, store location history, or share location data with any third party.
 
 ### C. AI Tutoring & Interaction Data
-* **Cloud AI (Gemini API):** When using cloud-powered AI tutoring features, user prompts and lesson contexts are sent securely to Google's Gemini API endpoints strictly to generate educational responses. These prompts contain no user-identifying metadata.
-* **On-Device Local AI (Gemma Models):** When local offline AI mode is enabled, model packages (such as Gemma weights from Hugging Face) are downloaded to device storage, and all AI processing occurs **100% locally on your device** without transmitting data over the internet.
+* **Cloud AI (Meta Llama 3.2 via Hugging Face):** When using cloud-powered AI tutoring features, user prompts and lesson contexts are sent securely to Meta Llama 3.2 endpoints strictly to generate educational responses. These prompts contain no user-identifying metadata.
+* **On-Device Local AI (Meta Llama 3.2 Models):** When local offline AI mode is enabled, model packages (such as Meta Llama 3.2 weights from Hugging Face) are downloaded to device storage, and all AI processing occurs **100% locally on your device** without transmitting data over the internet.
 
 ---
 
@@ -63,9 +63,8 @@ You can grant or revoke any optional permission at any time through your Android
 
 NeuroPath interacts with the following trusted third-party service providers solely to enable core App functionality:
 
-* **Google Cloud & Gemini API:** Used to deliver real-time educational answers and socratic tutoring. Usage is subject to [Google's Privacy Policy](https://policies.google.com/privacy).
+* **Hugging Face & Meta Llama 3.2 Services:** Used to deliver real-time educational answers, socratic tutoring, and as a repository for local open-weights Llama 3.2 models. Subject to [Hugging Face Privacy Policy](https://huggingface.co/privacy).
 * **Google Maps Geocoding Services:** Used for reverse geocoding to resolve state and district educational frameworks. Subject to [Google Privacy Policy](https://policies.google.com/privacy).
-* **Hugging Face:** Used as an optional download repository for local open-weights Gemma models. Subject to [Hugging Face Privacy Policy](https://huggingface.co/privacy).
 
 We do **not** sell, rent, trade, or share any user data with advertisers, data brokers, or marketing networks. The App contains **no advertisements** and **no third-party tracking software**.
 

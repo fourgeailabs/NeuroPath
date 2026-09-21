@@ -1,4 +1,3 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 import java.util.Base64
 
 plugins {
@@ -7,21 +6,20 @@ plugins {
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
-  alias(libs.plugins.google.services)
   id("io.gitlab.arturbosch.detekt") version "1.23.6"
   id("org.jlleitschuh.gradle.ktlint") version "12.1.0"
 }
 
 android {
-  namespace = "com.example"
+  namespace = "com.fourgeailabs.neuropath"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
     applicationId = "com.fourgeailabs.neuropath"
     minSdk = 24
     targetSdk = 36
-    versionCode = 39
-    versionName = "2.00.01"
+    versionCode = 45
+    versionName = "2.05.00"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     ndk { abiFilters += listOf("arm64-v8a") }
   }
@@ -29,10 +27,23 @@ android {
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      val uploadKeyFile = file(keystorePath)
+      if (uploadKeyFile.exists()) {
+        storeFile = uploadKeyFile
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = "upload"
+        keyPassword = System.getenv("KEY_PASSWORD")
+      } else {
+        // Fail clearly: a release build must never be silently signed with a debug key.
+        // Provide the upload keystore via KEYSTORE_PATH (plus STORE_PASSWORD / KEY_PASSWORD),
+        // or place it at ${rootDir}/my-upload-key.jks.
+        throw GradleException(
+          "Release signing keystore not found at '$keystorePath'. " +
+          "Set the KEYSTORE_PATH environment variable (with STORE_PASSWORD and KEY_PASSWORD) " +
+          "or place your upload keystore at <project>/my-upload-key.jks. " +
+          "Refusing to sign a release build with a debug key."
+        )
+      }
     }
     create("debugConfig") {
       val debugKeystoreFile = file("${rootDir}/debug.keystore")
@@ -98,10 +109,7 @@ ktlint {
 secrets {
   propertiesFileName = ".env"
   defaultPropertiesFileName = ".env.example"
-  ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
 }
-
-googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
@@ -123,6 +131,7 @@ dependencies {
   implementation(libs.kotlinx.coroutines.core)
   implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
+  implementation(libs.security.crypto)
   implementation(libs.okhttp)
   implementation(libs.retrofit)
   implementation(libs.llama.android)

@@ -68,7 +68,7 @@ cp debug.keystore_test debug.keystore
 
 # Configure secrets
 cp .env.example .env
-# Edit .env with your GEMINI_API_KEY
+# Edit .env with your HF_TOKEN or LLAMA_API_KEY
 
 # Build and test
 ./gradlew.bat assembleDebug

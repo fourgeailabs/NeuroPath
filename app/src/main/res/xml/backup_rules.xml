@@ -1,13 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Auto Backup rules (API 23-30). API 31+ uses res/xml/data_extraction_rules.xml.
+
+   NeuroPath stores children's names, learning records, and chat transcripts in its
+   Room database, and the parent PIN hash + Hugging Face token in encrypted shared
+   preferences. None of that is uploaded to cloud backup; device-to-device transfer
+   is governed by data_extraction_rules.xml.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- Child learning data: never uploaded to cloud backup. -->
+    <exclude domain="database" path="." />
+    <!-- Secrets: the encrypted prefs file is device-bound (AndroidKeyStore) and useless off-device. -->
+    <exclude domain="sharedpref" path="neuropath_secure_prefs.xml" />
 </full-backup-content>

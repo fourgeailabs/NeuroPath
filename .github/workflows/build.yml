@@ -113,8 +113,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: app/build/outputs/apk/debug/app-debug.apk
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.00.01' }}
-          name: "NeuroPath Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.00.01' }}"
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.04.00' }}
+          name: "NeuroPath Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v2.04.00' }}"
           body_path: README.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

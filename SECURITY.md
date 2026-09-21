@@ -46,7 +46,7 @@ NeuroPath implements several security measures:
 - Encrypted SharedPreferences for sensitive settings
 
 ### API Security
-- Gemini API keys stored in `.env` (gitignored)
+- Hugging Face / Llama API keys stored in `.env` (gitignored)
 - Secrets loaded via Gradle Secrets plugin at build time
 - No hardcoded API keys in source code
 - Firebase App Check for backend verification

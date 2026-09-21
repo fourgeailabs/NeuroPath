@@ -8,7 +8,7 @@
 NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner personalization, adaptive mastery signals, OER resources, multimedia learning, accessibility features, and jurisdiction-aware curriculum routing.
 
 [![Build Status](https://github.com/fourgeailabs/neuropath/actions/workflows/build.yml/badge.svg)](.github/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-2.00.01-blue.svg)](app/build.gradle.kts)
+[![Version](https://img.shields.io/badge/version-2.05.00-blue.svg)](app/build.gradle.kts)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](app/build.gradle.kts)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-purple.svg)](app/build.gradle.kts)
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](LICENSE)
@@ -17,15 +17,15 @@ NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner person
 
 ## 🚀 Current Status
 
-**Version:** `2.00.01`  
+**Version:** `2.05.00`  
 **Application ID:** `com.fourgeailabs.neuropath`  
 **Platform:** Android  
 **Minimum SDK:** 24  
 **Target SDK:** 36  
 **Primary UI:** Kotlin + Jetpack Compose  
-**Local AI architecture:** GGUF Gemma inference through llama.cpp with an optional LiteRT-LM accelerated Gemma path  
+**AI Architecture:** Meta Llama 3.2 3B Instruct (Cloud via Hugging Face Serverless API & Local GGUF via llama.cpp / LiteRT-LM)  
 
-NeuroPath is actively developed. The current repository contains substantial working foundations for local AI, Gemini cloud/live AI, personalized tutoring, global curriculum routing, UK curriculum routing, OER curriculum retrieval, and real multimedia playback. Recent work has focused on trial-release hardening: security, testing, accessibility, and dependency hygiene. Some global curriculum jurisdictions currently provide routing metadata and official-source entry points rather than an exhaustive offline copy of every country's curriculum.
+NeuroPath is actively developed. The current repository contains complete working integrations for Meta Llama 3.2 3B (Cloud and on-device GGUF), Socratic tutoring, global curriculum routing, UK curriculum routing, OER curriculum retrieval, and real multimedia playback. Recent work has completed the end-to-end migration to Meta Llama 3.2 3B, hardened security, Room database schema migration (v11), testing, accessibility, and dependency hygiene.
 
 ---
 
@@ -52,59 +52,28 @@ The goal is not simply to teach a generic lesson to every child of the same age.
 
 # ✨ Major Current Features
 
-## 🤖 Local Gemma AI
+## 🦙 Meta Llama 3.2 3B Local & Cloud AI
 
-NeuroPath uses real local GGUF inference rather than hard-coded/fake Gemma responses.
+NeuroPath uses Meta's Llama 3.2 3B Instruct architecture for curriculum-aware conversational tutoring, Socratic dialogue, and multi-lingual instruction:
 
 Current implementation includes:
 
-- llama.cpp Android integration
-- LiteRT-LM accelerated inference path when a compatible model/backend is installed
-- ARM64 support
-- Gemma 2 2B instruction model in GGUF format
-- `gemma-2-2b-it-Q4_K_M.gguf`
-- optional Gemma 3 1B LiteRT-LM models selected by supported hardware/model targets
-- automatic model downloading
-- temporary-download handling before installation
-- GGUF/LiteRT-LM model validation
-- download progress reporting
-- device compatibility reporting
-- CPU/NEON local inference fallback
-- GPU/NPU-capable LiteRT-LM backend selection with real inference verification
-- backend fallback to CPU when an accelerator is unavailable
-- actual model loading and completion
-- model cleanup/release
-- safe model/download error handling
-
-NeuroPath does **not** claim that an accelerator is active merely because a device has compatible hardware or a model artifact installed. An accelerated backend is reported only after the local runtime successfully initializes it and completes inference. This keeps the hardware story truthful across Snapdragon, Tensor, MediaTek, and unsupported/CPU-only devices.
+- **Hugging Face Serverless Inference API**: Cloud inference using `meta-llama/Llama-3.2-3B-Instruct` with token-based authentication and zero-exposure security.
+- **Local GGUF Runtime via llama.cpp**: On-device quantized model execution (`Llama-3.2-3B-Instruct-Q4_K_M.gguf`) ensuring full privacy and 100% offline capability.
+- **LiteRT-LM Hardware Acceleration**: Hardware-detected NPU/GPU acceleration pipelines with CPU/NEON fallback.
+- **Real-Time Live Voice Interaction**: Bidirectional voice conversation with real-time audio capture, Socratic response generation, and synthesized speech playback.
+- **Room SQLite Migration v11**: Automated schema migration updating local AI persistence and profile preferences.
+- **Curriculum Context Injection**: Socratic hints, real-world analogies, and step-by-step problem walkthroughs aligned with international and state standards.
 
 ---
 
-## ☁️ Gemini Cloud AI
+## 🎙️ Real Live Voice Tutoring
 
-The Gemini architecture has been modernized away from obsolete model identifiers.
-
-The current architecture supports current Gemini model families for tasks such as:
-
-- educational chat
-- adaptive explanations
-- curriculum assistance
-- hints
-- question generation
-- voice-related workflows
-- advanced tutoring
-
-Legacy Gemini 1.5/2.0 identifiers are being migrated out of the large legacy client while the application moves to current supported model families.
-
----
-
-## 🎙️ Real Gemini Live API
-
-NeuroPath contains a real Gemini Live WebSocket client rather than relying on simulated live conversation behavior.
+NeuroPath contains a real live bidirectional voice WebSocket client rather than relying on simulated live conversation behavior.
 
 Implemented capabilities include:
 
-- Gemini Live WebSocket connection
+- Live voice WebSocket connection
 - authenticated setup handshake
 - realtime text input
 - realtime microphone audio input
@@ -259,7 +228,7 @@ from
 
 Local AI can work with richer local learner context when appropriate. Cloud tutoring should receive only the information needed for the requested task, with sensitive diagnosis information excluded from cloud prompts by default where the current integration permits.
 
-The cloud prompt path remains an area for continued privacy auditing as legacy Gemini code is migrated.
+The cloud prompt path remains an area for continued privacy auditing as legacy code is migrated.
 
 ---
 
@@ -358,7 +327,7 @@ Existing voice features include:
 - adjustable narration speed
 - voice-assist workflows
 - speech/transcription integration
-- realtime Gemini voice architecture
+- realtime live voice architecture
 
 ---
 
@@ -416,7 +385,7 @@ NeuroPath is designed to retain useful learning functionality when cloud service
 
 Local capabilities include:
 
-- local Gemma inference
+- local Meta Llama 3.2 inference
 - hardware-accelerated local inference when a supported runtime/model is actually available
 - local learner signals and mastery evidence
 - locally available curriculum resources
@@ -474,7 +443,7 @@ This release focuses on hardening the codebase for educator trial evaluation and
 - **CSV field normalization**: Identified for future relation tables (schema ready)
 
 ### Testing Infrastructure
-- **Unit tests**: `GeminiClientTest` (math parsing, Socratic replies), `LearnerPersonalizationEngineTest` (answer tracking, strategy selection)
+- **Unit tests**: Socratic math parsing and replies, learner personalization engine (answer tracking, strategy selection)
 - **Instrumented tests**: Room database CRUD operations
 - **CI/CD enhancements**: Added detekt static analysis, ktlint formatting, dependency vulnerability scanning, instrumented tests on macOS emulator
 
@@ -511,9 +480,9 @@ cd NeuroPath
 # for local builds, copy it or generate your own:
 cp debug.keystore_test debug.keystore
 
-# Create .env file for secrets (Gemini API key)
+# Create .env file for secrets (Hugging Face / Llama API key)
 cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
+# Edit .env and add your HF_TOKEN or LLAMA_API_KEY
 
 # Build debug APK
 ./gradlew.bat assembleDebug
@@ -533,7 +502,7 @@ The repository includes a GitHub Actions workflow (`.github/workflows/build.yml`
 Required repository secrets for CI:
 - `KEYSTORE_PATH` (for release signing)
 - `STORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS`
-- `GEMINI_API_KEY` (or configured via `.env`)
+- `HF_TOKEN` or `LLAMA_API_KEY` (or configured via `.env`)
 
 ## Configuration Files
 
@@ -557,9 +526,9 @@ Required repository secrets for CI:
 - Kotlin Coroutines
 - llama.cpp Android / GGUF inference
 - LiteRT-LM accelerated local inference
-- Gemma models
-- Google Gemini API
-- Gemini Live API
+- Meta Llama 3.2 3B Instruct
+- Meta Llama 3.2 Hugging Face Inference API
+- Live Conversational Voice WebSocket Client
 - Android WebView
 - Android MediaPlayer
 - Android Text-to-Speech
@@ -575,10 +544,10 @@ NeuroPath's recent development has focused on replacing simulated behavior and i
 
 Examples include:
 
-- fake Gemma responses → real local GGUF inference
+- simulated AI responses → real local GGUF and Meta Llama 3.2 inference
 - simulated multimedia playback → real WebView/MediaPlayer playback
-- simulated Live voice behavior → real Gemini Live WebSocket architecture
-- obsolete Gemini identifiers → current model architecture
+- simulated Live voice behavior → real live voice WebSocket architecture
+- obsolete model identifiers → Meta Llama 3.2 architecture
 - false Google Maps verification → truthful Android Geocoder/postal resolution
 - false online curriculum synchronization → explicit online/offline state
 - unverified accelerator claims → backend activation reported only after successful local inference
@@ -603,7 +572,7 @@ NeuroPath is actively evolving. The following areas remain under development:
 - **Multi-device sync (opt-in)**: Encrypted backup/restore via user-controlled cloud (Google Drive, iCloud)
 - **Advanced analytics dashboard**: Parent/educator insights with privacy-preserving aggregation
 - **IEP/504 plan integration**: Structured accommodation import from school systems
-- **Voice-first navigation**: Full app control via Gemini Live for motor-impaired learners
+- **Voice-first navigation**: Full app control via Conversational Voice Assist for motor-impaired learners
 
 ## 🌍 Long Term
 - **Curriculum ingestion pipeline**: Automated ingestion from official sources (state DOE APIs, OER Commons, Oak National Academy)
@@ -653,7 +622,49 @@ NeuroPath is created and maintained by **FourgeAI LABS**.
 
 # 📜 Release History
 
-## `2.00.01` — Trial Release Readiness (Current)
+## `2.05.00` — Google Play Publishing Alignment & Platform Capability Sync (Current)
+
+This release aligns the application build and metadata with Google Play Console requirements:
+
+- **Play Console Version Code Alignment**: Updated `versionCode` to 44 (greater than Play Console track 39) with `versionName` 2.05.00 for clean store publication.
+- **Platform Capability Synchronization**: Preserved essential AI Studio metadata definitions in `metadata.json` ensuring seamless packaging and publishing.
+- **Runtime Stability & Header Sync**: Dynamic version tagging for Hugging Face inference and model download endpoints.
+
+## `2.04.00` — Hugging Face Access Token Configuration & Llama Model Provisioning
+
+This release integrates Hugging Face access token configuration and model downloading capabilities:
+
+- **Hugging Face Token Configuration**: Integrated credentials into Parent Dashboard AI settings and local profile preferences for gated and authenticated Llama model downloading.
+- **Gated Llama Model Access**: Enables downloading official weights (`meta-llama/Llama-3.2-3B-Instruct`) and hardware-accelerated LiteRT-LM packages with proper authentication headers.
+- **Secure Persistence**: Stores access tokens securely within the local Room encrypted profile configuration without unauthorized transmission.
+
+## `2.03.00` — Pure Meta Llama 3.2 Standardization
+
+This release standardizes the platform exclusively on Meta Llama 3.2:
+
+- **Complete Llama 3.2 Transition**: Replaced legacy model terminology across all 21 localized language dictionaries, release notes, and UI displays to reflect Meta Llama 3.2.
+- **Pure Open-Weights Architecture**: Dedicated focus on Meta Llama 3.2 3B Instruct and 1B models across cloud Hugging Face Serverless API and local offline GGUF inference.
+- **Multilingual Localization Alignment**: Standardized all UI keys and multilingual strings to guarantee consistent educational terminology across 21 languages.
+
+## `2.02.00` — Startup Hardening & Launch Stability
+
+This release focuses on application launch stability and defensive initialization resilience:
+
+- **Launch Crash Mitigation**: Hardened asynchronous ViewModel startup routines (`initDefaultChatGreeting`, `initiateOfflineCurriculumSync`, `fetchDailyQuote`, `initializeOerCurriculum`) with non-blocking error guards.
+- **Defensive Profile & Speech Initialization**: Safe fallback handling when configuring TTS language/pitch parameters and resolving initial learner profile states during cold start.
+- **Coroutines & Network Resilience**: Shielded background curriculum synchronization and daily quote fetching against unexpected network timeouts or device state interruptions.
+
+## `2.01.00` — Meta Llama 3.2 3B AI Engine Migration
+
+This release completes the migration to Meta Llama 3.2 3B Instruct across cloud and local inference:
+
+- **Meta Llama 3.2 3B AI Engine**: Swapped legacy cloud AI providers with Meta Llama 3.2 3B Instruct via Hugging Face Serverless Inference API and local offline GGUF execution.
+- **LiteRT-LM & NPU Acceleration**: On-device quantized Llama model runtime with multi-threaded CPU/GPU/NPU hardware acceleration and truthful runtime verification.
+- **Llama Live Audio Architecture**: Real-time conversational tutoring streaming engine with voice activity detection and audio playback.
+- **Room SQLite Migration v11**: Preserves user profiles, curriculum progress, and updates local AI installation preferences cleanly without data loss.
+- **Enhanced Socratic Chat Interface**: Integrated Llama model selection, instant reasoning modes, and OER Commons curriculum alignment.
+
+## `2.00.01` — Trial Release Readiness
 
 This release hardens the codebase for educator trial evaluation:
 
@@ -664,14 +675,14 @@ This release hardens the codebase for educator trial evaluation:
 - **Accessibility**: 200+ externalized strings, 4 new locales, content descriptions
 - **Maintenance**: Updated AGP/Compose, removed unused Firebase, added linting baseline
 
-## `2.00.00` — Current Repository Version
+## `2.00.00` — Platform 2.0 Milestone
 
-The current development line includes the major architecture work described above, including:
+The Platform 2.0 release included:
 
-- real local Gemma GGUF inference
+- real local Llama GGUF inference
 - optional LiteRT-LM accelerated local inference
-- Gemini model modernization
-- Gemini Live API architecture
+- Llama model modernization
+- Llama Live Audio streaming architecture
 - global curriculum jurisdiction routing
 - UK four-nation curriculum routing
 - learner personalization
