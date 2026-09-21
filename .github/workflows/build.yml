@@ -182,6 +182,10 @@ jobs:
           distribution: 'temurin'
       - name: Run Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
+        # The action runs in Docker with its own JRE; the host JAVA_HOME path
+        # does not exist inside the container, so clear it for this step.
+        env:
+          JAVA_HOME: ""
         with:
           project: 'NeuroPath'
           path: '.'
