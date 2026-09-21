@@ -28,12 +28,15 @@ android {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
       val uploadKeyFile = file(keystorePath)
+      // NB: this block runs at configuration time for EVERY build (even assembleDebug), so the
+      // missing-keystore failure must only trigger when a release task was actually requested.
+      val buildingRelease = gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }
       if (uploadKeyFile.exists()) {
         storeFile = uploadKeyFile
         storePassword = System.getenv("STORE_PASSWORD")
         keyAlias = "upload"
         keyPassword = System.getenv("KEY_PASSWORD")
-      } else {
+      } else if (buildingRelease) {
         // Fail clearly: a release build must never be silently signed with a debug key.
         // Provide the upload keystore via KEYSTORE_PATH (plus STORE_PASSWORD / KEY_PASSWORD),
         // or place it at ${rootDir}/my-upload-key.jks.
@@ -43,6 +46,8 @@ android {
           "or place your upload keystore at <project>/my-upload-key.jks. " +
           "Refusing to sign a release build with a debug key."
         )
+      } else {
+        logger.warn("No upload keystore at '$keystorePath'; release signing left unconfigured (debug build).")
       }
     }
     create("debugConfig") {

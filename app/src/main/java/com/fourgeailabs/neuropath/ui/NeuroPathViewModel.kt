@@ -378,9 +378,14 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         if (token.isBlank()) {
             val legacy = profiles.firstOrNull { it.customApiKey.isNotBlank() }?.customApiKey.orEmpty()
             if (legacy.isNotBlank()) {
-                secureStorage.setHfToken(legacy)
-                runCatching { repository.clearAllCustomApiKeys() }
-                Log.d("NeuroPathViewModel", "Migrated legacy per-profile API key into encrypted storage.")
+                // Only wipe the legacy copies once the token is safely in encrypted storage;
+                // if encryption is unavailable the token stays where it was (functional, as before).
+                if (secureStorage.setHfToken(legacy)) {
+                    runCatching { repository.clearAllCustomApiKeys() }
+                    Log.d("NeuroPathViewModel", "Migrated legacy per-profile API key into encrypted storage.")
+                } else {
+                    Log.w("NeuroPathViewModel", "Encrypted storage unavailable; legacy API key left in database")
+                }
                 token = legacy
             }
         }
@@ -391,10 +396,11 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         val today = java.time.LocalDate.now().toString()
         if (profile.lastActiveDate == today) return profile
         val yesterday = java.time.LocalDate.now().minusDays(1).toString()
+        // Consecutive day: extend. First launch or a 2+ day gap: the streak restarts at 1.
+        // (A gap must never increment — that was awarding streaks for not showing up.)
         val newStreak = when {
-            profile.lastActiveDate == yesterday -> if (profile.currentStreakDays <= 0) 2 else profile.currentStreakDays + 1
-            profile.lastActiveDate.isBlank() -> 1
-            else -> if (profile.currentStreakDays <= 0) 1 else profile.currentStreakDays + 1
+            profile.lastActiveDate == yesterday -> profile.currentStreakDays + 1
+            else -> 1
         }
         val updated = profile.copy(currentStreakDays = if (newStreak < 1) 1 else newStreak, lastActiveDate = today)
         viewModelScope.launch {
@@ -1729,35 +1735,34 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun verifyPin() {
         val entered = _pinInput.value
-        if (!secureStorage.hasParentPin()) {
-            // One-time migration: a legacy plaintext 4-digit PIN stored on a profile is hashed
-            // into secure storage, then wiped from the database. No silent fallback afterwards.
-            val legacy = allProfiles.value.firstOrNull { it.parentPin.isNotBlank() }?.parentPin
-                ?: _currentProfile.value.parentPin.takeIf { it.isNotBlank() }
-            if (legacy?.matches(Regex("^\\d{4}$")) != true) {
-                _pinError.value = true
-                _pinInput.value = ""
-                speechManager.speak("No PIN configured. Please set up a parent PIN in settings first.")
-                return
-            }
-            viewModelScope.launch {
-                runCatching { secureStorage.setParentPin(legacy) }
-                runCatching { repository.updateParentPinForAll("") }
-                verifyPinAttempt(entered)
-            }
-            return
-        }
-        verifyPinAttempt(entered)
-    }
-
-    private fun verifyPinAttempt(entered: String) {
         _pinInput.value = ""
-        if (secureStorage.verifyParentPin(entered)) {
-            _pinError.value = false
-            navigateTo(AppScreen.PARENT_DASHBOARD)
-        } else {
-            _pinError.value = true
-            speechManager.speak("Incorrect passcode. Please try again.")
+        viewModelScope.launch {
+            if (!secureStorage.hasParentPin()) {
+                // One-time migration: a legacy plaintext 4-digit PIN stored on a profile is
+                // hashed into secure storage, then wiped from the database. No silent fallback
+                // afterwards. If encrypted storage is unavailable the gate stays shut.
+                val legacy = allProfiles.value.firstOrNull { it.parentPin.isNotBlank() }?.parentPin
+                    ?: _currentProfile.value.parentPin.takeIf { it.isNotBlank() }
+                if (legacy?.matches(Regex("^\\d{4}$")) != true) {
+                    _pinError.value = true
+                    speechManager.speak("No PIN configured. Please set up a parent PIN in settings first.")
+                    return@launch
+                }
+                val migrated = runCatching { secureStorage.setParentPin(legacy) }.getOrDefault(false)
+                if (!migrated) {
+                    _pinError.value = true
+                    speechManager.speak("Secure storage is unavailable on this device.")
+                    return@launch
+                }
+                runCatching { repository.updateParentPinForAll("") }
+            }
+            if (secureStorage.verifyParentPin(entered)) {
+                _pinError.value = false
+                navigateTo(AppScreen.PARENT_DASHBOARD)
+            } else {
+                _pinError.value = true
+                speechManager.speak("Incorrect passcode. Please try again.")
+            }
         }
     }
 
@@ -1773,10 +1778,10 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     fun updateParentPin(newPin: String) {
         viewModelScope.launch {
             // The parent PIN is app-level (one PIN, not per child profile) and lives only in
-            // secure storage as a salted hash. Legacy plaintext copies are wiped.
-            val stored = runCatching { secureStorage.setParentPin(newPin) }
-            if (stored.isFailure) {
-                Log.e("NeuroPathViewModel", "Failed to store parent PIN", stored.exceptionOrNull())
+            // secure storage as a PBKDF2 hash. Legacy plaintext copies are wiped.
+            val stored = runCatching { secureStorage.setParentPin(newPin) }.getOrDefault(false)
+            if (!stored) {
+                Log.e("NeuroPathViewModel", "Failed to store parent PIN")
                 _pinError.value = true
                 return@launch
             }
@@ -1789,7 +1794,9 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     fun updateAiSetup(platform: String, key: String) {
         viewModelScope.launch {
             // The API key is a secret: encrypted storage only, never the Room profile.
-            secureStorage.setHfToken(key)
+            if (!secureStorage.setHfToken(key)) {
+                Log.w("NeuroPathViewModel", "Encrypted storage unavailable; API key kept in memory only")
+            }
             LlamaClient.customApiKeyOverride = key.trim()
             val current = _currentProfile.value
             val updated = current.copy(customAiPlatform = platform, customApiKey = "")
@@ -1864,7 +1871,9 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             // Only overwrite it when the caller explicitly passed a value (so saving other
             // settings with an untouched token field cannot wipe it).
             if (customApiKey != null) {
-                secureStorage.setHfToken(customApiKey)
+                if (!secureStorage.setHfToken(customApiKey)) {
+                    Log.w("NeuroPathViewModel", "Encrypted storage unavailable; API key kept in memory only")
+                }
                 LlamaClient.customApiKeyOverride = customApiKey.trim()
             }
             val updated = _currentProfile.value.copy(

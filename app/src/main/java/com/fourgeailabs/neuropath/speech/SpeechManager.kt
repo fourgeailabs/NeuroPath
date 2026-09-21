@@ -215,6 +215,11 @@ class SpeechManager(private val context: Context) {
         }
     }
 
+    /**
+     * Ends the current recognition session and lets the recognizer deliver its final results
+     * through onResults/onError. This must NOT destroy the recognizer: destroying immediately
+     * after stopListening() would swallow the final results and the transcript would be lost.
+     */
     fun stopListening() {
         _isListening.value = false
         // SpeechRecognizer must be touched on the main thread; this can be called from
@@ -222,6 +227,19 @@ class SpeechManager(private val context: Context) {
         mainHandler.post {
             try {
                 speechRecognizer?.stopListening()
+            } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * Cancels recognition outright (no final results) and releases the recognizer. Use for
+     * shutdown, interruption, or starting a brand-new session — never to finalise one.
+     */
+    fun cancelListening() {
+        _isListening.value = false
+        mainHandler.post {
+            try {
+                speechRecognizer?.cancel()
                 speechRecognizer?.destroy()
                 speechRecognizer = null
             } catch (_: Exception) {}
@@ -232,7 +250,7 @@ class SpeechManager(private val context: Context) {
         try {
             tts?.stop()
         } catch (_: Exception) {}
-        stopListening()
+        cancelListening()
         _isSpeaking.value = false
         _activeUtteranceId.value = null
         _highlightRange.value = null
