@@ -26,7 +26,7 @@ import androidx.compose.material.icons.filled.InvertColors
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.SelfImprovement
-import androidx.compose.material.icons.filled.VolumeMute
+import androidx.compose.material.icons.automirrored.filled.VolumeMute
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -185,7 +185,7 @@ fun TopSensoryBar(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.VolumeMute,
+                                imageVector = Icons.AutoMirrored.Filled.VolumeMute,
                                 contentDescription = "Stop Speech",
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
@@ -276,7 +276,7 @@ fun TopSensoryBar(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.VolumeMute, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Filled.VolumeMute, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Stop Soundscape")
                     }
