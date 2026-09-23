@@ -127,6 +127,12 @@ object LlamaAccelerator {
 
         for (backend in candidateBackends) {
             val loadStart = System.nanoTime()
+            val requested = when (backend) {
+                is Backend.NPU, is Backend.GOOGLE_TENSOR -> LocalAiBackend.NPU
+                is Backend.GPU -> LocalAiBackend.GPU
+                else -> LocalAiBackend.CPU
+            }
+            LocalAiDiagnostics.recordAttempt(context, file.name, requested)
             try {
                 val config = EngineConfig(modelPath = file.absolutePath, backend = backend)
                 Engine(config).use { engine ->
@@ -154,15 +160,34 @@ object LlamaAccelerator {
                             is Backend.GPU -> LocalAiBackend.GPU
                             else -> LocalAiBackend.CPU
                         }
+                        LocalAiDiagnostics.recordSuccess(context, file.name, requested, active)
                         Log.i(TAG, "Verified active backend=$active model=${file.name} loadMs=$loadTimeMs generationMs=$generationTimeMs")
                         return@withContext LlamaAcceleratorResult(text, active, file.name, loadTimeMs, generationTimeMs)
                     }
                 }
             } catch (t: Throwable) {
                 lastFailure = t
+                LocalAiDiagnostics.recordAttempt(
+                    context,
+                    file.name,
+                    requested,
+                    t.message ?: t.javaClass.simpleName
+                )
                 Log.w(TAG, "LiteRT-LM backend $backend failed; trying next candidate", t)
             }
         }
+        LocalAiDiagnostics.recordFallback(
+            context,
+            file.name,
+            candidateBackends.lastOrNull()?.let {
+                when (it) {
+                    is Backend.NPU, is Backend.GOOGLE_TENSOR -> LocalAiBackend.NPU
+                    is Backend.GPU -> LocalAiBackend.GPU
+                    else -> LocalAiBackend.CPU
+                }
+            },
+            lastFailure?.message ?: "No LiteRT-LM backend completed inference"
+        )
         Log.w(TAG, "No LiteRT-LM backend completed inference", lastFailure)
         null
     }
