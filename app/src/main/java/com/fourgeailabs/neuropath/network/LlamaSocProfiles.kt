@@ -15,7 +15,7 @@ object LlamaSocProfiles {
         val npuBackendLabel: String
     )
 
-    const val GENERIC_GPU_MODEL = "llama3.2-3b-it-int4.litertlm"
+    const val GENERIC_GPU_MODEL = "llama3_2_3b_mixed_int4_gpu.litertlm"
 
     // Tensor G5/G6 detection anchors on the "tensor g5"/"tensor g6" generation marker instead of
     // a bare contains("g5"), which could false-positive on unrelated model strings.
