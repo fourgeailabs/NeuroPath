@@ -29,7 +29,6 @@ object LlamaAccelerator {
     private const val TAG = "LlamaAccelerator"
     private const val MODEL_REPO = "litert-community/Llama-3.2-3B"
     private const val GENERIC_GPU_MODEL = LlamaSocProfiles.GENERIC_GPU_MODEL
-    private const val TENSOR_MODEL_MARKER = "_Google_Tensor_"
     // Sanity floor for the ~1.7GB int4 LiteRT-LM artifact: anything far smaller is not the model.
     private const val MIN_MODEL_BYTES = 1_000_000_000L
     private const val MODEL_MAGIC = "LITERTLM"
@@ -133,20 +132,19 @@ object LlamaAccelerator {
                 Engine(config).use { engine ->
                     engine.initialize()
                     val loadTimeMs = (System.nanoTime() - loadStart) / 1_000_000L
-                    engine.createConversation().use { conversation ->
+                    val conversationConfig = if (systemPrompt.isNotBlank()) {
+                        com.google.ai.edge.litertlm.ConversationConfig(
+                            systemInstruction = com.google.ai.edge.litertlm.Contents.of(systemPrompt.trim())
+                        )
+                    } else {
+                        com.google.ai.edge.litertlm.ConversationConfig()
+                    }
+                    engine.createConversation(conversationConfig).use { conversation ->
                         val generationStart = System.nanoTime()
-                        val response = if (systemPrompt.isNotBlank()) {
-                            val configuredConversation = engine.createConversation(
-                                com.google.ai.edge.litertlm.ConversationConfig(
-                                    systemInstruction = com.google.ai.edge.litertlm.Contents.of(systemPrompt.trim())
-                                )
-                            )
-                            configuredConversation.use {
-                                it.sendMessage(prompt.trim(), maxOutputToken = MAX_OUTPUT_TOKENS)
-                            }
-                        } else {
-                            conversation.sendMessage(prompt.trim(), maxOutputToken = MAX_OUTPUT_TOKENS)
-                        }
+                        val response = conversation.sendMessage(
+                            prompt.trim(),
+                            maxOutputToken = MAX_OUTPUT_TOKENS
+                        )
                         val text = response.contents.toString().trim()
                         check(text.isNotBlank()) { "LiteRT-LM returned an empty response" }
                         val generationTimeMs = (System.nanoTime() - generationStart) / 1_000_000L
@@ -170,13 +168,13 @@ object LlamaAccelerator {
     }
 
     private fun backendCandidates(context: Context, modelName: String): List<Backend> {
+        val verified = LlamaSocProfiles.verifiedBackends(modelName)
         return buildList {
-            when {
-                modelName.contains(TENSOR_MODEL_MARKER) -> add(Backend.GOOGLE_TENSOR())
-                modelName != GENERIC_GPU_MODEL -> add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
+            if (LocalAiBackend.NPU in verified) {
+                add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
             }
-            add(Backend.GPU())
-            add(Backend.CPU())
-        }
+            if (LocalAiBackend.GPU in verified) add(Backend.GPU())
+            if (LocalAiBackend.CPU in verified) add(Backend.CPU())
+        }.ifEmpty { listOf(Backend.CPU()) }
     }
 }
