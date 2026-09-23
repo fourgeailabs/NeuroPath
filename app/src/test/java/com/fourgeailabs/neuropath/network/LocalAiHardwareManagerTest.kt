@@ -5,9 +5,36 @@ import org.junit.Test
 
 class LocalAiHardwareManagerTest {
     @Test
-    fun npuCandidateIsIdentifiedWithoutClaimingItIsActive() {
-        assertEquals("QUALCOMM_QNN", LocalAiHardwareManager.potentialNpuBackend("Qualcomm", "SM8650"))
-        assertEquals("GOOGLE_TENSOR", LocalAiHardwareManager.potentialNpuBackend("Google", "Tensor G5"))
+    fun unverifiedNpuHardwareDoesNotClaimNpuSupport() {
+        assertEquals(null, LocalAiHardwareManager.potentialNpuBackend("Qualcomm", "SM8650"))
+        assertEquals(null, LocalAiHardwareManager.potentialNpuBackend("Google", "Tensor G5"))
+        assertEquals(null, LocalAiHardwareManager.potentialNpuBackend("MediaTek", "MT6993"))
+    }
+
+    @Test
+    fun activeBackendMustHaveSuccessfulRuntimeProbe() {
+        val selected = LocalAiHardwareManager.selectBackend(
+            probes = listOf(
+                LocalAiBackendProbe(LocalAiBackend.NPU, false, "hardware present but runtime unavailable"),
+                LocalAiBackendProbe(LocalAiBackend.GPU, false, "initialization failed"),
+                LocalAiBackendProbe(LocalAiBackend.CPU, true, "initialized")
+            ),
+            cloudAvailable = false
+        )
+        assertEquals(LocalAiBackend.CPU, selected)
+    }
+
+    @Test
+    fun unavailableWhenNoLocalBackendAndCloudDisabled() {
+        val selected = LocalAiHardwareManager.selectBackend(
+            probes = listOf(
+                LocalAiBackendProbe(LocalAiBackend.NPU, false, "unsupported"),
+                LocalAiBackendProbe(LocalAiBackend.GPU, false, "unsupported"),
+                LocalAiBackendProbe(LocalAiBackend.CPU, false, "model invalid")
+            ),
+            cloudAvailable = false
+        )
+        assertEquals(LocalAiBackend.UNAVAILABLE, selected)
     }
 
     @Test
