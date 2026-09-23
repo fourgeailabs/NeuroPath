@@ -27,7 +27,7 @@ data class LlamaAcceleratorResult(
 
 object LlamaAccelerator {
     private const val TAG = "LlamaAccelerator"
-    private const val MODEL_REPO = "litert-community/Llama-3.2-3B-Instruct"
+    private const val MODEL_REPO = "litert-community/Llama-3.2-3B"
     private const val GENERIC_GPU_MODEL = LlamaSocProfiles.GENERIC_GPU_MODEL
     private const val TENSOR_MODEL_MARKER = "_Google_Tensor_"
     // Sanity floor for the ~1.7GB int4 LiteRT-LM artifact: anything far smaller is not the model.
@@ -135,11 +135,18 @@ object LlamaAccelerator {
                     val loadTimeMs = (System.nanoTime() - loadStart) / 1_000_000L
                     engine.createConversation().use { conversation ->
                         val generationStart = System.nanoTime()
-                        val fullPrompt = buildString {
-                            if (systemPrompt.isNotBlank()) append(systemPrompt.trim()).append("\n\n")
-                            append(prompt.trim())
+                        val response = if (systemPrompt.isNotBlank()) {
+                            val configuredConversation = engine.createConversation(
+                                com.google.ai.edge.litertlm.ConversationConfig(
+                                    systemInstruction = com.google.ai.edge.litertlm.Contents.of(systemPrompt.trim())
+                                )
+                            )
+                            configuredConversation.use {
+                                it.sendMessage(prompt.trim(), maxOutputToken = MAX_OUTPUT_TOKENS)
+                            }
+                        } else {
+                            conversation.sendMessage(prompt.trim(), maxOutputToken = MAX_OUTPUT_TOKENS)
                         }
-                        val response = conversation.sendMessage(fullPrompt, maxOutputToken = MAX_OUTPUT_TOKENS)
                         val text = response.contents.toString().trim()
                         check(text.isNotBlank()) { "LiteRT-LM returned an empty response" }
                         val generationTimeMs = (System.nanoTime() - generationStart) / 1_000_000L
