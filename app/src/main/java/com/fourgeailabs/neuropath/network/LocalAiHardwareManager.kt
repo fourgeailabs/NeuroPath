@@ -49,7 +49,7 @@ object LocalAiHardwareManager {
      * result is a *candidate* only — it never claims the NPU is actually in use.
      */
     fun potentialNpuBackend(manufacturer: String, socModel: String): String? =
-        LlamaSocProfiles.resolve(manufacturer, socModel)?.npuBackendLabel
+        LlamaSocProfiles.potentialNpuBackend(manufacturer, socModel)
 
     fun selectBackend(probes: List<LocalAiBackendProbe>, cloudAvailable: Boolean): LocalAiBackend {
         val priority = listOf(LocalAiBackend.NPU, LocalAiBackend.GPU, LocalAiBackend.CPU)
