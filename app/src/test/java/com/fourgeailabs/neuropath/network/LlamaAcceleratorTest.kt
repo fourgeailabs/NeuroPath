@@ -36,7 +36,7 @@ class LlamaAcceleratorTest {
     @Test
     fun unsupportedHardwareUsesGenericGpuCapableModel() {
         assertEquals(
-            "llama3.2-3b-it-int4.litertlm",
+            "llama3_2_3b_mixed_int4_gpu.litertlm",
             LlamaAccelerator.selectedModelFilename("Samsung", "Exynos 2400")
         )
     }
