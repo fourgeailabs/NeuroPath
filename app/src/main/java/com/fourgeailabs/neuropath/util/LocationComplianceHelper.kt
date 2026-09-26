@@ -66,7 +66,6 @@ object LocationComplianceHelper {
     )
 
     private data class UsZipRange(val start: Int, val end: Int, val state: String, val city: String)
-
     // Full 50-state (+ DC + Puerto Rico) ZIP coverage. Each range maps to a
     // city that has a registry entry. Order matters: more specific ranges
     // (DC, Maryland, Arizona city clusters, El Paso) come before the broader
@@ -227,6 +226,8 @@ object LocationComplianceHelper {
         "B3" to ("Nova Scotia" to "Halifax")
     )
 
+    private fun mapKnownUsZip(clean: String): Pair<String, String>? = US_ZIP_EXACT[clean.take(5)]
+
     suspend fun resolvePostalOrZipCode(context: Context, inputPostal: String): LocationComplianceResult = withContext(Dispatchers.IO) {
         val clean = inputPostal.trim().uppercase()
         if (clean.isBlank()) {
@@ -241,7 +242,7 @@ object LocationComplianceHelper {
         // Known postal mappings take precedence over Android Geocoder because
         // geocoders may collapse a ZIP into a nearby metro label.
         val zipStr = clean.take(5)
-        val exactUsZip = US_ZIP_EXACT[zipStr]
+        val exactUsZip = mapKnownUsZip(clean)
         if (exactUsZip != null) {
             foundCountry = "United States"
             foundCountryCode = "US"
