@@ -124,7 +124,10 @@ jobs:
 
   instrumented-tests:
     name: Instrumented Tests (Emulator)
-    runs-on: macos-latest
+    # Linux runners provide KVM hardware acceleration for x86_64 emulator images.
+    # macOS ARM runners cannot virtualize x86_64 guests (HVF: HV_UNSUPPORTED),
+    # so the emulator never booted there.
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: build-and-test
 
@@ -158,8 +161,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
-          arch: arm64-v8a
-          force-avd-creation: true
+          arch: x86_64
+          force-avd-creation: false
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
           script: gradle connectedDebugAndroidTest --stacktrace --console=plain
         env:

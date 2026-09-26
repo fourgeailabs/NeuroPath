@@ -27,8 +27,9 @@ data class LlamaAcceleratorResult(
 
 object LlamaAccelerator {
     private const val TAG = "LlamaAccelerator"
-    private const val MODEL_REPO = "litert-community/Llama-3.2-3B"
+    private const val MODEL_REPO = "litert-community/Llama-3.2-3B-Instruct"
     private const val GENERIC_GPU_MODEL = LlamaSocProfiles.GENERIC_GPU_MODEL
+    private const val TENSOR_MODEL_MARKER = "_Google_Tensor_"
     // Sanity floor for the ~1.7GB int4 LiteRT-LM artifact: anything far smaller is not the model.
     private const val MIN_MODEL_BYTES = 1_000_000_000L
     private const val MODEL_MAGIC = "LITERTLM"
@@ -127,30 +128,18 @@ object LlamaAccelerator {
 
         for (backend in candidateBackends) {
             val loadStart = System.nanoTime()
-            val requested = when (backend) {
-                is Backend.NPU, is Backend.GOOGLE_TENSOR -> LocalAiBackend.NPU
-                is Backend.GPU -> LocalAiBackend.GPU
-                else -> LocalAiBackend.CPU
-            }
-            LocalAiDiagnostics.recordAttempt(context, file.name, requested)
             try {
                 val config = EngineConfig(modelPath = file.absolutePath, backend = backend)
                 Engine(config).use { engine ->
                     engine.initialize()
                     val loadTimeMs = (System.nanoTime() - loadStart) / 1_000_000L
-                    val conversationConfig = if (systemPrompt.isNotBlank()) {
-                        com.google.ai.edge.litertlm.ConversationConfig(
-                            systemInstruction = com.google.ai.edge.litertlm.Contents.of(systemPrompt.trim())
-                        )
-                    } else {
-                        com.google.ai.edge.litertlm.ConversationConfig()
-                    }
-                    engine.createConversation(conversationConfig).use { conversation ->
+                    engine.createConversation().use { conversation ->
                         val generationStart = System.nanoTime()
-                        val response = conversation.sendMessage(
-                            prompt.trim(),
-                            maxOutputToken = MAX_OUTPUT_TOKENS
-                        )
+                        val fullPrompt = buildString {
+                            if (systemPrompt.isNotBlank()) append(systemPrompt.trim()).append("\n\n")
+                            append(prompt.trim())
+                        }
+                        val response = conversation.sendMessage(fullPrompt, maxOutputToken = MAX_OUTPUT_TOKENS)
                         val text = response.contents.toString().trim()
                         check(text.isNotBlank()) { "LiteRT-LM returned an empty response" }
                         val generationTimeMs = (System.nanoTime() - generationStart) / 1_000_000L
@@ -160,46 +149,27 @@ object LlamaAccelerator {
                             is Backend.GPU -> LocalAiBackend.GPU
                             else -> LocalAiBackend.CPU
                         }
-                        LocalAiDiagnostics.recordSuccess(context, file.name, requested, active)
                         Log.i(TAG, "Verified active backend=$active model=${file.name} loadMs=$loadTimeMs generationMs=$generationTimeMs")
                         return@withContext LlamaAcceleratorResult(text, active, file.name, loadTimeMs, generationTimeMs)
                     }
                 }
             } catch (t: Throwable) {
                 lastFailure = t
-                LocalAiDiagnostics.recordAttempt(
-                    context,
-                    file.name,
-                    requested,
-                    t.message ?: t.javaClass.simpleName
-                )
                 Log.w(TAG, "LiteRT-LM backend $backend failed; trying next candidate", t)
             }
         }
-        LocalAiDiagnostics.recordFallback(
-            context,
-            file.name,
-            candidateBackends.lastOrNull()?.let {
-                when (it) {
-                    is Backend.NPU, is Backend.GOOGLE_TENSOR -> LocalAiBackend.NPU
-                    is Backend.GPU -> LocalAiBackend.GPU
-                    else -> LocalAiBackend.CPU
-                }
-            },
-            lastFailure?.message ?: "No LiteRT-LM backend completed inference"
-        )
         Log.w(TAG, "No LiteRT-LM backend completed inference", lastFailure)
         null
     }
 
     private fun backendCandidates(context: Context, modelName: String): List<Backend> {
-        val verified = LlamaSocProfiles.verifiedBackends(modelName)
         return buildList {
-            if (LocalAiBackend.NPU in verified) {
-                add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
+            when {
+                modelName.contains(TENSOR_MODEL_MARKER) -> add(Backend.GOOGLE_TENSOR())
+                modelName != GENERIC_GPU_MODEL -> add(Backend.NPU(nativeLibraryDir = context.applicationInfo.nativeLibraryDir))
             }
-            if (LocalAiBackend.GPU in verified) add(Backend.GPU())
-            if (LocalAiBackend.CPU in verified) add(Backend.CPU())
-        }.ifEmpty { listOf(Backend.CPU()) }
+            add(Backend.GPU())
+            add(Backend.CPU())
+        }
     }
 }

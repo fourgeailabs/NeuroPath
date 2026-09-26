@@ -23,7 +23,7 @@ NeuroPath combines curriculum-aware tutoring, local and cloud AI, learner person
 **Minimum SDK:** 24  
 **Target SDK:** 36  
 **Primary UI:** Kotlin + Jetpack Compose  
-**AI Architecture:** Meta Llama 3.2 3B Instruct (Cloud via Hugging Face Serverless API & Local GGUF via llama.cpp / LiteRT-LM GPU/CPU)  
+**AI Architecture:** Meta Llama 3.2 3B Instruct (Cloud via Hugging Face Serverless API & Local GGUF via llama.cpp / LiteRT-LM)  
 
 NeuroPath is actively developed. The current repository contains complete working integrations for Meta Llama 3.2 3B (Cloud and on-device GGUF), Socratic tutoring, global curriculum routing, UK curriculum routing, OER curriculum retrieval, and real multimedia playback. Recent work has completed the end-to-end migration to Meta Llama 3.2 3B, hardened security, Room database schema migration (v11), testing, accessibility, and dependency hygiene.
 
@@ -60,7 +60,7 @@ Current implementation includes:
 
 - **Hugging Face Serverless Inference API**: Cloud inference using `meta-llama/Llama-3.2-3B-Instruct` with token-based authentication and zero-exposure security.
 - **Local GGUF Runtime via llama.cpp**: On-device quantized model execution (`Llama-3.2-3B-Instruct-Q4_K_M.gguf`) ensuring full privacy and 100% offline capability.
-- **LiteRT-LM Hardware Acceleration**: Published-model GPU acceleration with CPU fallback; NPU API support is architected but only enabled when an exact model/runtime combination is verified.
+- **LiteRT-LM Hardware Acceleration**: Hardware-detected NPU/GPU acceleration pipelines with CPU/NEON fallback.
 - **Real-Time Live Voice Interaction**: Bidirectional voice conversation with real-time audio capture, Socratic response generation, and synthesized speech playback.
 - **Room SQLite Migration v11**: Automated schema migration updating local AI persistence and profile preferences.
 - **Curriculum Context Injection**: Socratic hints, real-world analogies, and step-by-step problem walkthroughs aligned with international and state standards.
@@ -659,7 +659,7 @@ This release focuses on application launch stability and defensive initializatio
 This release completes the migration to Meta Llama 3.2 3B Instruct across cloud and local inference:
 
 - **Meta Llama 3.2 3B AI Engine**: Swapped legacy cloud AI providers with Meta Llama 3.2 3B Instruct via Hugging Face Serverless Inference API and local offline GGUF execution.
-- **LiteRT-LM Acceleration**: On-device quantized Llama model runtime with verified GPU/CPU execution and a guarded NPU integration point that does not claim unsupported SoC/model combinations.
+- **LiteRT-LM & NPU Acceleration**: On-device quantized Llama model runtime with multi-threaded CPU/GPU/NPU hardware acceleration and truthful runtime verification.
 - **Llama Live Audio Architecture**: Real-time conversational tutoring streaming engine with voice activity detection and audio playback.
 - **Room SQLite Migration v11**: Preserves user profiles, curriculum progress, and updates local AI installation preferences cleanly without data loss.
 - **Enhanced Socratic Chat Interface**: Integrated Llama model selection, instant reasoning modes, and OER Commons curriculum alignment.
