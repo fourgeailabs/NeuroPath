@@ -11,25 +11,25 @@ enum class AppLanguage(
 ) {
     ENGLISH_US("en-US", "English (American)", "English (US)", "🇺🇸", Locale.US),
     ENGLISH_UK("en-GB", "English (British)", "English (UK)", "🇬🇧", Locale.UK),
-    SPANISH("es", "Spanish", "Español", "🇪🇸", Locale("es", "ES")),
+    SPANISH("es", "Spanish", "Español", "🇪🇸", Locale.Builder().setLanguage("es").setRegion("ES").build()),
     FRENCH("fr", "French", "Français", "🇫🇷", Locale.FRANCE),
     GERMAN("de", "German", "Deutsch", "🇩🇪", Locale.GERMANY),
     MANDARIN("zh", "Chinese (Mandarin)", "中文 (普通话)", "🇨🇳", Locale.CHINA),
     JAPANESE("ja", "Japanese", "日本語", "🇯🇵", Locale.JAPAN),
-    PORTUGUESE("pt", "Portuguese", "Português", "🇧🇷", Locale("pt", "BR")),
-    HINDI("hi", "Hindi", "हिंदी", "🇮🇳", Locale("hi", "IN")),
-    ARABIC("ar", "Arabic", "العربية", "🇸🇦", Locale("ar")),
+    PORTUGUESE("pt", "Portuguese", "Português", "🇧🇷", Locale.Builder().setLanguage("pt").setRegion("BR").build()),
+    HINDI("hi", "Hindi", "हिंदी", "🇮🇳", Locale.Builder().setLanguage("hi").setRegion("IN").build()),
+    ARABIC("ar", "Arabic", "العربية", "🇸🇦", Locale.Builder().setLanguage("ar").build()),
     ITALIAN("it", "Italian", "Italiano", "🇮🇹", Locale.ITALY),
-    RUSSIAN("ru", "Russian", "Русский", "🇷🇺", Locale("ru")),
+    RUSSIAN("ru", "Russian", "Русский", "🇷🇺", Locale.Builder().setLanguage("ru").build()),
     KOREAN("ko", "Korean", "한국어", "🇰🇷", Locale.KOREA),
-    TURKISH("tr", "Turkish", "Türkçe", "🇹🇷", Locale("tr")),
-    VIETNAMESE("vi", "Vietnamese", "Tiếng Việt", "🇻🇳", Locale("vi")),
-    POLISH("pl", "Polish", "Polski", "🇵🇱", Locale("pl")),
-    DUTCH("nl", "Dutch", "Nederlands", "🇳🇱", Locale("nl")),
-    THAI("th", "Thai", "ไทย", "🇹🇭", Locale("th")),
-    INDONESIAN("id", "Indonesian", "Bahasa Indonesia", "🇮🇩", Locale("id")),
-    SWEDISH("sv", "Swedish", "Svenska", "🇸🇪", Locale("sv")),
-    GREEK("el", "Greek", "Ελληνικά", "🇬🇷", Locale("el"));
+    TURKISH("tr", "Turkish", "Türkçe", "🇹🇷", Locale.Builder().setLanguage("tr").build()),
+    VIETNAMESE("vi", "Vietnamese", "Tiếng Việt", "🇻🇳", Locale.Builder().setLanguage("vi").build()),
+    POLISH("pl", "Polish", "Polski", "🇵🇱", Locale.Builder().setLanguage("pl").build()),
+    DUTCH("nl", "Dutch", "Nederlands", "🇳🇱", Locale.Builder().setLanguage("nl").build()),
+    THAI("th", "Thai", "ไทย", "🇹🇭", Locale.Builder().setLanguage("th").build()),
+    INDONESIAN("id", "Indonesian", "Bahasa Indonesia", "🇮🇩", Locale.Builder().setLanguage("id").build()),
+    SWEDISH("sv", "Swedish", "Svenska", "🇸🇪", Locale.Builder().setLanguage("sv").build()),
+    GREEK("el", "Greek", "Ελληνικά", "🇬🇷", Locale.Builder().setLanguage("el").build());
 
     companion object {
         fun fromCode(code: String): AppLanguage {

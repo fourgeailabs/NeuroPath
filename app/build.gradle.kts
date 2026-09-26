@@ -164,3 +164,9 @@ dependencies {
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
+
+// Room schema export location (silences the "schema export directory was not
+// provided" warning and keeps versioned schema JSONs for migration review).
+ksp {
+  arg("room.schemaLocation", "$projectDir/schemas")
+}

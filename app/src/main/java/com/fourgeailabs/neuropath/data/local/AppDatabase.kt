@@ -121,8 +121,10 @@ interface OerCurriculumDao {
     suspend fun ensureUnitsPresent(units: List<OerCurriculumEntity>): Int {
         val existing = getAllIds().toSet()
         val missing = units.filter { it.id !in existing }
-        if (missing.isNotEmpty()) insertUnitsIfMissing(missing)
-        return missing.size
+        if (missing.isEmpty()) return 0
+        // IGNORE inserts return -1 for rows a concurrent verification already inserted,
+        // so count only the rows that were actually written.
+        return insertUnitsIfMissing(missing).count { it != -1L }
     }
 
     @Query("DELETE FROM oer_curriculum_units")

@@ -137,7 +137,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         }
     }
 
-    suspend fun getCuratedCollectionsDirectoryForLlama(): String = withContext(Dispatchers.IO) {
+    suspend fun getCuratedCollectionsDirectory(): String = withContext(Dispatchers.IO) {
         val all = getAllUnits()
         val builder = StringBuilder()
         builder.append("BUILT-IN CURRICULUM LIBRARY (unit topics aligned with the curated collections at https://oercommons.org/curated-collections; units are authored in-app, not downloaded):\n")

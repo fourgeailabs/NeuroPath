@@ -8,8 +8,8 @@ data class LlamaChatRequest(
     val model: String = "meta-llama/Llama-3.2-3B-Instruct",
     val messages: List<LlamaChatMessage>,
     val temperature: Float? = 0.6f,
-    @Json(name = "max_tokens") val maxTokens: Int? = 512,
-    @Json(name = "top_p") val topP: Float? = null,
+    @param:Json(name = "max_tokens") val maxTokens: Int? = 512,
+    @param:Json(name = "top_p") val topP: Float? = null,
     val stream: Boolean = false
 )
 
@@ -30,7 +30,7 @@ data class LlamaChatResponse(
 data class LlamaChatChoice(
     val index: Int? = null,
     val message: LlamaChatMessage? = null,
-    @Json(name = "finish_reason") val finishReason: String? = null
+    @param:Json(name = "finish_reason") val finishReason: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -41,14 +41,14 @@ data class LlamaGenerateRequest(
 
 @JsonClass(generateAdapter = true)
 data class LlamaParameters(
-    @Json(name = "max_new_tokens") val maxNewTokens: Int = 384,
+    @param:Json(name = "max_new_tokens") val maxNewTokens: Int = 384,
     val temperature: Float = 0.6f,
-    @Json(name = "top_p") val topP: Float = 0.9f
+    @param:Json(name = "top_p") val topP: Float = 0.9f
 )
 
 @JsonClass(generateAdapter = true)
 data class LlamaInferenceItem(
-    @Json(name = "generated_text") val generatedText: String? = null
+    @param:Json(name = "generated_text") val generatedText: String? = null
 )
 
 data class DownloadedCurriculumResult(

@@ -330,7 +330,7 @@ object LocationComplianceHelper {
 
                 if (isoCode.isNotBlank()) {
                     detectedCountryCode = isoCode
-                    val locale = Locale("", isoCode)
+                    val locale = Locale.Builder().setRegion(isoCode).build()
                     val name = locale.displayCountry
                     if (!name.isNullOrBlank()) {
                         detectedCountryName = name

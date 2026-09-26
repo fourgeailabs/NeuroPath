@@ -1219,13 +1219,37 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     // (there is no offline WAV-to-text engine in this build).
     private var pendingVoiceTranscription: ((String) -> Unit)? = null
 
+    // Dedicated job for the transcription safety-net timeout. A stale timeout must never
+    // clear a newer pending transcription, so any previous job is cancelled before a new
+    // one is armed. (viewModelScope cancellation in onCleared finishes the rest.)
+    private var transcriptionTimeoutJob: Job? = null
+
+    private fun clearTranscriptionTimeout() {
+        transcriptionTimeoutJob?.cancel()
+        transcriptionTimeoutJob = null
+    }
+
+    private fun armTranscriptionTimeout() {
+        clearTranscriptionTimeout()
+        transcriptionTimeoutJob = viewModelScope.launch {
+            delay(2000)
+            if (pendingVoiceTranscription != null) {
+                pendingVoiceTranscription = null
+                _isTranscribingAudio.value = false
+            }
+        }
+    }
+
     fun startAudioRecording(): Boolean {
         _isRecordingAudio.value = true
         triggerHapticPop()
+        // A previous session's safety-net timeout must not fire into this new session.
+        clearTranscriptionTimeout()
         speechManager.startListening(
             onTextRecognized = { text ->
                 val callback = pendingVoiceTranscription
                 pendingVoiceTranscription = null
+                clearTranscriptionTimeout()
                 _isTranscribingAudio.value = false
                 if (text.isNotBlank()) {
                     triggerHapticSuccess()
@@ -1236,6 +1260,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             },
             onError = {
                 pendingVoiceTranscription = null
+                clearTranscriptionTimeout()
                 _isTranscribingAudio.value = false
                 speechManager.speak("Could not catch that clearly. Please try again.")
             }
@@ -1251,13 +1276,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         // the transcript (or the failure) to the code above.
         speechManager.stopListening()
         // Safety net: if the recognizer never calls back, don't leave the spinner running.
-        viewModelScope.launch {
-            delay(2000)
-            if (pendingVoiceTranscription != null) {
-                pendingVoiceTranscription = null
-                _isTranscribingAudio.value = false
-            }
-        }
+        armTranscriptionTimeout()
     }
 
     fun toggleVoiceConversationMode(enabled: Boolean) {

@@ -38,8 +38,8 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.Undo
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.Undo
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -471,7 +471,7 @@ fun CreativeStudioScreen(
                                 viewModel.triggerHapticPop()
                             }
                         ) {
-                            Icon(imageVector = Icons.Default.Undo, contentDescription = "Undo")
+                            Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
                         }
                         IconButton(
                             onClick = {
@@ -690,7 +690,7 @@ fun CreativeStudioScreen(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                         ) {
-                            Icon(imageVector = Icons.Default.VolumeUp, contentDescription = "Read Aloud")
+                            Icon(imageVector = Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Read Aloud")
                             Spacer(Modifier.width(6.dp))
                             Text("Read Aloud 🔊")
                         }

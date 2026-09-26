@@ -1,0 +1,800 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 11,
+    "identityHash": "220516803375015cf36e5d1fff986c29",
+    "entities": [
+      {
+        "tableName": "child_profiles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `age` INTEGER NOT NULL, `gradeLevel` TEXT NOT NULL, `ageGroupTier` TEXT NOT NULL, `stateStandard` TEXT NOT NULL, `country` TEXT NOT NULL, `stateOrProvince` TEXT NOT NULL, `city` TEXT NOT NULL, `schoolDistrict` TEXT NOT NULL, `appLanguageCode` TEXT NOT NULL, `activeThemeId` TEXT NOT NULL, `neurodivergentTypesCsv` TEXT NOT NULL, `strugglesCsv` TEXT NOT NULL, `strengthsCsv` TEXT NOT NULL, `hyperFixationsCsv` TEXT NOT NULL, `customAccentColorHex` TEXT, `dyslexiaFontEnabled` INTEGER NOT NULL, `highContrastMode` TEXT NOT NULL, `ttsSpeed` REAL NOT NULL, `ttsVoicePitch` REAL NOT NULL, `autoHighlightWords` INTEGER NOT NULL, `readAnswersAloud` INTEGER NOT NULL, `ambientSound` TEXT NOT NULL, `totalStars` INTEGER NOT NULL, `totalGems` INTEGER NOT NULL, `currentStreakDays` INTEGER NOT NULL, `lastActiveDate` TEXT NOT NULL, `learningBuddyDisabled` INTEGER NOT NULL, `aiVersionMode` TEXT NOT NULL, `localLlamaInstalled` INTEGER NOT NULL, `currentAvatarId` TEXT NOT NULL, `equippedHatId` TEXT, `equippedPetId` TEXT, `equippedBadgeId` TEXT, `unlockedItemIdsCsv` TEXT NOT NULL, `parentPin` TEXT NOT NULL, `dailyGoalMinutes` INTEGER NOT NULL, `isCoppaConsented` INTEGER NOT NULL, `isInitialSetupComplete` INTEGER NOT NULL, `zipOrPostalCodeOverride` TEXT NOT NULL, `customAiPlatform` TEXT NOT NULL, `customApiKey` TEXT NOT NULL, `themeRotationSchedule` TEXT NOT NULL, `lastThemeRotationTimestamp` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "age",
+            "columnName": "age",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gradeLevel",
+            "columnName": "gradeLevel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ageGroupTier",
+            "columnName": "ageGroupTier",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stateStandard",
+            "columnName": "stateStandard",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "country",
+            "columnName": "country",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stateOrProvince",
+            "columnName": "stateOrProvince",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "city",
+            "columnName": "city",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "schoolDistrict",
+            "columnName": "schoolDistrict",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "appLanguageCode",
+            "columnName": "appLanguageCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeThemeId",
+            "columnName": "activeThemeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "neurodivergentTypesCsv",
+            "columnName": "neurodivergentTypesCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "strugglesCsv",
+            "columnName": "strugglesCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "strengthsCsv",
+            "columnName": "strengthsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hyperFixationsCsv",
+            "columnName": "hyperFixationsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customAccentColorHex",
+            "columnName": "customAccentColorHex",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dyslexiaFontEnabled",
+            "columnName": "dyslexiaFontEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "highContrastMode",
+            "columnName": "highContrastMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ttsSpeed",
+            "columnName": "ttsSpeed",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ttsVoicePitch",
+            "columnName": "ttsVoicePitch",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "autoHighlightWords",
+            "columnName": "autoHighlightWords",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "readAnswersAloud",
+            "columnName": "readAnswersAloud",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ambientSound",
+            "columnName": "ambientSound",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalStars",
+            "columnName": "totalStars",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalGems",
+            "columnName": "totalGems",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentStreakDays",
+            "columnName": "currentStreakDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastActiveDate",
+            "columnName": "lastActiveDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "learningBuddyDisabled",
+            "columnName": "learningBuddyDisabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aiVersionMode",
+            "columnName": "aiVersionMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localLlamaInstalled",
+            "columnName": "localLlamaInstalled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentAvatarId",
+            "columnName": "currentAvatarId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "equippedHatId",
+            "columnName": "equippedHatId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "equippedPetId",
+            "columnName": "equippedPetId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "equippedBadgeId",
+            "columnName": "equippedBadgeId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "unlockedItemIdsCsv",
+            "columnName": "unlockedItemIdsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentPin",
+            "columnName": "parentPin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dailyGoalMinutes",
+            "columnName": "dailyGoalMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCoppaConsented",
+            "columnName": "isCoppaConsented",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isInitialSetupComplete",
+            "columnName": "isInitialSetupComplete",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "zipOrPostalCodeOverride",
+            "columnName": "zipOrPostalCodeOverride",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customAiPlatform",
+            "columnName": "customAiPlatform",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customApiKey",
+            "columnName": "customApiKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "themeRotationSchedule",
+            "columnName": "themeRotationSchedule",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastThemeRotationTimestamp",
+            "columnName": "lastThemeRotationTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "downloaded_curriculum",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `country` TEXT NOT NULL, `stateOrProvince` TEXT NOT NULL, `schoolDistrict` TEXT NOT NULL, `postalCode` TEXT NOT NULL, `standardTitle` TEXT NOT NULL, `officialSourceAgency` TEXT NOT NULL, `officialSourceUrl` TEXT NOT NULL, `gradesCoveredSummary` TEXT NOT NULL, `rawCurriculumJson` TEXT NOT NULL, `lastSyncTimestamp` INTEGER NOT NULL, `lastSyncDateFormatted` TEXT NOT NULL, `syncStatus` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "country",
+            "columnName": "country",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stateOrProvince",
+            "columnName": "stateOrProvince",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "schoolDistrict",
+            "columnName": "schoolDistrict",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postalCode",
+            "columnName": "postalCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardTitle",
+            "columnName": "standardTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "officialSourceAgency",
+            "columnName": "officialSourceAgency",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "officialSourceUrl",
+            "columnName": "officialSourceUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gradesCoveredSummary",
+            "columnName": "gradesCoveredSummary",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawCurriculumJson",
+            "columnName": "rawCurriculumJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncTimestamp",
+            "columnName": "lastSyncTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncDateFormatted",
+            "columnName": "lastSyncDateFormatted",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "lesson_records",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`lessonId` TEXT NOT NULL, `subjectId` TEXT NOT NULL, `gradeLevel` TEXT NOT NULL, `stateStandard` TEXT NOT NULL, `title` TEXT NOT NULL, `standardCode` TEXT NOT NULL, `completed` INTEGER NOT NULL, `scorePercent` INTEGER NOT NULL, `attempts` INTEGER NOT NULL, `lastAttemptTimestamp` INTEGER NOT NULL, `customThemeId` TEXT, PRIMARY KEY(`lessonId`))",
+        "fields": [
+          {
+            "fieldPath": "lessonId",
+            "columnName": "lessonId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjectId",
+            "columnName": "subjectId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gradeLevel",
+            "columnName": "gradeLevel",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stateStandard",
+            "columnName": "stateStandard",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardCode",
+            "columnName": "standardCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completed",
+            "columnName": "completed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scorePercent",
+            "columnName": "scorePercent",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attempts",
+            "columnName": "attempts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAttemptTimestamp",
+            "columnName": "lastAttemptTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customThemeId",
+            "columnName": "customThemeId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "lessonId"
+          ]
+        }
+      },
+      {
+        "tableName": "progress_logs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `profileId` INTEGER NOT NULL, `subjectId` TEXT NOT NULL, `lessonId` TEXT NOT NULL, `lessonTitle` TEXT NOT NULL, `scorePercent` INTEGER NOT NULL, `totalQuestions` INTEGER NOT NULL, `correctQuestions` INTEGER NOT NULL, `durationSeconds` INTEGER NOT NULL, `sensoryBreaksTaken` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjectId",
+            "columnName": "subjectId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lessonId",
+            "columnName": "lessonId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lessonTitle",
+            "columnName": "lessonTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scorePercent",
+            "columnName": "scorePercent",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalQuestions",
+            "columnName": "totalQuestions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "correctQuestions",
+            "columnName": "correctQuestions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sensoryBreaksTaken",
+            "columnName": "sensoryBreaksTaken",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "sensory_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `profileId` INTEGER NOT NULL, `activityType` TEXT NOT NULL, `durationSeconds` INTEGER NOT NULL, `countAction` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activityType",
+            "columnName": "activityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "countAction",
+            "columnName": "countAction",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "oer_curriculum_units",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `subjectName` TEXT NOT NULL, `gradeLevelCode` TEXT NOT NULL, `gradeBandName` TEXT NOT NULL, `collectionTitle` TEXT NOT NULL, `unitTitle` TEXT NOT NULL, `standardCode` TEXT NOT NULL, `oerCommonsUrl` TEXT NOT NULL, `openLicense` TEXT NOT NULL, `summary` TEXT NOT NULL, `learningObjectivesCsv` TEXT NOT NULL, `keyConceptsCsv` TEXT NOT NULL, `vocabularyCsv` TEXT NOT NULL, `essentialQuestionsCsv` TEXT NOT NULL, `socraticGuidingQuestionsCsv` TEXT NOT NULL, `commonMisconceptionsCsv` TEXT NOT NULL, `practiceProblemsJson` TEXT NOT NULL, `accommodationsCsv` TEXT NOT NULL, `isPreinstalled` INTEGER NOT NULL, `lastUpdatedTimestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjectName",
+            "columnName": "subjectName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gradeLevelCode",
+            "columnName": "gradeLevelCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gradeBandName",
+            "columnName": "gradeBandName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "collectionTitle",
+            "columnName": "collectionTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unitTitle",
+            "columnName": "unitTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "standardCode",
+            "columnName": "standardCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "oerCommonsUrl",
+            "columnName": "oerCommonsUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openLicense",
+            "columnName": "openLicense",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summary",
+            "columnName": "summary",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "learningObjectivesCsv",
+            "columnName": "learningObjectivesCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keyConceptsCsv",
+            "columnName": "keyConceptsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vocabularyCsv",
+            "columnName": "vocabularyCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "essentialQuestionsCsv",
+            "columnName": "essentialQuestionsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "socraticGuidingQuestionsCsv",
+            "columnName": "socraticGuidingQuestionsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "commonMisconceptionsCsv",
+            "columnName": "commonMisconceptionsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "practiceProblemsJson",
+            "columnName": "practiceProblemsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accommodationsCsv",
+            "columnName": "accommodationsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPreinstalled",
+            "columnName": "isPreinstalled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdatedTimestamp",
+            "columnName": "lastUpdatedTimestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "chat_messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `profileId` INTEGER NOT NULL, `sessionId` TEXT NOT NULL, `sessionTitle` TEXT NOT NULL, `sender` TEXT NOT NULL, `text` TEXT NOT NULL, `explanationMode` TEXT NOT NULL, `modelUsed` TEXT NOT NULL, `isFreeModel` INTEGER NOT NULL, `subjectTag` TEXT NOT NULL, `isBookmarked` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "sessionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionTitle",
+            "columnName": "sessionTitle",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sender",
+            "columnName": "sender",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "explanationMode",
+            "columnName": "explanationMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modelUsed",
+            "columnName": "modelUsed",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isFreeModel",
+            "columnName": "isFreeModel",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subjectTag",
+            "columnName": "subjectTag",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isBookmarked",
+            "columnName": "isBookmarked",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '220516803375015cf36e5d1fff986c29')"
+    ]
+  }
+}
