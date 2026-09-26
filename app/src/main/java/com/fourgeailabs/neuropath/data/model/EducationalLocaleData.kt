@@ -110,6 +110,16 @@ val GLOBAL_EDUCATIONAL_LOCALES = listOf(
     EducationalLocale("United States", "US", "🇺🇸", "Virginia", "Fairfax", "Fairfax County Public Schools (FCPS)", "Virginia Standards of Learning (SOL)", "Virginia Board of Education SOL & Advanced Academics"),
     EducationalLocale("United States", "US", "🇺🇸", "Colorado", "Denver", "Denver Public Schools (DPS)", "Colorado Academic Standards (CAS)", "Colorado Department of Education 21st Century Skills"),
     EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Phoenix", "Phoenix Union / Phoenix Elementary District", "Arizona Academic Standards (AzM2)", "Arizona Department of Education Core Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Surprise", "Dysart Unified School District", "Arizona Academic Standards (AzM2)", "Dysart Unified School District Curriculum Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Scottsdale", "Scottsdale Unified School District", "Arizona Academic Standards (AzM2)", "Scottsdale Unified School District Curriculum Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Mesa", "Mesa Public Schools", "Arizona Academic Standards (AzM2)", "Mesa Public Schools Curriculum Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Chandler", "Chandler Unified School District", "Arizona Academic Standards (AzM2)", "Chandler Unified School District Curriculum Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Gilbert", "Gilbert Public Schools", "Arizona Academic Standards (AzM2)", "Gilbert Public Schools Curriculum Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Glendale", "Glendale Union / Glendale Elementary District", "Arizona Academic Standards (AzM2)", "Arizona Department of Education Core Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Peoria", "Peoria Unified School District", "Arizona Academic Standards (AzM2)", "Peoria Unified School District Curriculum Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Tempe", "Tempe Union / Tempe Elementary District", "Arizona Academic Standards (AzM2)", "Arizona Department of Education Core Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Tucson", "Tucson Unified School District", "Arizona Academic Standards (AzM2)", "Tucson Unified School District Curriculum Standards"),
+    EducationalLocale("United States", "US", "🇺🇸", "Arizona", "Flagstaff", "Flagstaff Unified School District", "Arizona Academic Standards (AzM2)", "Flagstaff Unified School District Curriculum Standards"),
     EducationalLocale("United States", "US", "🇺🇸", "Washington D.C.", "Washington", "District of Columbia Public Schools (DCPS)", "DCPS Learning Standards & DC-CAS", "District of Columbia Educational Guidelines"),
 
     // ==========================================

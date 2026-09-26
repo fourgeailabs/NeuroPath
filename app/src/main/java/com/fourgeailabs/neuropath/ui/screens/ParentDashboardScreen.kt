@@ -1,5 +1,8 @@
 package com.fourgeailabs.neuropath.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -46,6 +49,7 @@ import androidx.compose.material.icons.filled.Wifi
 import com.fourgeailabs.neuropath.network.LlamaClient
 import com.fourgeailabs.neuropath.network.LlamaDownloadState
 import com.fourgeailabs.neuropath.network.LlamaLocalManager
+import com.fourgeailabs.neuropath.util.LocationComplianceHelper
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -145,6 +149,15 @@ fun ParentDashboardScreen(
     val lessonRecords by viewModel.lessonRecords.collectAsState()
     val isVerifyingLocation by viewModel.isVerifyingLocation.collectAsState()
     val locationComplianceResult by viewModel.locationComplianceResult.collectAsState()
+
+    // Runtime location permission: the rescan button requests it on demand so the
+    // GPS/network path in detectLocationCompliance can actually run.
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        // Run detection regardless — the helper falls back gracefully if denied.
+        viewModel.detectLocationCompliance(context)
+    }
     val oerUnits by viewModel.oerCurriculumUnits.collectAsState()
     val isOerSyncing by viewModel.isOerSyncing.collectAsState()
     val oerSyncResult by viewModel.oerSyncResult.collectAsState()
@@ -1288,7 +1301,16 @@ fun ParentDashboardScreen(
                             // Auto-Detect / Rescan Location via Google Maps Button
                             Button(
                                 onClick = {
-                                    viewModel.detectLocationCompliance(context)
+                                    if (LocationComplianceHelper.hasLocationPermission(context)) {
+                                        viewModel.detectLocationCompliance(context)
+                                    } else {
+                                        locationPermissionLauncher.launch(
+                                            arrayOf(
+                                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
+                                        )
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth().testTag("rescan_google_maps_location_btn"),
                                 shape = RoundedCornerShape(12.dp),

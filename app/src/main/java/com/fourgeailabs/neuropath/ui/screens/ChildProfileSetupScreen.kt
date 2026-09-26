@@ -1,5 +1,8 @@
 package com.fourgeailabs.neuropath.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -106,6 +109,15 @@ fun ChildProfileSetupScreen(
     val currentProfile by viewModel.currentProfile.collectAsState()
     val allProfiles by viewModel.allProfiles.collectAsState()
     val isVerifyingLocation by viewModel.isVerifyingLocation.collectAsState()
+
+    // Runtime location permission: the scan button requests it on demand so the
+    // GPS/network path in detectLocationCompliance can actually run.
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        // Run detection regardless — the helper falls back gracefully if denied.
+        viewModel.detectLocationCompliance(context)
+    }
 
     val targetProfile = if (editingProfileId != null) {
         allProfiles.find { it.id == editingProfileId } ?: currentProfile
@@ -1059,7 +1071,16 @@ fun ChildProfileSetupScreen(
                     // Google Maps Location Auto-Scan Action
                     Button(
                         onClick = {
-                            viewModel.detectLocationCompliance(context)
+                            if (LocationComplianceHelper.hasLocationPermission(context)) {
+                                viewModel.detectLocationCompliance(context)
+                            } else {
+                                locationPermissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.ACCESS_FINE_LOCATION,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                            }
                         },
                         modifier = Modifier.fillMaxWidth().testTag("google_maps_setup_scan_btn"),
                         shape = RoundedCornerShape(12.dp),
