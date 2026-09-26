@@ -118,9 +118,15 @@ jobs:
         run: |
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            echo "name=NeuroPath Release ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
+            # Branch builds get a fresh dated tag so every build shows up as its
+            # own current release instead of overwriting the old version tag.
             version=$(grep -m1 'versionName = ' app/build.gradle.kts | sed 's/.*"\(.*\)"/\1/')
-            echo "tag=v${version}" >> "$GITHUB_OUTPUT"
+            datestamp=$(date -u +%Y%m%d)
+            tag="v${version}-${datestamp}-${{ github.run_number }}"
+            echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+            echo "name=NeuroPath v${version} — Build ${datestamp} (#${{ github.run_number }})" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Create Release and Upload APK
@@ -129,8 +135,11 @@ jobs:
         with:
           files: app/build/outputs/apk/debug/app-debug.apk
           tag_name: ${{ steps.release_tag.outputs.tag }}
-          name: "NeuroPath Release ${{ steps.release_tag.outputs.tag }}"
-          body_path: README.md
+          name: ${{ steps.release_tag.outputs.name }}
+          body: |
+            Automated build of `${{ github.ref_name }}` @ `${{ github.sha }}`.
+            - Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - APK: `app-debug.apk` (debug-signed)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
