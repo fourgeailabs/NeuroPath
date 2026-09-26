@@ -73,38 +73,6 @@ jobs:
           set -o pipefail
           gradle ktlintCheck --stacktrace --console=plain 2>&1 | tee ktlint.log || true
 
-      - name: Upload Gradle build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: neuropath-gradle-build-log
-          path: build.log
-          if-no-files-found: ignore
-
-      - name: Upload JVM test log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: neuropath-jvm-test-log
-          path: test.log
-          if-no-files-found: ignore
-
-      - name: Upload Detekt report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: neuropath-detekt-report
-          path: app/build/reports/detekt/
-          if-no-files-found: ignore
-
-      - name: Upload Ktlint report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: neuropath-ktlint-report
-          path: app/build/reports/ktlint/
-          if-no-files-found: ignore
-
       - name: Upload APK Artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -196,14 +164,6 @@ jobs:
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g"
 
-      - name: Upload Instrumented Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: instrumented-test-results
-          path: app/build/outputs/androidTest-results/
-          if-no-files-found: ignore
-
   dependency-check:
     name: Dependency Vulnerability Scan
     runs-on: ubuntu-latest
@@ -227,10 +187,3 @@ jobs:
           args: >
             --failOnCVSS 7
             --skipProvidedScope true
-      - name: Upload Dependency Check Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dependency-check-report
-          path: reports/
-          if-no-files-found: ignore
