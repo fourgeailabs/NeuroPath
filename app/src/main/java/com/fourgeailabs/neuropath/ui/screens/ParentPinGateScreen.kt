@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.data.model.AppLanguageDictionary
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.t
 
 @Composable
 fun ParentPinGateScreen(
@@ -67,7 +68,7 @@ fun ParentPinGateScreen(
                 onClick = { viewModel.navigateTo(AppScreen.HOME) },
                 modifier = Modifier.testTag("pin_gate_back_btn")
             ) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("back"))
             }
         }
 
@@ -81,7 +82,7 @@ fun ParentPinGateScreen(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Lock,
-                        contentDescription = "Parent Gate",
+                        contentDescription = t("parent_gate"),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(32.dp)
                     )
@@ -179,7 +180,7 @@ fun ParentPinGateScreen(
                                     if (key == "DEL") {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.Backspace,
-                                            contentDescription = "Delete",
+                                            contentDescription = t("delete"),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     } else {
@@ -203,7 +204,7 @@ fun ParentPinGateScreen(
             onClick = { viewModel.navigateTo(AppScreen.HOME) },
             modifier = Modifier.testTag("pin_cancel_btn")
         ) {
-            Text("Cancel & Return to Child Mode", fontWeight = FontWeight.SemiBold)
+            Text(t("cancel_return_to_child_mode"), fontWeight = FontWeight.SemiBold)
         }
     }
 }

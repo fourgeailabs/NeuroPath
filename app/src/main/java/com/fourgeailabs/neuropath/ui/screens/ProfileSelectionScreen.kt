@@ -62,6 +62,8 @@ import com.fourgeailabs.neuropath.data.model.AppLanguageDictionary
 import com.fourgeailabs.neuropath.data.model.WorldTheme
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -168,7 +170,7 @@ fun ProfileSelectionScreen(
                                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
                             ) {
                                 Text(
-                                    text = "${tier.icon} ${tier.title}",
+                                    text = tf("str_3", tier.icon, tier.title),
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -192,7 +194,7 @@ fun ProfileSelectionScreen(
                             Spacer(Modifier.height(2.dp))
 
                             Text(
-                                text = "Age ${profile.age} • ${theme.title}",
+                                text = tf("age_2", profile.age, theme.title),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -206,7 +208,7 @@ fun ProfileSelectionScreen(
                         ) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "Edit Profile",
+                                contentDescription = t("edit_profile"),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -255,7 +257,7 @@ fun ProfileSelectionScreen(
                                 Text("⭐", fontSize = 14.sp)
                                 Spacer(Modifier.width(3.dp))
                                 Text(
-                                    "${profile.totalStars} Stars",
+                                    tf("stars_2", profile.totalStars),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -265,7 +267,7 @@ fun ProfileSelectionScreen(
                                 Text("💎", fontSize = 14.sp)
                                 Spacer(Modifier.width(3.dp))
                                 Text(
-                                    "${profile.totalGems} Gems",
+                                    tf("gems_2", profile.totalGems),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -276,7 +278,7 @@ fun ProfileSelectionScreen(
                                     Text("🔥", fontSize = 14.sp)
                                     Spacer(Modifier.width(3.dp))
                                     Text(
-                                        "${profile.currentStreakDays}d",
+                                        tf("d", profile.currentStreakDays),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface

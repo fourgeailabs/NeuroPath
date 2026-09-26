@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.fourgeailabs.neuropath.ui.AppScreen
+import com.fourgeailabs.neuropath.ui.AppStrings
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.TopSensoryBar
 import com.fourgeailabs.neuropath.ui.screens.AvatarShopScreen
@@ -70,6 +71,13 @@ class MainActivity : ComponentActivity() {
                 colorScheme = colorScheme,
                 typography = typography
             ) {
+                val langCode = profile.appLanguageCode
+                // Synchronous guarded assignment (not LaunchedEffect): AppStrings.language is
+                // Compose state, but an effect-based write would land after the first composition
+                // pass and leave children rendered in the previous language. A profile change
+                // recomposes this scope anyway, so the write below is seen by every child that
+                // composes afterwards; the state write additionally recomposes t()/tf() readers.
+                if (AppStrings.language != langCode) AppStrings.language = langCode
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     topBar = {

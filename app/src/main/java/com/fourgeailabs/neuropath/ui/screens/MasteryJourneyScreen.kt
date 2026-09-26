@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.HighlightedSpeechText
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @Composable
 fun MasteryJourneyScreen(
@@ -102,20 +104,20 @@ fun MasteryJourneyScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = t("back"),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "Adaptive Journey",
+                    t("adaptive_journey"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    "Question ${qIndex + 1} of $totalQuestions",
+                    tf("question_of", totalQuestions, qIndex + 1),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -138,7 +140,7 @@ fun MasteryJourneyScreen(
                 ) {
                     Text("🫧", fontSize = 14.sp)
                     Spacer(Modifier.width(4.dp))
-                    Text("Break", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    Text(t("break"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                 }
             }
         }
@@ -215,7 +217,7 @@ fun MasteryJourneyScreen(
                             Text(currentQuestion.visualAidEmoji, fontSize = 16.sp)
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                "Question ${qIndex + 1}",
+                                tf("question", qIndex + 1),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -225,7 +227,7 @@ fun MasteryJourneyScreen(
 
                     // Score pill
                     Text(
-                        "⭐ $correctCount Correct",
+                        tf("correct", correctCount),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -319,7 +321,7 @@ fun MasteryJourneyScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                contentDescription = "Read option aloud",
+                                contentDescription = t("read_option_aloud"),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -343,7 +345,7 @@ fun MasteryJourneyScreen(
             ) {
                 Text(theme.emoji, fontSize = 18.sp)
                 Spacer(Modifier.width(8.dp))
-                Text("I'm confused, Learning Buddy help!", fontWeight = FontWeight.Bold)
+                Text(t("ai_help_prompt"), fontWeight = FontWeight.Bold)
             }
         }
 
@@ -361,7 +363,7 @@ fun MasteryJourneyScreen(
                     .height(54.dp)
                     .testTag("submit_answer_btn")
             ) {
-                Text("Check Answer ✨", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(t("check_answer"), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         } else {
             Button(
@@ -379,7 +381,7 @@ fun MasteryJourneyScreen(
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.width(8.dp))
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next")
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = t("next"))
             }
         }
     }
@@ -401,7 +403,7 @@ fun MasteryJourneyScreen(
             },
             title = {
                 Text(
-                    "Gentle Coaching Hint",
+                    t("gentle_coaching_hint"),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -409,7 +411,7 @@ fun MasteryJourneyScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "Mistakes help our brain form new neural pathways! Here is a friendly clue to guide you:",
+                        t("mistakes_help_our_brain_form_new_neural_pathways"),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -435,7 +437,7 @@ fun MasteryJourneyScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Got It! Continue", fontWeight = FontWeight.Bold)
+                    Text(t("got_it_continue"), fontWeight = FontWeight.Bold)
                 }
             }
         )

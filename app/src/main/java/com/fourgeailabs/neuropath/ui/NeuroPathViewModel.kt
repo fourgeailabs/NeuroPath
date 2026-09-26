@@ -58,6 +58,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 
 enum class AppScreen {
@@ -79,10 +81,10 @@ enum class AppScreen {
     PARENT_DASHBOARD
 }
 
-enum class BreathingPhase(val label: String, val durationSec: Int, val instruction: String, val scaleTarget: Float) {
-    INHALE("Inhale Gently", 4, "Breathe in slowly through your nose...", 1.35f),
-    HOLD("Hold Calmly", 7, "Rest softly and keep the breath calm...", 1.35f),
-    EXHALE("Exhale Slowly", 8, "Breathe out gently through your mouth...", 0.85f)
+enum class BreathingPhase(val labelKey: String, val durationSec: Int, val instructionKey: String, val scaleTarget: Float) {
+    INHALE("inhale_gently", 4, "breathe_in_slowly_through_your_nose", 1.35f),
+    HOLD("hold_calmly_2", 7, "rest_softly_and_keep_the_breath_calm", 1.35f),
+    EXHALE("exhale_slowly_2", 8, "breathe_out_gently_through_your_mouth", 0.85f)
 }
 
 data class ChatMessage(
@@ -227,7 +229,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private val _currentSessionId = MutableStateFlow("session_${System.currentTimeMillis()}")
     val currentSessionId: StateFlow<String> = _currentSessionId.asStateFlow()
 
-    private val _currentSessionTitle = MutableStateFlow("Personalized Study Session")
+    private val _currentSessionTitle = MutableStateFlow(t("personalized_study_session"))
     val currentSessionTitle: StateFlow<String> = _currentSessionTitle.asStateFlow()
 
     private val _searchQueryChat = MutableStateFlow("")
@@ -257,7 +259,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isVoiceConversationMode = MutableStateFlow(false)
     val isVoiceConversationMode: StateFlow<Boolean> = _isVoiceConversationMode.asStateFlow()
 
-    private val _liveVoiceStatus = MutableStateFlow("Tap the microphone or speak with your buddy!")
+    private val _liveVoiceStatus = MutableStateFlow(t("tap_the_microphone_or_speak_with_your_buddy"))
     val liveVoiceStatus: StateFlow<String> = _liveVoiceStatus.asStateFlow()
 
     private val _liveVoiceTranscript = MutableStateFlow<String?>(null)
@@ -306,7 +308,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private val _locationComplianceResult = MutableStateFlow<LocationComplianceResult?>(null)
     val locationComplianceResult: StateFlow<LocationComplianceResult?> = _locationComplianceResult.asStateFlow()
 
-    private val _dailyQuote = MutableStateFlow("You are capable of amazing things!")
+    private val _dailyQuote = MutableStateFlow(t("you_are_capable_of_amazing_things"))
     val dailyQuote: StateFlow<String> = _dailyQuote.asStateFlow()
 
     // Parent PIN Gate
@@ -419,7 +421,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             )
             repository.updateProfile(updated)
             _currentProfile.value = updated
-            speechManager.speak("AI and Learning Buddy configuration updated.")
+            speechManager.speak(t("ai_and_learning_buddy_configuration_updated"))
         }
     }
 
@@ -627,7 +629,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             } catch (e: Throwable) {
                 Log.e("NeuroPathViewModel", "Failed to sync curriculum for locale", e)
-                runCatching { speechManager.speak("Curriculum sync failed. Please check your connection and try again.") }
+                runCatching { speechManager.speak(t("curriculum_sync_failed_please_check_your_connect")) }
             } finally {
                 _isDownloadingCurriculum.value = false
             }
@@ -655,7 +657,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 val result = repository.verifyOerCurriculumLibrary()
                 _oerSyncResult.value = result
-                runCatching { speechManager.speak("Curriculum library verified.") }
+                runCatching { speechManager.speak(t("curriculum_library_verified")) }
             } catch (e: Throwable) {
                 Log.e("NeuroPathViewModel", "Failed to verify curriculum library", e)
                 _oerSyncResult.value = OerSyncResult(
@@ -664,7 +666,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     totalUnitsCount = oerCurriculumUnits.value.size,
                     message = "Verification failed: ${e.message}. Using the pre-installed collection."
                 )
-                runCatching { speechManager.speak("Library verification failed. Using pre-installed curriculum.") }
+                runCatching { speechManager.speak(t("library_verification_failed_using_pre_installed")) }
             } finally {
                 _isOerSyncing.value = false
             }
@@ -858,7 +860,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         if (_currentProfile.value.readAnswersAloud) {
             val step = lesson.teachSteps.getOrNull(0)
             if (step != null) {
-                speechManager.speak("${step.title}. ${step.text}")
+                speechManager.speak(tf("str_6", step.title, step.text))
             }
         }
     }
@@ -870,7 +872,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             _currentTeachStep.value += 1
             val step = lesson.teachSteps[_currentTeachStep.value]
             if (_currentProfile.value.readAnswersAloud) {
-                speechManager.speak("${step.title}. ${step.text}")
+                speechManager.speak(tf("str_6", step.title, step.text))
             }
         } else {
             startMasteryJourney()
@@ -884,7 +886,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             val lesson = _activeLesson.value ?: return
             val step = lesson.teachSteps[_currentTeachStep.value]
             if (_currentProfile.value.readAnswersAloud) {
-                speechManager.speak("${step.title}. ${step.text}")
+                speechManager.speak(tf("str_6", step.title, step.text))
             }
         }
     }
@@ -902,7 +904,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             val prof = _currentProfile.value
             val step = _activeLesson.value?.teachSteps?.getOrNull(_currentTeachStep.value) ?: return@launch
-            speechManager.speak("Thinking of a good way to explain this...")
+            speechManager.speak(t("thinking_of_a_good_way_to_explain_this"))
             val prompt = "Explain '${step.title}' clearly for a student in ${prof.schoolDistrict} (${prof.city}). Use accessible concepts and the ${getActiveTheme().title} theme. Keep to 2 short sentences."
             val explanation = LlamaClient.generateChatReply(
                 conversationHistory = listOf("user" to prompt),
@@ -919,7 +921,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             val prof = _currentProfile.value
             val question = _activeLesson.value?.questions?.getOrNull(_journeyQuestionIndex.value) ?: return@launch
-            speechManager.speak("Let's look at this together...")
+            speechManager.speak(t("let_s_look_at_this_together"))
             val prompt = "A student needs help with: '${question.questionText}'. Give a small hint without spoiling the answer. Use the ${getActiveTheme().title} theme. Keep to 2 short sentences."
             val explanation = LlamaClient.generateChatReply(
                 conversationHistory = listOf("user" to prompt),
@@ -950,7 +952,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         val lesson = _activeLesson.value ?: return
         val question = lesson.questions.getOrNull(_journeyQuestionIndex.value) ?: return
         val optionText = question.options.getOrNull(optionIndex) ?: return
-        speechManager.speak("Option ${optionIndex + 1}: $optionText")
+        speechManager.speak(tf("option", optionText, optionIndex + 1))
     }
 
     fun selectOption(index: Int) {
@@ -972,7 +974,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         if (isCorrect) {
             _lessonCorrectCount.value += 1
             triggerHapticSuccess()
-            speechManager.speak("Super! ${question.growthMindsetExplanation}")
+            speechManager.speak(tf("super", question.growthMindsetExplanation))
         } else {
             _showErrorCoach.value = true
             _errorCoachText.value = question.hint
@@ -988,9 +990,9 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     schoolDistrict = prof.schoolDistrict
                 )
                 if (aiHint.isNotBlank()) {
-                    _errorCoachText.value = "$aiHint\n\nClue: ${question.hint}"
+                    _errorCoachText.value = tf("1_s_n_nclue_2_s", aiHint, question.hint)
                 }
-                speechManager.speak("That's okay! Mistakes help our brains grow. ${_errorCoachText.value}")
+                speechManager.speak(tf("that_s_okay_mistakes_help_our_brains_grow", _errorCoachText.value))
             }
         }
     }
@@ -1090,7 +1092,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 // Phase 1: INHALE (4 seconds)
                 _breathingPhase.value = BreathingPhase.INHALE
                 if (_currentProfile.value.readAnswersAloud) {
-                    speechManager.speak("Breathe in slowly...")
+                    speechManager.speak(t("breathe_in_slowly"))
                 }
                 for (sec in 4 downTo 1) {
                     _breathingSecondsRemaining.value = sec
@@ -1103,7 +1105,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 // Phase 2: HOLD (7 seconds)
                 _breathingPhase.value = BreathingPhase.HOLD
                 if (_currentProfile.value.readAnswersAloud) {
-                    speechManager.speak("Hold calmly...")
+                    speechManager.speak(t("hold_calmly"))
                 }
                 for (sec in 7 downTo 1) {
                     _breathingSecondsRemaining.value = sec
@@ -1116,7 +1118,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 // Phase 3: EXHALE (8 seconds)
                 _breathingPhase.value = BreathingPhase.EXHALE
                 if (_currentProfile.value.readAnswersAloud) {
-                    speechManager.speak("Exhale slowly...")
+                    speechManager.speak(t("exhale_slowly"))
                 }
                 for (sec in 8 downTo 1) {
                     _breathingSecondsRemaining.value = sec
@@ -1178,15 +1180,15 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             val owned = _currentProfile.value.unlockedItemIdsCsv
                 .split(",").any { it.trim() == itemId }
             if (owned) {
-                speechManager.speak("You already own that item!")
+                speechManager.speak(t("you_already_own_that_item"))
                 return@launch
             }
             val success = repository.unlockItem(_currentProfile.value.id, itemId, starCost, gemCost)
             if (success) {
                 triggerHapticSuccess()
-                speechManager.speak("New item unlocked!")
+                speechManager.speak(t("new_item_unlocked"))
             } else {
-                speechManager.speak("Need more stars or gems to unlock!")
+                speechManager.speak(t("need_more_stars_or_gems_to_unlock"))
             }
         }
     }
@@ -1205,7 +1207,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 onTextReceived(text)
             },
             onError = { error ->
-                speechManager.speak("Voice assist: $error")
+                speechManager.speak(tf("voice_assist", error))
             }
         )
     }
@@ -1255,14 +1257,14 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     triggerHapticSuccess()
                     callback?.invoke(text)
                 } else {
-                    speechManager.speak("Could not catch that clearly. Please try again.")
+                    speechManager.speak(t("could_not_catch_that_clearly_please_try_again"))
                 }
             },
             onError = {
                 pendingVoiceTranscription = null
                 clearTranscriptionTimeout()
                 _isTranscribingAudio.value = false
-                speechManager.speak("Could not catch that clearly. Please try again.")
+                speechManager.speak(t("could_not_catch_that_clearly_please_try_again"))
             }
         )
         return true
@@ -1285,11 +1287,11 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             speechManager.stop()
             _isLiveVoiceActive.value = false
             _liveVoiceTranscript.value = null
-            _liveVoiceStatus.value = "Tap the microphone or speak with your buddy!"
+            _liveVoiceStatus.value = t("tap_the_microphone_or_speak_with_your_buddy")
         } else {
             val theme = getActiveTheme()
-            val greeting = "Hi! I'm in voice conversation mode. What would you like to learn or explore together?"
-            _liveVoiceStatus.value = "Listening for your voice..."
+            val greeting = t("hi_i_m_in_voice_conversation_mode_what_would_you")
+            _liveVoiceStatus.value = t("listening_for_your_voice")
             _liveVoiceTranscript.value = greeting
             if (_currentProfile.value.readAnswersAloud) {
                 speechManager.speak(greeting)
@@ -1300,7 +1302,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     fun sendLiveVoiceTurn(rawText: String? = null) {
         viewModelScope.launch {
             _isLiveVoiceActive.value = true
-            _liveVoiceStatus.value = "Buddy is thinking and responding..."
+            _liveVoiceStatus.value = t("buddy_is_thinking_and_responding")
             val theme = getActiveTheme()
             val profile = _currentProfile.value
             // Sanitize recognized speech the same way as typed input.
@@ -1347,7 +1349,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
             _isLiveVoiceActive.value = false
             _liveVoiceTranscript.value = result.transcriptText
-            _liveVoiceStatus.value = "Tap microphone to speak again"
+            _liveVoiceStatus.value = t("tap_microphone_to_speak_again")
 
             // Add to chat history for continuity
             if (!userText.isNullOrBlank()) {
@@ -1375,15 +1377,15 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             ChatMessage(
                 id = "greet",
                 sender = "BUDDY",
-                text = "${theme.greeting} I'm ${theme.buddyName}, your ${theme.buddyRole}! I can explain anything in your lessons with step-by-step guidance, fun analogies, or direct answers. What are we exploring today?",
+                text = tf("1_s_i_m_2_s_your_3_s_i_can_explain_anything_in_y", theme.greeting, theme.buddyName, theme.buddyRole),
                 explanationMode = _explanationMode.value,
                 modelMode = _chatModelMode.value,
                 isFreeModel = _chatModelMode.value.isFreeTier,
                 subjectTag = _selectedSubjectTag.value,
                 suggestedFollowUps = listOf(
-                    "Explain today's lesson",
-                    "Give me a fun math puzzle",
-                    "Tell me a fascinating science fact"
+                    t("explain_today_s_lesson"),
+                    t("give_me_a_fun_math_puzzle"),
+                    t("tell_me_a_fascinating_science_fact")
                 )
             )
         )
@@ -1400,7 +1402,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     fun startNewChatSession(title: String) {
         val newSessionId = "session_${System.currentTimeMillis()}"
         _currentSessionId.value = newSessionId
-        _currentSessionTitle.value = title.ifBlank { "Personalized Study Session" }
+        _currentSessionTitle.value = title.ifBlank { t("personalized_study_session") }
         initDefaultChatGreeting()
     }
 
@@ -1438,7 +1440,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             repository.deleteChatSession(_currentProfile.value.id, sessionId)
             if (_currentSessionId.value == sessionId) {
-                startNewChatSession("New Study Topic")
+                startNewChatSession(t("new_study_topic"))
             }
         }
     }
@@ -1446,7 +1448,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     fun clearAllChatHistory() {
         viewModelScope.launch {
             repository.clearAllChatHistory(_currentProfile.value.id)
-            startNewChatSession("Personalized Study Session")
+            startNewChatSession(t("personalized_study_session"))
         }
     }
 
@@ -1699,7 +1701,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     modelMode = currentModel,
                     isFreeModel = currentModel.isFreeTier,
                     subjectTag = currentSubject,
-                    suggestedFollowUps = listOf("Can you show another example?", "Why does this work?", "Quiz me!")
+                    suggestedFollowUps = listOf(t("can_you_show_another_example"), t("why_does_this_work"), t("quiz_me"))
                 )
                 _chatMessages.value = _chatMessages.value + replyMsg
             } finally {
@@ -1712,29 +1714,29 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         val qLower = query.lowercase()
         return when {
             qLower.contains("fraction") || qLower.contains("math") || subject == EducationalSubjectTag.MATH -> listOf(
-                "Show another practice problem",
-                "Why do we need a common denominator?",
-                "Give me a real-world math example"
+                t("show_another_practice_problem"),
+                t("why_do_we_need_a_common_denominator"),
+                t("give_me_a_real_world_math_example")
             )
             qLower.contains("plant") || qLower.contains("science") || subject == EducationalSubjectTag.SCIENCE -> listOf(
-                "What happens at night?",
-                "Can you give me a fun quiz question?",
-                "How does this connect to animals?"
+                t("what_happens_at_night"),
+                t("can_you_give_me_a_fun_quiz_question"),
+                t("how_does_this_connect_to_animals")
             )
             qLower.contains("read") || qLower.contains("word") || subject == EducationalSubjectTag.READING -> listOf(
-                "Give me a practice sentence",
-                "What is an antonym for this?",
-                "How do I use this in an essay?"
+                t("give_me_a_practice_sentence"),
+                t("what_is_an_antonym_for_this"),
+                t("how_do_i_use_this_in_an_essay")
             )
             qLower.contains("code") || qLower.contains("program") || subject == EducationalSubjectTag.CODING -> listOf(
-                "Show me a simple code snippet",
-                "What kind of bug could happen here?",
-                "How does this work in video games?"
+                t("show_me_a_simple_code_snippet"),
+                t("what_kind_of_bug_could_happen_here"),
+                t("how_does_this_work_in_video_games")
             )
             else -> listOf(
-                "Explain this with another example",
-                "Why is this important?",
-                "Ask me a check-in question!"
+                t("explain_this_with_another_example"),
+                t("why_is_this_important"),
+                t("ask_me_a_check_in_question")
             )
         }
     }
@@ -1770,13 +1772,13 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     ?: _currentProfile.value.parentPin.takeIf { it.isNotBlank() }
                 if (legacy?.matches(Regex("^\\d{4}$")) != true) {
                     _pinError.value = true
-                    speechManager.speak("No PIN configured. Please set up a parent PIN in settings first.")
+                    speechManager.speak(t("no_pin_configured_please_set_up_a_parent_pin_in"))
                     return@launch
                 }
                 val migrated = runCatching { secureStorage.setParentPin(legacy) }.getOrDefault(false)
                 if (!migrated) {
                     _pinError.value = true
-                    speechManager.speak("Secure storage is unavailable on this device.")
+                    speechManager.speak(t("secure_storage_is_unavailable_on_this_device"))
                     return@launch
                 }
                 runCatching { repository.updateParentPinForAll("") }
@@ -1786,7 +1788,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 navigateTo(AppScreen.PARENT_DASHBOARD)
             } else {
                 _pinError.value = true
-                speechManager.speak("Incorrect passcode. Please try again.")
+                speechManager.speak(t("incorrect_passcode_please_try_again"))
             }
         }
     }
@@ -1924,7 +1926,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             _currentProfile.value = updated
             speechManager.setLanguage(appLanguageCode)
             speechManager.setSpeechParameters(ttsSpeed, updated.ttsVoicePitch)
-            speechManager.speak("Settings saved successfully!")
+            speechManager.speak(t("settings_saved_successfully"))
             fetchDailyQuote()
         }
     }
@@ -1939,7 +1941,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             repository.updateProfile(updated)
             repository.logSensorySession(prof.id, activityName, 60, stars)
             triggerHapticSuccess()
-            speechManager.speak("Awesome job! You earned $stars stars and $gems gems!")
+            speechManager.speak(tf("awesome_job_you_earned_stars_and_gems", stars, gems))
         }
     }
 

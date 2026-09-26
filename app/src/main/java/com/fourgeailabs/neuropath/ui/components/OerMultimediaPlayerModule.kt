@@ -33,6 +33,8 @@ import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,7 +138,7 @@ fun OerMultimediaPlayerContent(
                     Text(resource.creatorOrSource, fontSize = 11.sp)
                 }
             }
-            TextButton(onClick = onClose) { Text("Close") }
+            TextButton(onClick = onClose) { Text(t("close")) }
         }
 
         Spacer(Modifier.height(10.dp))
@@ -150,10 +152,12 @@ fun OerMultimediaPlayerContent(
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.mediaPlaybackRequiresUserGesture = false
+                        settings.allowFileAccess = false
+                        settings.allowContentAccess = false
                         webChromeClient = WebChromeClient()
                         webViewClient = WebViewClient()
                         val url = resource.videoUrl ?: resource.sourceUrl
-                        if (url.isBlank()) mediaError = "This lesson does not have an online video source yet."
+                        if (url.isBlank()) mediaError = t("this_lesson_does_not_have_an_online_video_source")
                         else loadUrl(url)
                     }
                 },
@@ -168,11 +172,11 @@ fun OerMultimediaPlayerContent(
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.Audiotrack, null, modifier = Modifier.size(48.dp))
-                    Text("Audio lesson", fontWeight = FontWeight.Bold)
+                    Text(t("audio_lesson"), fontWeight = FontWeight.Bold)
                     Text(transcriptLine?.text ?: resource.description, fontSize = 13.sp)
                     Text(
-                        if (resource.audioUrl.isNullOrBlank()) "Using accessible on-device narration from the lesson transcript."
-                        else "Streaming audio source",
+                        if (resource.audioUrl.isNullOrBlank()) t("using_accessible_on_device_narration_from_the_le")
+                        else t("streaming_audio_source"),
                         fontSize = 11.sp
                     )
                 }
@@ -195,7 +199,7 @@ fun OerMultimediaPlayerContent(
                 speechManager.stop()
                 audioPlayer?.seekTo(0)
                 if (isVideo) seekVideo(0)
-            }) { Icon(Icons.Default.Replay, "Restart") }
+            }) { Icon(Icons.Default.Replay, t("restart")) }
 
             IconButton(onClick = {
                 isPlaying = !isPlaying
@@ -224,7 +228,7 @@ fun OerMultimediaPlayerContent(
                         applyAudioSpeed(audioPlayer)
                     }
                 }
-            }) { Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (isPlaying) "Pause" else "Play") }
+            }) { Icon(if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, if (isPlaying) t("pause") else t("play")) }
 
             IconButton(onClick = {
                 speed = when (speed) { 0.75f -> 1f; 1f -> 1.25f; 1.25f -> 1.5f; 1.5f -> 2f; else -> 0.75f }
@@ -234,12 +238,12 @@ fun OerMultimediaPlayerContent(
                 } else {
                     applyAudioSpeed(audioPlayer)
                 }
-            }) { Icon(Icons.Default.Speed, "Playback speed") }
-            IconButton(onClick = { captions = !captions }) { Icon(Icons.Default.ClosedCaption, "Captions") }
+            }) { Icon(Icons.Default.Speed, t("playback_speed")) }
+            IconButton(onClick = { captions = !captions }) { Icon(Icons.Default.ClosedCaption, t("captions")) }
         }
 
         if (captions && transcriptLine != null) {
-            Card(Modifier.fillMaxWidth()) { Text("${transcriptLine.speaker}: ${transcriptLine.text}", Modifier.padding(10.dp), fontSize = 12.sp) }
+            Card(Modifier.fillMaxWidth()) { Text(tf("str_15", transcriptLine.speaker, transcriptLine.text), Modifier.padding(10.dp), fontSize = 12.sp) }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -272,7 +276,7 @@ fun OerMultimediaPlayerContent(
                         if (answered) Text(if (answerCorrect) "Correct! ${checkpoint!!.explanation}" else checkpoint!!.explanation)
                     }
                 },
-                confirmButton = { TextButton(enabled = answered, onClick = { checkpoint = null; isPlaying = true; if (isVideo) setVideoPlaying(true) }) { Text("Continue") } }
+                confirmButton = { TextButton(enabled = answered, onClick = { checkpoint = null; isPlaying = true; if (isVideo) setVideoPlaying(true) }) { Text(t("continue_btn")) } }
             )
         }
     }

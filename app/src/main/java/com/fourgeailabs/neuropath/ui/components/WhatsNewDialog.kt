@@ -37,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 data class ReleaseNote(
     val version: String,
@@ -327,9 +329,9 @@ fun WhatsNewDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(imageVector = Icons.Default.NewReleases, contentDescription = "What's New", tint = MaterialTheme.colorScheme.primary)
+                        Icon(imageVector = Icons.Default.NewReleases, contentDescription = t("whats_new"), tint = MaterialTheme.colorScheme.primary)
                         Text(
-                            "What's New in NeuroPath",
+                            t("what_s_new_in_neuropath"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary
@@ -337,12 +339,12 @@ fun WhatsNewDialog(
                     }
 
                     IconButton(onClick = onDismiss) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                        Icon(imageVector = Icons.Default.Close, contentDescription = t("close"))
                     }
                 }
 
                 Text(
-                    "Explore the latest update highlights and historical version notes below. Click any release to expand or collapse details.",
+                    t("explore_the_latest_update_highlights_and_histori"),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -390,7 +392,7 @@ fun WhatsNewDialog(
                                                     color = Color(0xFFD4EDDA)
                                                 ) {
                                                     Text(
-                                                        "CURRENT",
+                                                        t("current"),
                                                         fontSize = 9.sp,
                                                         fontWeight = FontWeight.Bold,
                                                         color = Color(0xFF155724),
@@ -404,7 +406,7 @@ fun WhatsNewDialog(
 
                                     Icon(
                                         imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                        contentDescription = "Toggle dropdown"
+                                        contentDescription = t("toggle_dropdown")
                                     )
                                 }
 
@@ -414,14 +416,14 @@ fun WhatsNewDialog(
                                         verticalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Text(
-                                            "Released: ${note.date}",
+                                            tf("released", note.date),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         note.highlights.forEach { highlight ->
                                             Text(
-                                                "• $highlight",
+                                                tf("str_16", highlight),
                                                 fontSize = 12.sp,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )

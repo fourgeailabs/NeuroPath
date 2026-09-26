@@ -99,6 +99,8 @@ import com.fourgeailabs.neuropath.data.model.NeuroThemeData
 import com.fourgeailabs.neuropath.data.model.ThemeRotationSchedule
 import kotlin.math.cos
 import kotlin.math.sin
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 enum class ThemePreviewTab(val title: String, val iconEmoji: String) {
     SIMULATION("Live Screen", "📱"),
@@ -185,14 +187,14 @@ fun ThemePreviewModal(
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    "Theme Preview & Palette",
+                                    t("theme_preview_palette"),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Text(
-                                "Visualize colors, background atmosphere & assets",
+                                t("visualize_colors_background_atmosphere_assets"),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -203,7 +205,7 @@ fun ThemePreviewModal(
                         onClick = onDismiss,
                         modifier = Modifier.testTag("close_theme_preview_btn")
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = t("close"))
                     }
                 }
 
@@ -228,7 +230,7 @@ fun ThemePreviewModal(
                             },
                             modifier = Modifier.testTag("prev_theme_btn")
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous Theme")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("previous_theme"))
                         }
 
                         Column(
@@ -243,7 +245,7 @@ fun ThemePreviewModal(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    "${previewTheme.emoji} ${previewTheme.title}",
+                                    tf("str_3", previewTheme.emoji, previewTheme.title),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.5.sp,
                                     maxLines = 1,
@@ -255,7 +257,7 @@ fun ThemePreviewModal(
                                     color = primaryColor
                                 ) {
                                     Text(
-                                        "${selectedThemeIndex + 1}/100",
+                                        tf("100", selectedThemeIndex + 1),
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
@@ -264,7 +266,7 @@ fun ThemePreviewModal(
                                 }
                             }
                             Text(
-                                "${previewTheme.category.title} • Tap to switch",
+                                tf("tap_to_switch", previewTheme.category.title),
                                 fontSize = 10.5.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -276,7 +278,7 @@ fun ThemePreviewModal(
                             },
                             modifier = Modifier.testTag("next_theme_btn")
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next Theme")
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = t("next_theme"))
                         }
                     }
                 }
@@ -294,7 +296,7 @@ fun ThemePreviewModal(
                         OutlinedTextField(
                             value = themeSearchQuery,
                             onValueChange = { themeSearchQuery = it },
-                            placeholder = { Text("Search 100 theme worlds...", fontSize = 12.sp) },
+                            placeholder = { Text(t("search_100_theme_worlds"), fontSize = 12.sp) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
@@ -313,7 +315,7 @@ fun ThemePreviewModal(
                             FilterChip(
                                 selected = selectedCategoryFilter == null,
                                 onClick = { selectedCategoryFilter = null },
-                                label = { Text("All Categories", fontSize = 10.sp) },
+                                label = { Text(t("all_categories"), fontSize = 10.sp) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = primaryColor,
                                     selectedLabelColor = Color.White
@@ -325,7 +327,7 @@ fun ThemePreviewModal(
                                     onClick = {
                                         selectedCategoryFilter = if (selectedCategoryFilter == cat) null else cat
                                     },
-                                    label = { Text("${cat.emoji} ${cat.title}", fontSize = 10.sp) },
+                                    label = { Text(tf("str_3", cat.emoji, cat.title), fontSize = 10.sp) },
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = primaryColor,
                                         selectedLabelColor = Color.White
@@ -407,7 +409,7 @@ fun ThemePreviewModal(
                             onClick = { previewTab = tab },
                             text = {
                                 Text(
-                                    "${tab.iconEmoji} ${tab.title}",
+                                    tf("str_3", tab.iconEmoji, tab.title),
                                     fontSize = 11.5.sp,
                                     fontWeight = if (previewTab == tab) FontWeight.Bold else FontWeight.Medium
                                 )
@@ -492,7 +494,7 @@ fun ThemePreviewModal(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🔄 Rotation:", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(t("rotation"), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 selectedRotationSchedule.title.substringBefore("(").trim(),
@@ -534,7 +536,7 @@ fun ThemePreviewModal(
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Close", fontWeight = FontWeight.SemiBold)
+                            Text(t("close"), fontWeight = FontWeight.SemiBold)
                         }
 
                         Button(
@@ -655,10 +657,10 @@ private fun LiveScreenSimulationView(
                             }
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Surface(shape = RoundedCornerShape(6.dp), color = secondaryColor) {
-                                    Text("⭐ 450 XP", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                    Text(t("450_xp"), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                                 }
                                 Surface(shape = RoundedCornerShape(6.dp), color = Color.White.copy(alpha = 0.2f)) {
-                                    Text("🔥 5-Day", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                                    Text(t("5_day"), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                                 }
                             }
                         }
@@ -696,14 +698,14 @@ private fun LiveScreenSimulationView(
                                     )
                                     Spacer(Modifier.width(4.dp))
                                     Text(
-                                        "• ${theme.buddyRole}",
+                                        tf("str_16", theme.buddyRole),
                                         fontSize = 9.5.sp,
                                         color = primaryColor.copy(alpha = 0.8f)
                                     )
                                 }
                                 Spacer(Modifier.height(4.dp))
                                 Text(
-                                    "\"${theme.greeting}\"",
+                                    tf("str_4", theme.greeting),
                                     fontSize = 11.sp,
                                     lineHeight = 15.sp,
                                     fontWeight = FontWeight.Medium,
@@ -728,14 +730,14 @@ private fun LiveScreenSimulationView(
                             ) {
                                 Surface(shape = RoundedCornerShape(6.dp), color = primaryColor) {
                                     Text(
-                                        "ACTIVE LESSON ADVENTURE",
+                                        t("active_lesson_adventure"),
                                         fontSize = 8.5.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.White,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
-                                Text("Step 2 of 5", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = primaryColor)
+                                Text(t("step_2_of_5"), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = primaryColor)
                             }
 
                             Spacer(Modifier.height(8.dp))
@@ -759,7 +761,7 @@ private fun LiveScreenSimulationView(
                             ) {
                                 Icon(Icons.Default.TouchApp, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(6.dp))
-                                Text("Explore Quest Mission", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                                Text(t("explore_quest_mission"), fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -776,7 +778,7 @@ private fun LiveScreenSimulationView(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Layers, contentDescription = null, tint = primaryColor, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Sensory Atmosphere & Background Assets", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(t("sensory_atmosphere_background_assets"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
                 Text(
                     "• Ambient Palette: ${categoryToSensoryDescriptor(theme.category)}",
@@ -784,12 +786,12 @@ private fun LiveScreenSimulationView(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    "• Tactile Interactive Cue: ${theme.interactiveIdea}",
+                    tf("tactile_interactive_cue", theme.interactiveIdea),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    "• Sensory Modulation: High readability contrast with reduced blue-light eye strain canvas.",
+                    t("sensory_modulation_high_readability_contrast_wit"),
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -819,7 +821,7 @@ private fun ColorPaletteInspectorView(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            "Color Swatches & Material 3 Token Hierarchy",
+            t("color_swatches_material_3_token_hierarchy"),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -869,10 +871,10 @@ private fun ColorPaletteInspectorView(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("♿ WCAG & Dyslexia Readability", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(t("wcag_dyslexia_readability"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFF28A745)) {
                         Text(
-                            "AAA Certified",
+                            t("aaa_certified"),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -881,7 +883,7 @@ private fun ColorPaletteInspectorView(
                     }
                 }
                 Text(
-                    "All high-frequency reading elements maintain a contrast ratio >= 4.5:1 against the ${theme.title} surface canvas, preventing eye strain during hyperfocus sessions.",
+                    tf("all_high_frequency_reading_elements_maintain_a_c", theme.title),
                     fontSize = 11.sp,
                     lineHeight = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -891,7 +893,7 @@ private fun ColorPaletteInspectorView(
 
         // Interactive Live Component Samples
         Text(
-            "Live Styled Components in Theme Palette:",
+            t("live_styled_components_in_theme_palette"),
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurface
@@ -907,7 +909,7 @@ private fun ColorPaletteInspectorView(
                 colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Primary Button", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(t("primary_button"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
 
             OutlinedButton(
@@ -916,7 +918,7 @@ private fun ColorPaletteInspectorView(
                 border = BorderStroke(1.5.dp, primaryColor),
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Outlined Action", fontSize = 11.sp, color = primaryColor, fontWeight = FontWeight.Bold)
+                Text(t("outlined_action"), fontSize = 11.sp, color = primaryColor, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -1018,7 +1020,7 @@ private fun CurriculumAndBuddyView(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "\"${theme.greeting}\"",
+                    tf("str_4", theme.greeting),
                     fontSize = 11.5.sp,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                     color = Color(0xFF1E212B)
@@ -1027,7 +1029,7 @@ private fun CurriculumAndBuddyView(
         }
 
         Text(
-            "📚 Cross-Disciplinary Subject Adaptations:",
+            t("cross_disciplinary_subject_adaptations"),
             fontWeight = FontWeight.Bold,
             fontSize = 12.5.sp,
             color = MaterialTheme.colorScheme.primary
@@ -1067,7 +1069,7 @@ private fun CurriculumAndBuddyView(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
         ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("🧠 Neurodivergent Alignment:", fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                Text(t("neurodivergent_alignment"), fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)

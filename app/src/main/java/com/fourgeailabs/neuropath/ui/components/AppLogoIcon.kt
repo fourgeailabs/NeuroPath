@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fourgeailabs.neuropath.ui.t
 
 @Composable
 fun AppLogoIcon(
@@ -150,7 +151,7 @@ fun AppLogoIcon(
         if (showText) {
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "NeuroPath",
+                text = t("app_title"),
                 fontSize = (size.value * 0.24f).sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground

@@ -122,6 +122,8 @@ import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Refresh
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 enum class ParentDashboardTab(val title: String, val iconEmoji: String) {
     PROFILES("Child Profiles", "👥"),
@@ -230,7 +232,7 @@ fun ParentDashboardScreen(
                     onClick = { viewModel.navigateTo(AppScreen.HOME) },
                     modifier = Modifier.testTag("parent_back_btn")
                 ) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("back"))
                 }
 
                 Text(
@@ -248,9 +250,9 @@ fun ParentDashboardScreen(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Default.Security, contentDescription = "COPPA Safe", tint = Color(0xFF155724), modifier = Modifier.size(14.dp))
+                        Icon(imageVector = Icons.Default.Security, contentDescription = t("coppa_safe_2"), tint = Color(0xFF155724), modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("COPPA Safe", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF155724))
+                        Text(t("coppa_safe_2"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF155724))
                     }
                 }
             }
@@ -277,7 +279,7 @@ fun ParentDashboardScreen(
                         onClick = { selectedTab = tab },
                         text = {
                             Text(
-                                "${tab.iconEmoji} $tabTitle",
+                                tf("str_12", tabTitle, tab.iconEmoji),
                                 fontSize = 12.sp,
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal
                             )
@@ -304,13 +306,13 @@ fun ParentDashboardScreen(
                             Spacer(Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    "On-Device Child Profiles & Privacy",
+                                    t("on_device_child_profiles_privacy"),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    "All child profiles, hyper-fixations, strengths, and IEP records are stored strictly on this device. Create, edit, or remove profiles anytime.",
+                                    t("all_child_profiles_hyper_fixations_strengths_and"),
                                     fontSize = 11.5.sp,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
@@ -370,7 +372,7 @@ fun ParentDashboardScreen(
                                                     color = MaterialTheme.colorScheme.primary
                                                 ) {
                                                     Text(
-                                                        "ACTIVE",
+                                                        t("active"),
                                                         fontSize = 9.sp,
                                                         fontWeight = FontWeight.ExtraBold,
                                                         color = MaterialTheme.colorScheme.onPrimary,
@@ -380,7 +382,7 @@ fun ParentDashboardScreen(
                                             }
                                         }
                                         Text(
-                                            text = "Age ${p.age} • ${pTier.title} • ${pTheme.title}",
+                                            text = tf("age", p.age, pTier.title, pTheme.title),
                                             fontSize = 12.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
@@ -394,14 +396,14 @@ fun ParentDashboardScreen(
                                         onClick = { editingProfileId = p.id },
                                         modifier = Modifier.testTag("parent_edit_profile_${p.id}")
                                     ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.primary)
+                                        Icon(Icons.Default.Edit, contentDescription = t("edit_profile"), tint = MaterialTheme.colorScheme.primary)
                                     }
                                     if (allProfiles.size > 1) {
                                         IconButton(
                                             onClick = { showDeleteConfirmForProfile = p },
                                             modifier = Modifier.testTag("parent_delete_profile_${p.id}")
                                         ) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Delete Profile", tint = MaterialTheme.colorScheme.error)
+                                            Icon(Icons.Default.Delete, contentDescription = t("delete_profile"), tint = MaterialTheme.colorScheme.error)
                                         }
                                     }
                                 }
@@ -426,7 +428,7 @@ fun ParentDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "⭐ ${p.totalStars} Stars • 💎 ${p.totalGems} Gems • 🔥 ${p.currentStreakDays}d Streak",
+                                    text = tf("stars_gems_d_streak", p.totalStars, p.totalGems, p.currentStreakDays),
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -439,7 +441,7 @@ fun ParentDashboardScreen(
                                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                                         modifier = Modifier.testTag("switch_to_profile_${p.id}")
                                     ) {
-                                        Text("Select Active", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        Text(t("select_active"), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -461,7 +463,7 @@ fun ParentDashboardScreen(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Add Another Child Profile", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(t("add_another_child_profile"), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
 
@@ -476,13 +478,13 @@ fun ParentDashboardScreen(
                                 Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    "Change Parent Passcode (PIN)",
+                                    t("change_parent_passcode_pin"),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                             Text(
-                                "Set a secure 4-digit code required to access this dashboard and switch critical settings.",
+                                t("set_a_secure_4_digit_code_required_to_access_thi"),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -494,7 +496,7 @@ fun ParentDashboardScreen(
                                 OutlinedTextField(
                                     value = newPinText,
                                     onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) newPinText = it },
-                                    label = { Text("New PIN (4 digits)") },
+                                    label = { Text(t("new_pin_4_digits")) },
                                     singleLine = true,
                                     visualTransformation = PasswordVisualTransformation(),
                                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
@@ -504,7 +506,7 @@ fun ParentDashboardScreen(
                                 OutlinedTextField(
                                     value = confirmPinText,
                                     onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) confirmPinText = it },
-                                    label = { Text("Confirm PIN") },
+                                    label = { Text(t("confirm_pin_2")) },
                                     singleLine = true,
                                     visualTransformation = PasswordVisualTransformation(),
                                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword),
@@ -544,7 +546,7 @@ fun ParentDashboardScreen(
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.align(Alignment.End).testTag("save_parent_pin_btn")
                             ) {
-                                Text("Update PIN", fontWeight = FontWeight.Bold)
+                                Text(t("update_pin"), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -561,7 +563,7 @@ fun ParentDashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(imageVector = Icons.Default.Language, contentDescription = "Language", tint = MaterialTheme.colorScheme.primary)
+                                Icon(imageVector = Icons.Default.Language, contentDescription = t("language"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
                                     "🌐 ${AppLanguageDictionary.getString("app_language", selectedLanguageCode)}",
                                     style = MaterialTheme.typography.titleMedium,
@@ -570,7 +572,7 @@ fun ParentDashboardScreen(
                                 )
                             }
                             Text(
-                                "Multi-language support for UI, Voice Assist tutoring, speech synthesis, and hints.",
+                                t("language_desc"),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -594,7 +596,7 @@ fun ParentDashboardScreen(
                                 ) {
                                     AppLanguage.entries.forEach { lang ->
                                         DropdownMenuItem(
-                                            text = { Text("${lang.flagEmoji} ${lang.displayName} - ${lang.nativeName}") },
+                                            text = { Text(tf("str_8", lang.flagEmoji, lang.displayName, lang.nativeName)) },
                                             onClick = {
                                                 selectedLanguageCode = lang.code
                                                 expandedLanguage = false
@@ -615,7 +617,7 @@ fun ParentDashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
-                                "👶 Learner Profile",
+                                t("learner_profile"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -624,12 +626,12 @@ fun ParentDashboardScreen(
                             OutlinedTextField(
                                 value = childName,
                                 onValueChange = { childName = it },
-                                label = { Text("Child's First Name") },
+                                label = { Text(t("child_name")) },
                                 modifier = Modifier.fillMaxWidth()
                             )
 
                             // Grade Level Selector
-                            Text("Grade Level (Pre-K to 12th):", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(t("grade_level_pre_k_to_12th"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             ExposedDropdownMenuBox(
                                 expanded = expandedGrade,
                                 onExpandedChange = { expandedGrade = !expandedGrade }
@@ -679,9 +681,9 @@ fun ParentDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Icon(imageVector = Icons.Default.Palette, contentDescription = "Theme Palette", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(imageVector = Icons.Default.Palette, contentDescription = t("theme_palette"), tint = MaterialTheme.colorScheme.primary)
                                     Text(
-                                        "🌟 Special Interest Neuro-Theme",
+                                        t("special_interest_neuro_theme"),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -693,7 +695,7 @@ fun ParentDashboardScreen(
                                     color = MaterialTheme.colorScheme.primaryContainer
                                 ) {
                                     Text(
-                                        "100 Themes Library",
+                                        t("100_themes_library"),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -703,7 +705,7 @@ fun ParentDashboardScreen(
                             }
 
                             Text(
-                                "Personalizing lessons around a child's passionate interest increases dopamine engagement and retention for neurodivergent learners.",
+                                t("personalizing_lessons_around_a_child_s_passionat"),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -732,7 +734,7 @@ fun ParentDashboardScreen(
                                                     color = themePrimaryColor
                                                 )
                                                 Text(
-                                                    "${activeThemeData.buddyName} • ${activeThemeData.category.title}",
+                                                    tf("str_7", activeThemeData.buddyName, activeThemeData.category.title),
                                                     fontSize = 11.sp,
                                                     color = themePrimaryColor.copy(alpha = 0.85f),
                                                     fontWeight = FontWeight.Medium
@@ -749,7 +751,7 @@ fun ParentDashboardScreen(
                                     }
 
                                     Text(
-                                        "\"${activeThemeData.greeting}\"",
+                                        tf("str_4", activeThemeData.greeting),
                                         fontSize = 11.5.sp,
                                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                         color = Color(0xFF1E212B)
@@ -769,12 +771,12 @@ fun ParentDashboardScreen(
                                     ) {
                                         Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(Modifier.width(8.dp))
-                                        Text("Preview Palette, Atmosphere & Assets", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text(t("preview_palette_atmosphere_assets"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
                                 }
                             }
 
-                            Text("Quick Switch or Preview Popular Theme Worlds:", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                            Text(t("quick_switch_or_preview_popular_theme_worlds"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
 
                             Row(
                                 modifier = Modifier
@@ -821,7 +823,7 @@ fun ParentDashboardScreen(
                                                 Box(contentAlignment = Alignment.Center) {
                                                     Icon(
                                                         Icons.Default.Visibility,
-                                                        contentDescription = "Preview Theme",
+                                                        contentDescription = t("preview_theme"),
                                                         tint = if (isSelected) Color.White else MaterialTheme.colorScheme.primary,
                                                         modifier = Modifier.size(14.dp)
                                                     )
@@ -843,7 +845,7 @@ fun ParentDashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text(
-                                "🧠 Neurodiversity Accommodation Tools",
+                                t("neurodiversity_accommodation_tools"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -896,7 +898,7 @@ fun ParentDashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(
-                                "🔊 Speech & Reading Accessibility",
+                                t("speech_reading_accessibility"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -908,8 +910,8 @@ fun ParentDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Read Questions & Answers Aloud", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text("Automatic natural voice with karaoke word highlighting", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(t("read_questions_answers_aloud"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(t("automatic_natural_voice_with_karaoke_word_highli"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Switch(checked = readAloud, onCheckedChange = { readAloud = it })
                             }
@@ -920,14 +922,14 @@ fun ParentDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("OpenDyslexic Typography", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text("Enhanced letter-spacing and weighted base forms", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(t("opendyslexic_typography"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(t("enhanced_letter_spacing_and_weighted_base_forms"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Switch(checked = dyslexiaEnabled, onCheckedChange = { dyslexiaEnabled = it })
                             }
 
                             Column {
-                                Text("Speech Rate: ${String.format("%.2f", ttsSpeed)}x", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text(tf("speech_rate_value", String.format("%.2f", ttsSpeed)), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                 Slider(
                                     value = ttsSpeed,
                                     onValueChange = { ttsSpeed = it },
@@ -947,9 +949,9 @@ fun ParentDashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = "AI Settings", tint = MaterialTheme.colorScheme.primary)
+                                Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = t("ai_settings"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
-                                    "🤖 AI Engine Service (Llama 3.2 3B)",
+                                    t("ai_engine_service_llama_3_2_3b"),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -973,7 +975,7 @@ fun ParentDashboardScreen(
                                     )
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        text = "Hugging Face Llama 3.2 3B Integration Active",
+                                        text = t("hugging_face_llama_3_2_3b_integration_active"),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -982,7 +984,7 @@ fun ParentDashboardScreen(
                             }
 
                             Text(
-                                "NeuroPath is powered globally by Meta Llama 3.2 3B Instruct via Hugging Face Inference API and on-device hardware-accelerated local LiteRT-LM / GGUF execution.",
+                                t("neuropath_is_powered_globally_by_meta_llama_3_2"),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -996,8 +998,8 @@ fun ParentDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Disable Learning Buddy Collectively", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text("Completely hides Learning Buddy from the child's interface.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(t("disable_learning_buddy_collectively"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(t("completely_hides_learning_buddy_from_the_child_s"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Switch(
                                     checked = profile.learningBuddyDisabled,
@@ -1010,7 +1012,7 @@ fun ParentDashboardScreen(
 
                             Spacer(Modifier.height(4.dp))
 
-                            Text("Child AI Version Mode", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(t("child_ai_version_mode"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1055,7 +1057,7 @@ fun ParentDashboardScreen(
                             ) {
                                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("⚡ Llama 3.2 3B Hardware & GPU Acceleration", fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.secondary)
+                                        Text(t("llama_3_2_3b_hardware_gpu_acceleration"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.secondary)
                                     }
                                     Text(
                                         if (profile.localLlamaInstalled) "Status: Llama 3.2 3B loaded on-device with LiteRT-LM Vulkan/OpenCL hardware acceleration active." else "Status: Enable LiteRT-LM Llama 3.2 3B on-device hardware acceleration without cloud dependency.",
@@ -1089,11 +1091,11 @@ fun ParentDashboardScreen(
                             ) {
                                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("🦙 Llama 3.2 3B Local Engine (Hugging Face: meta-llama/Llama-3.2-3B-Instruct)", fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.tertiary)
+                                        Text(t("llama_3_2_3b_local_engine_hugging_face_meta_llam"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.tertiary)
                                     }
 
                                     Text(
-                                        "Source: ${LlamaLocalManager.HUGGINGFACE_REPO_URL}",
+                                        tf("source", LlamaLocalManager.HUGGINGFACE_REPO_URL),
                                         fontSize = 10.5.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.tertiary
@@ -1109,20 +1111,20 @@ fun ParentDashboardScreen(
                                         is LlamaDownloadState.NotInstalled, is LlamaDownloadState.Error -> {
                                             if (state is LlamaDownloadState.Error) {
                                                 Text(
-                                                    "⚠️ ${state.message}",
+                                                    tf("str_11", state.message),
                                                     fontSize = 11.5.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.error
                                                 )
                                             }
 
-                                            Text("Official Repository: meta-llama/Llama-3.2-3B-Instruct | Public Mirror: bartowski/Llama-3.2-3B-Instruct-GGUF (~1.98 GB)", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(t("official_repository_meta_llama_llama_3_2_3b_inst"), fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                                             OutlinedTextField(
                                                 value = hfTokenInput,
                                                 onValueChange = { hfTokenInput = it; hfTokenEdited = true },
-                                                label = { Text("Hugging Face Access Token (hf_...) [Optional]") },
-                                                placeholder = { Text("Stored securely on this device — never displayed") },
+                                                label = { Text(t("hugging_face_access_token_hf_optional")) },
+                                                placeholder = { Text(t("stored_securely_on_this_device_never_displayed")) },
                                                 singleLine = true,
                                                 modifier = Modifier.fillMaxWidth().testTag("hf_token_input")
                                             )
@@ -1140,13 +1142,13 @@ fun ParentDashboardScreen(
                                                 shape = RoundedCornerShape(10.dp),
                                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                                             ) {
-                                                Text("Download Llama 3.2 3B Weights from Hugging Face", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                Text(t("download_llama_3_2_3b_weights_from_hugging_face"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                             }
                                         }
                                         is LlamaDownloadState.Downloading -> {
                                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                    Text("Downloading Llama 3.2 3B from Hugging Face...", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                    Text(t("downloading_llama_3_2_3b_from_hugging_face"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                                     Text("${(state.progress * 100).toInt()}% (${state.downloadSpeedKbps} KB/s)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
                                                 }
                                                 LinearProgressIndicator(
@@ -1172,7 +1174,7 @@ fun ParentDashboardScreen(
                                                     shape = RoundedCornerShape(10.dp),
                                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                                                 ) {
-                                                    Text("Set Active Engine", fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                                                    Text(t("set_active_engine"), fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
                                                 }
                                                 OutlinedButton(
                                                     onClick = {
@@ -1181,7 +1183,7 @@ fun ParentDashboardScreen(
                                                     modifier = Modifier.weight(1f).testTag("delete_llama_model_btn"),
                                                     shape = RoundedCornerShape(10.dp)
                                                 ) {
-                                                    Text("Delete Model", fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                                                    Text(t("delete_model"), fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
                                                 }
                                             }
                                         }
@@ -1203,9 +1205,9 @@ fun ParentDashboardScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(imageVector = Icons.Default.Timeline, contentDescription = "Analytics", tint = MaterialTheme.colorScheme.primary)
+                                Icon(imageVector = Icons.Default.Timeline, contentDescription = t("analytics"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
-                                    "Learning & Sensory Metrics",
+                                    t("learning_sensory_metrics"),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -1225,7 +1227,7 @@ fun ParentDashboardScreen(
 
                             Spacer(Modifier.height(14.dp))
 
-                            Text("Subject Mastery Progress:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(t("subject_mastery_progress"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             Spacer(Modifier.height(8.dp))
 
                             EducationalSubject.entries.forEach { subject ->
@@ -1251,7 +1253,7 @@ fun ParentDashboardScreen(
                                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                                     )
                                     Spacer(Modifier.width(8.dp))
-                                    Text("$score%", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    Text(tf("str_10", score), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -1268,7 +1270,7 @@ fun ParentDashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(imageVector = Icons.Default.Public, contentDescription = "Locale", tint = MaterialTheme.colorScheme.primary)
+                                Icon(imageVector = Icons.Default.Public, contentDescription = t("locale"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
                                     "🏛️ ${AppLanguageDictionary.getString("educational_locale", selectedLanguageCode)}",
                                     style = MaterialTheme.typography.titleMedium,
@@ -1278,7 +1280,7 @@ fun ParentDashboardScreen(
                             }
 
                             Text(
-                                "Pulls and strictly locks educational curriculum requirements tailored to your child's home country, province/state, city, and district. Ensures the child cannot access foreign curricula or knowledge meant for other countries.",
+                                t("pulls_and_strictly_locks_educational_curriculum"),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1299,11 +1301,11 @@ fun ParentDashboardScreen(
                                         strokeWidth = 2.dp
                                     )
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Scanning Location with Google Maps...", fontSize = 13.sp)
+                                    Text(t("scanning_location_with_google_maps"), fontSize = 13.sp)
                                 } else {
                                     Icon(imageVector = Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("🗺️ Rescan Location with Google Maps", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(t("rescan_location_with_google_maps"), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
 
@@ -1320,8 +1322,8 @@ fun ParentDashboardScreen(
                                             fontSize = 12.sp,
                                             color = if (res.isGoogleMapsVerified) Color(0xFF1B5E20) else MaterialTheme.colorScheme.onSurface
                                         )
-                                        Text("District Alignment: ${res.detectedDistrict} (${res.educationalStandard})", fontSize = 11.sp, color = if (res.isGoogleMapsVerified) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text("Source: ${res.verificationSource}", fontSize = 10.sp, color = if (res.isGoogleMapsVerified) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(tf("district_alignment", res.detectedDistrict, res.educationalStandard), fontSize = 11.sp, color = if (res.isGoogleMapsVerified) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(tf("source", res.verificationSource), fontSize = 10.sp, color = if (res.isGoogleMapsVerified) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -1329,8 +1331,8 @@ fun ParentDashboardScreen(
                             Spacer(Modifier.height(4.dp))
 
                             // Postal Code / ZIP Code Fallback Option
-                            Text("Postal Code / ZIP Code Fallback:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            Text("If location services are unavailable or denied, enter a postal or ZIP code to look up curriculum standards.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(t("postal_code_zip_code_fallback"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(t("if_location_services_are_unavailable_or_denied_e"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1343,8 +1345,8 @@ fun ParentDashboardScreen(
                                         zipOrPostalInput = it
                                         zipMessage = null
                                     },
-                                    label = { Text("ZIP / Postal Code") },
-                                    placeholder = { Text("e.g. 85374, 90210, M5V 2T6") },
+                                    label = { Text(t("zip_postal_code")) },
+                                    placeholder = { Text(t("e_g_85374_90210_m5v_2t6")) },
                                     singleLine = true,
                                     modifier = Modifier.weight(1f).testTag("zip_fallback_input")
                                 )
@@ -1364,7 +1366,7 @@ fun ParentDashboardScreen(
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.testTag("apply_zip_fallback_btn")
                                 ) {
-                                    Text("Apply ZIP", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text(t("apply_zip"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 }
                             }
 
@@ -1375,7 +1377,7 @@ fun ParentDashboardScreen(
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
                             // Quick Presets
-                            Text("Quick-Select Global District Presets:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(t("quick_select_global_district_presets"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -1422,7 +1424,7 @@ fun ParentDashboardScreen(
                                     value = country,
                                     onValueChange = {},
                                     readOnly = true,
-                                    label = { Text("Country") },
+                                    label = { Text(t("country")) },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCountryList) },
                                     modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 )
@@ -1453,7 +1455,7 @@ fun ParentDashboardScreen(
                                     value = stateOrProvince,
                                     onValueChange = {},
                                     readOnly = true,
-                                    label = { Text("State / Province / Region") },
+                                    label = { Text(t("state_province_region")) },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedStateList) },
                                     modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 )
@@ -1483,7 +1485,7 @@ fun ParentDashboardScreen(
                                     value = city,
                                     onValueChange = {},
                                     readOnly = true,
-                                    label = { Text("City") },
+                                    label = { Text(t("city")) },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCityList) },
                                     modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 )
@@ -1512,7 +1514,7 @@ fun ParentDashboardScreen(
                                     value = schoolDistrict,
                                     onValueChange = {},
                                     readOnly = true,
-                                    label = { Text("School District / Local Education Authority") },
+                                    label = { Text(t("school_district_local_education_authority")) },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedDistrictList) },
                                     modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 )
@@ -1541,24 +1543,24 @@ fun ParentDashboardScreen(
                                     modifier = Modifier.padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Active District", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = t("active_district"), tint = MaterialTheme.colorScheme.primary)
                                     Spacer(Modifier.width(8.dp))
                                     Column {
                                         Text(
-                                            "Locked Curriculum Standard:",
+                                            t("locked_curriculum_standard"),
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                         Text(
-                                            "$schoolDistrict ($city, $stateOrProvince, $country)",
+                                            tf("str_9", schoolDistrict, city, stateOrProvince, country),
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
                                         Spacer(Modifier.height(2.dp))
                                         Text(
-                                            "🔒 Foreign Curriculum Restricted: Only educational content aligned with $country standards is active.",
+                                            tf("foreign_curriculum_restricted_only_educational_c", country),
                                             fontSize = 10.5.sp,
                                             color = MaterialTheme.colorScheme.primary
                                         )
@@ -1599,12 +1601,12 @@ fun ParentDashboardScreen(
                                     }
                                     Column {
                                         Text(
-                                            "OER Commons Curated Collection",
+                                            t("oer_commons_curated_collection"),
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            "Pre-installed K-12 Open Educational Resources",
+                                            t("pre_installed_k_12_open_educational_resources"),
                                             fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -1616,7 +1618,7 @@ fun ParentDashboardScreen(
                                     color = MaterialTheme.colorScheme.primaryContainer
                                 ) {
                                     Text(
-                                        "${oerUnits.size} Units Cached",
+                                        tf("units_cached", oerUnits.size),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -1626,7 +1628,7 @@ fun ParentDashboardScreen(
                             }
 
                             Text(
-                                "All K-12 core curriculum benchmarks (Mathematics, English Language Arts, Sciences, Social Studies & Civics) are pre-installed offline and accessible to the AI tutor. Unit topics are aligned with the curated collections at oercommons.org/curated-collections.",
+                                t("all_k_12_core_curriculum_benchmarks_mathematics"),
                                 fontSize = 12.sp,
                                 lineHeight = 17.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1644,7 +1646,7 @@ fun ParentDashboardScreen(
                                     ) {
                                         Icon(
                                             imageVector = if (oerSyncResult!!.isSuccess) Icons.Default.CheckCircle else Icons.Default.WarningAmber,
-                                            contentDescription = "Sync Status",
+                                            contentDescription = t("sync_status"),
                                             tint = if (oerSyncResult!!.isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -1674,11 +1676,11 @@ fun ParentDashboardScreen(
                                             strokeWidth = 2.dp
                                         )
                                         Spacer(Modifier.width(6.dp))
-                                        Text("Verifying...", fontSize = 12.sp)
+                                        Text(t("verifying"), fontSize = 12.sp)
                                     } else {
-                                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Verify", modifier = Modifier.size(16.dp))
+                                        Icon(imageVector = Icons.Default.Refresh, contentDescription = t("verify"), modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(6.dp))
-                                        Text("Verify Library", fontSize = 12.sp)
+                                        Text(t("verify_library"), fontSize = 12.sp)
                                     }
                                 }
 
@@ -1686,9 +1688,9 @@ fun ParentDashboardScreen(
                                     onClick = { uriHandler.openUri("https://oercommons.org/curated-collections") },
                                     modifier = Modifier.testTag("open_oer_commons_url_btn")
                                 ) {
-                                    Icon(imageVector = Icons.Default.Public, contentDescription = "Website", modifier = Modifier.size(16.dp))
+                                    Icon(imageVector = Icons.Default.Public, contentDescription = t("website"), modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("OER Hub", fontSize = 12.sp)
+                                    Text(t("oer_hub"), fontSize = 12.sp)
                                 }
                             }
                         }
@@ -1714,11 +1716,11 @@ fun ParentDashboardScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.WarningAmber,
-                                    contentDescription = "AI Disclaimer",
+                                    contentDescription = t("ai_disclaimer"),
                                     tint = Color(0xFF856404)
                                 )
                                 Text(
-                                    "⚠️ AI Accuracy & Fallibility Warning",
+                                    t("ai_accuracy_fallibility_warning"),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF856404)
@@ -1750,11 +1752,11 @@ fun ParentDashboardScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Wifi,
-                                    contentDescription = "Internet Notice",
+                                    contentDescription = t("internet_notice"),
                                     tint = Color(0xFF0D47A1)
                                 )
                                 Text(
-                                    "🌐 Internet Access & Cloud AI Disclaimer",
+                                    t("internet_access_cloud_ai_disclaimer"),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF0D47A1)
@@ -1786,11 +1788,11 @@ fun ParentDashboardScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Security,
-                                    contentDescription = "Location Compliance",
+                                    contentDescription = t("location_compliance"),
                                     tint = Color(0xFF1B5E20)
                                 )
                                 Text(
-                                    "📍 Location Data & Localized Standards Assurance",
+                                    t("location_data_localized_standards_assurance"),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF1B5E20)
@@ -1814,9 +1816,9 @@ fun ParentDashboardScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(imageVector = Icons.Default.Description, contentDescription = "Legal", tint = MaterialTheme.colorScheme.primary)
+                                Icon(imageVector = Icons.Default.Description, contentDescription = t("legal"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
-                                    "📜 ${legalNotice.countryName} Terms & Conditions",
+                                    tf("terms_conditions_2", legalNotice.countryName),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -1824,14 +1826,14 @@ fun ParentDashboardScreen(
                             }
 
                             Text(
-                                "Governing Legal Framework: ${legalNotice.governingLaw}",
+                                tf("governing_legal_framework", legalNotice.governingLaw),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
 
                             Text(
-                                "Review the localized Terms of Service, Educational AI Disclaimer, COPPA/GDPR compliance, and student data protection policies at any time.",
+                                t("review_the_localized_terms_of_service_educationa"),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1845,7 +1847,7 @@ fun ParentDashboardScreen(
                             ) {
                                 Icon(imageVector = Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("View Full ${legalNotice.countryName} Terms & Conditions", fontWeight = FontWeight.Bold)
+                                Text(tf("view_full_terms_conditions", legalNotice.countryName), fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -1861,7 +1863,7 @@ fun ParentDashboardScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(imageVector = Icons.Default.Info, contentDescription = "About", tint = MaterialTheme.colorScheme.primary)
+                        Icon(imageVector = Icons.Default.Info, contentDescription = t("about"), tint = MaterialTheme.colorScheme.primary)
                         Text(
                             AppLanguageDictionary.getString("about_app", selectedLanguageCode),
                             style = MaterialTheme.typography.titleMedium,
@@ -1870,7 +1872,7 @@ fun ParentDashboardScreen(
                         )
                     }
 
-                    Text("App Version: v${com.fourgeailabs.neuropath.BuildConfig.VERSION_NAME} • Locale: $country", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(tf("app_version_v_locale", country, com.fourgeailabs.neuropath.BuildConfig.VERSION_NAME), fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
                     OutlinedButton(
                         onClick = { showWhatsNewDialog = true },
@@ -1881,13 +1883,13 @@ fun ParentDashboardScreen(
                     }
 
                     Text(
-                        "Ambient soundscapes are synthesized procedurally on-device (no audio samples, no downloads).",
+                        t("ambient_soundscapes_are_synthesized_procedurally"),
                         fontSize = 11.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Text(
-                        "AI Pedagogical Guidance Rule: AI Learning Buddy adheres to strict Socratic scaffolding (never gives direct answers immediately) and cites the official curriculum framework reference document used.",
+                        t("ai_pedagogical_guidance_rule_ai_learning_buddy_a"),
                         fontSize = 11.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1895,7 +1897,7 @@ fun ParentDashboardScreen(
                     HorizontalDivider()
 
                     Text(
-                        "Created by FourgeAI LABS",
+                        t("created_by"),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary,
@@ -2005,10 +2007,10 @@ fun ParentDashboardScreen(
         AlertDialog(
             onDismissRequest = { showDeleteConfirmForProfile = null },
             title = {
-                Text("Delete Profile?", fontWeight = FontWeight.Bold)
+                Text(t("delete_profile_2"), fontWeight = FontWeight.Bold)
             },
             text = {
-                Text("Are you sure you want to permanently delete the profile for \"${target.name.ifBlank { "this learner" }}\"? All local progress and stars for this child will be erased.")
+                Text(tf("delete_profile_confirm", target.name.ifBlank { "this learner" }))
             },
             confirmButton = {
                 Button(
@@ -2018,12 +2020,12 @@ fun ParentDashboardScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete Permanently")
+                    Text(t("delete_permanently"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmForProfile = null }) {
-                    Text("Cancel")
+                    Text(t("cancel"))
                 }
             }
         )
@@ -2044,7 +2046,7 @@ fun TermsAndConditionsDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(imageVector = Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Text("${legalNotice.countryName} Terms & Conditions", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text(tf("terms_conditions", legalNotice.countryName), fontWeight = FontWeight.Bold, fontSize = 17.sp)
             }
         },
         text = {
@@ -2105,7 +2107,7 @@ fun TermsAndConditionsDialog(
         },
         confirmButton = {
             Button(onClick = onDismiss) {
-                Text("Close")
+                Text(t("close"))
             }
         }
     )
@@ -2320,7 +2322,7 @@ fun WhatsNewDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Text("What's New in NeuroPath", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(t("what_s_new_in_neuropath"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         },
         text = {
@@ -2331,7 +2333,7 @@ fun WhatsNewDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    "Explore the latest enhancements and version history below. Tap any version to view its release notes.",
+                    t("explore_the_latest_enhancements_and_version_hist"),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -2391,7 +2393,7 @@ fun WhatsNewDialog(
         },
         confirmButton = {
             Button(onClick = onDismiss) {
-                Text("Close")
+                Text(t("close"))
             }
         }
     )
@@ -2412,13 +2414,13 @@ fun UpdateCheckDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Text("App Update Status", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(t("app_update_status"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    "Current Installed Version: v$currentVersion",
+                    tf("current_installed_version_v", currentVersion),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
@@ -2431,14 +2433,14 @@ fun UpdateCheckDialog(
                         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF155724), modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "You are running the latest build available from GitHub Actions & Releases.",
+                            t("you_are_running_the_latest_build_available_from"),
                             fontSize = 12.sp,
                             color = Color(0xFF155724)
                         )
                     }
                 }
                 Text(
-                    "GitHub Releases & Actions automatically build APK releases on repository push.",
+                    t("github_releases_actions_automatically_build_apk"),
                     fontSize = 11.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -2451,16 +2453,16 @@ fun UpdateCheckDialog(
                     onDismiss()
                 }
             ) {
-                Text("View Releases")
+                Text(t("view_releases"))
             }
         },
         dismissButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TextButton(onClick = onRemindLater) {
-                    Text("Remind Later")
+                    Text(t("remind_later"))
                 }
                 TextButton(onClick = onSkipVersion) {
-                    Text("Skip Version")
+                    Text(t("skip_version"))
                 }
             }
         }

@@ -65,6 +65,8 @@ import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.BreathingVisualMode
 import com.fourgeailabs.neuropath.ui.components.FourSevenEightBreathingVisualizer
 import com.fourgeailabs.neuropath.util.rememberReducedMotion
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,12 +106,12 @@ fun BreathingGuideScreen(
                         }
                         Column {
                             Text(
-                                "4-7-8 Breathing Guide",
+                                t("4_7_8_breathing_guide"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Vagus Nerve & Sensory Regulation",
+                                t("vagus_nerve_sensory_regulation"),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -123,7 +125,7 @@ fun BreathingGuideScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back to Home"
+                            contentDescription = t("back_to_home")
                         )
                     }
                 },
@@ -134,7 +136,7 @@ fun BreathingGuideScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Info,
-                            contentDescription = "How 4-7-8 Works",
+                            contentDescription = t("how_4_7_8_works"),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -163,7 +165,7 @@ fun BreathingGuideScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Cycle Target:",
+                    text = t("cycle_target"),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -180,7 +182,7 @@ fun BreathingGuideScreen(
                                 .testTag("target_cycles_$count")
                         ) {
                             Text(
-                                text = "$count Cycles",
+                                text = tf("cycles", count),
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -235,7 +237,7 @@ fun BreathingGuideScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Default.Celebration,
-                                    contentDescription = "Success",
+                                    contentDescription = t("success"),
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(24.dp)
                                 )
@@ -244,13 +246,13 @@ fun BreathingGuideScreen(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "✨ $targetCycleGoal Cycles Complete!",
+                                text = tf("cycles_complete", targetCycleGoal),
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Text(
-                                text = "Your parasympathetic nervous system has been gently activated. Heart rate and sensory focus are restored.",
+                                text = t("your_parasympathetic_nervous_system_has_been_gen"),
                                 fontSize = 11.sp,
                                 lineHeight = 15.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
@@ -272,12 +274,12 @@ fun BreathingGuideScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Favorite,
-                    contentDescription = "Calm",
+                    contentDescription = t("breathing_btn"),
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "I Feel Calmer Now 🌟",
+                    text = t("i_feel_calmer_now"),
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp
                 )
@@ -294,7 +296,7 @@ fun BreathingGuideScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("🧠 How 4-7-8 Breathing Works", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(t("how_4_7_8_breathing_works"), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             },
             text = {
@@ -302,7 +304,7 @@ fun BreathingGuideScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        "The 4-7-8 technique is a clinically proven rhythmic breathing exercise developed to calm the autonomic nervous system:",
+                        t("the_4_7_8_technique_is_a_clinically_proven_rhyth"),
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -317,14 +319,14 @@ fun BreathingGuideScreen(
                             modifier = Modifier.padding(10.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text("1. Inhale (4s): Oxygenates the blood through deep nasal inhalation.", fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                            Text("2. Hold (7s): Allows oxygen to diffuse into the bloodstream and slows heart contractions.", fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                            Text("3. Exhale (8s): Stimulates the vagus nerve, immediately engaging the parasympathetic 'rest-and-digest' state.", fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                            Text(t("1_inhale_4s_oxygenates_the_blood_through_deep_na"), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                            Text(t("2_hold_7s_allows_oxygen_to_diffuse_into_the_bloo"), fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                            Text(t("3_exhale_8s_stimulates_the_vagus_nerve_immediate"), fontSize = 11.sp, fontWeight = FontWeight.Medium)
                         }
                     }
 
                     Text(
-                        "Ideal for neurodivergent learners during transitions, sensory overload, or before testing.",
+                        t("ideal_for_neurodivergent_learners_during_transit"),
                         fontSize = 11.sp,
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                         color = MaterialTheme.colorScheme.primary
@@ -336,7 +338,7 @@ fun BreathingGuideScreen(
                     onClick = { showExplanationDialog = false },
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Got It!")
+                    Text(t("got_it"))
                 }
             }
         )

@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.audio.AmbientSoundType
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.t
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -101,7 +102,7 @@ fun TopSensoryBar(
                         Text("🌿", fontSize = 14.sp)
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "Sensory Suite",
+                            t("sensory_suite"),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -186,12 +187,12 @@ fun TopSensoryBar(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.VolumeMute,
-                                contentDescription = "Stop Speech",
+                                contentDescription = t("stop_speech"),
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(4.dp))
-                            Text("Stop Audio", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(t("stop_audio_btn"), fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -219,14 +220,14 @@ fun TopSensoryBar(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("🌿 Calm Soundscapes", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(t("calm_soundscapes"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     IconButton(onClick = { showSoundDialog = false }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = t("close"))
                     }
                 }
 
                 Text(
-                    "Soothing background sounds, synthesized live on your device — no downloads, no AI generation, no accounts.",
+                    t("soothing_background_sounds_synthesized_live_on_y"),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -261,7 +262,7 @@ fun TopSensoryBar(
                             if (isPlaying) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.VolumeUp,
-                                    contentDescription = "Playing — tap to stop",
+                                    contentDescription = t("playing_tap_to_stop"),
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -278,7 +279,7 @@ fun TopSensoryBar(
                     ) {
                         Icon(Icons.AutoMirrored.Filled.VolumeMute, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Stop Soundscape")
+                        Text(t("stop_soundscape"))
                     }
                 }
 
@@ -291,7 +292,7 @@ fun TopSensoryBar(
     if (showContrastDialog) {
         AlertDialog(
             onDismissRequest = { showContrastDialog = false },
-            title = { Text("🎨 Sensory Color & Contrast Palettes", fontWeight = FontWeight.Bold) },
+            title = { Text(t("sensory_color_contrast_palettes"), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val modes = listOf(
@@ -341,7 +342,7 @@ fun TopSensoryBar(
             },
             confirmButton = {
                 TextButton(onClick = { showContrastDialog = false }) {
-                    Text("Close")
+                    Text(t("close"))
                 }
             }
         )

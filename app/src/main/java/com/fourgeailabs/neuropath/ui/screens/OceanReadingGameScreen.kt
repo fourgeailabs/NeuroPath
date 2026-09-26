@@ -73,6 +73,8 @@ import com.fourgeailabs.neuropath.data.model.DEFAULT_OCEAN_PASSAGES
 import com.fourgeailabs.neuropath.data.model.OceanReadingPassage
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 enum class OceanGameMode(val title: String, val icon: String) {
     FILL_IN_BLANKS("Cloze Reading", "📝"),
@@ -138,7 +140,7 @@ fun OceanReadingGameScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back to Home",
+                            contentDescription = t("back_to_home"),
                             tint = oceanBluePrimary
                         )
                     }
@@ -146,14 +148,14 @@ fun OceanReadingGameScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("🌊 ", fontSize = 18.sp)
                             Text(
-                                "Ocean Reading Quest",
+                                t("ocean_reading_quest"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = oceanBluePrimary
                             )
                         }
                         Text(
-                            "Marine Science Comprehension",
+                            t("marine_science_comprehension"),
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -168,7 +170,7 @@ fun OceanReadingGameScreen(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("⭐ +5 Stars", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF856404))
+                        Text(t("5_stars"), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF856404))
                     }
                 }
             }
@@ -291,7 +293,7 @@ fun OceanReadingGameScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                    contentDescription = "Read passage aloud",
+                                    contentDescription = t("read_passage_aloud"),
                                     tint = oceanBluePrimary
                                 )
                             }
@@ -313,7 +315,7 @@ fun OceanReadingGameScreen(
                 // Cloze Fill-In-The-Blank Module
                 item {
                     Text(
-                        "📝 Fill in the Scientific Blanks:",
+                        t("fill_in_the_scientific_blanks"),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -354,7 +356,7 @@ fun OceanReadingGameScreen(
                                 Text(sentence.visualEmoji, fontSize = 20.sp)
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    "Clue ${sentence.id}",
+                                    tf("clue", sentence.id),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp,
                                     color = oceanBluePrimary
@@ -371,12 +373,12 @@ fun OceanReadingGameScreen(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Check,
-                                                contentDescription = "Correct",
+                                                contentDescription = t("correct_2"),
                                                 tint = Color(0xFF2E7D32),
                                                 modifier = Modifier.size(14.dp)
                                             )
                                             Spacer(Modifier.width(2.dp))
-                                            Text("Mastered", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                                            Text(t("mastered"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                                         }
                                     }
                                 } else if (isTargetSelected) {
@@ -385,7 +387,7 @@ fun OceanReadingGameScreen(
                                         color = oceanBluePrimary.copy(alpha = 0.15f)
                                     ) {
                                         Text(
-                                            "Active Blank",
+                                            t("active_blank"),
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = oceanBluePrimary,
@@ -449,7 +451,7 @@ fun OceanReadingGameScreen(
                                     color = Color(0xFFFFF8E1)
                                 ) {
                                     Text(
-                                        "💡 Hint: ${sentence.hint}",
+                                        tf("hint_2", sentence.hint),
                                         fontSize = 12.sp,
                                         color = Color(0xFF795548),
                                         modifier = Modifier.padding(8.dp)
@@ -471,21 +473,21 @@ fun OceanReadingGameScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Lightbulb,
-                                        contentDescription = "Hint",
+                                        contentDescription = t("hint"),
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Hint", fontSize = 12.sp)
+                                    Text(t("hint"), fontSize = 12.sp)
                                 }
 
                                 IconButton(
                                     onClick = {
-                                        viewModel.speechManager.speak("${sentence.textBeforeBlank} blank ${sentence.textAfterBlank}")
+                                        viewModel.speechManager.speak(tf("blank", sentence.textBeforeBlank, sentence.textAfterBlank))
                                     }
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                        contentDescription = "Read sentence",
+                                        contentDescription = t("read_sentence"),
                                         tint = oceanBluePrimary,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -503,7 +505,7 @@ fun OceanReadingGameScreen(
                             .padding(top = 8.dp)
                     ) {
                         Text(
-                            "🏷️ Marine Vocabulary Bank (Tap to place in active blank):",
+                            t("marine_vocabulary_bank_tap_to_place_in_active_bl"),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -576,14 +578,14 @@ fun OceanReadingGameScreen(
                                 modifier = Modifier.padding(16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text("🎉 Marine Science Champion! 🎉", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF155724))
-                                Text("You completed all vocabulary comprehension blanks accurately!", fontSize = 13.sp, color = Color(0xFF155724))
+                                Text(t("marine_science_champion"), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF155724))
+                                Text(t("you_completed_all_vocabulary_comprehension_blank"), fontSize = 13.sp, color = Color(0xFF155724))
                                 Spacer(Modifier.height(8.dp))
                                 Button(
                                     onClick = { gameMode = OceanGameMode.WORD_SEARCH },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF28A745))
                                 ) {
-                                    Text("Play Ocean Word Search 🔍")
+                                    Text(t("play_ocean_word_search"))
                                 }
                             }
                         }
@@ -599,7 +601,7 @@ fun OceanReadingGameScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "🔍 Deep Sea Word Search Grid:",
+                                t("deep_sea_word_search_grid"),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -611,7 +613,7 @@ fun OceanReadingGameScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Reset Selection",
+                                    contentDescription = t("reset_selection"),
                                     tint = oceanBluePrimary
                                 )
                             }
@@ -636,7 +638,7 @@ fun OceanReadingGameScreen(
                                             // Tap to mark found for accessibility / playful discovery
                                             foundWords[word] = true
                                             viewModel.triggerHapticSuccess()
-                                            viewModel.speechManager.speak("Found $word!")
+                                            viewModel.speechManager.speak(tf("found", word))
                                             if (currentPassage.wordSearchWords.all { foundWords[it] == true } && !isWordSearchCompleted) {
                                                 isWordSearchCompleted = true
                                                 viewModel.awardMiniGameRewards(6, 2, "OCEAN_WORD_SEARCH")
@@ -651,7 +653,7 @@ fun OceanReadingGameScreen(
                                         if (isFound) {
                                             Icon(
                                                 imageVector = Icons.Default.Check,
-                                                contentDescription = "Found",
+                                                contentDescription = t("found_2"),
                                                 tint = Color(0xFF2E7D32),
                                                 modifier = Modifier.size(14.dp)
                                             )
@@ -719,7 +721,7 @@ fun OceanReadingGameScreen(
                                                             foundWords[matchedWord] = true
                                                             selectedCells = emptyList()
                                                             viewModel.triggerHapticSuccess()
-                                                            viewModel.speechManager.speak("Found $matchedWord!")
+                                                            viewModel.speechManager.speak(tf("found", matchedWord))
                                                             if (currentPassage.wordSearchWords.all { foundWords[it] == true } && !isWordSearchCompleted) {
                                                                 isWordSearchCompleted = true
                                                                 viewModel.awardMiniGameRewards(6, 2, "OCEAN_WORD_SEARCH")
@@ -756,14 +758,14 @@ fun OceanReadingGameScreen(
                                 modifier = Modifier.padding(16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text("🏆 Oceanic Explorer Completed! 🏆", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF155724))
-                                Text("You found all marine vocabulary words in the deep ocean grid!", fontSize = 13.sp, color = Color(0xFF155724))
+                                Text(t("oceanic_explorer_completed"), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF155724))
+                                Text(t("you_found_all_marine_vocabulary_words_in_the_dee"), fontSize = 13.sp, color = Color(0xFF155724))
                                 Spacer(Modifier.height(8.dp))
                                 Button(
                                     onClick = { viewModel.navigateTo(AppScreen.HOME) },
                                     colors = ButtonDefaults.buttonColors(containerColor = oceanBluePrimary)
                                 ) {
-                                    Text("Return Home 🏠")
+                                    Text(t("return_home_2"))
                                 }
                             }
                         }

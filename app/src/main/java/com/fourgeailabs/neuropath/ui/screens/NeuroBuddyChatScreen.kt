@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.EducationalChatInterface
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 /**
  * Screen hosting the Educational Learning Buddy.
@@ -110,7 +112,7 @@ private fun VoiceConversationScreenWrapper(
                 onClick = onBack,
                 modifier = Modifier.testTag("chat_back_btn")
             ) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("back"))
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -132,7 +134,7 @@ private fun VoiceConversationScreenWrapper(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        "Live Voice Mode",
+                        t("live_voice_mode"),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -153,13 +155,13 @@ private fun VoiceConversationScreenWrapper(
                 ) {
                     Icon(
                         imageVector = Icons.Default.GraphicEq,
-                        contentDescription = "Switch to Text Chat",
+                        contentDescription = t("switch_to_text_chat"),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        "💬 Chat View",
+                        t("chat_view"),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -225,13 +227,13 @@ private fun VoiceConversationStage(
             ) {
                 Icon(
                     imageVector = Icons.Default.RecordVoiceOver,
-                    contentDescription = "Live API",
+                    contentDescription = t("live_api"),
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "Live Voice Conversation (Llama 3.2 3B)",
+                    t("live_voice_conversation_llama_3_2_3b"),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -300,9 +302,9 @@ private fun VoiceConversationStage(
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("💬 Live Transcript", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(t("live_transcript"), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.weight(1f))
-                            Text("Curriculum: ${profile.stateStandard}", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(tf("curriculum", profile.stateStandard), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(
@@ -352,7 +354,7 @@ private fun VoiceConversationStage(
                     } else {
                         Icon(
                             imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
-                            contentDescription = "Speak in Live Voice Mode",
+                            contentDescription = t("speak_in_live_voice_mode"),
                             tint = Color.White,
                             modifier = Modifier.size(36.dp)
                         )

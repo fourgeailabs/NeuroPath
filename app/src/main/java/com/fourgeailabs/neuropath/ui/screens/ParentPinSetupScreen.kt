@@ -45,6 +45,7 @@ import com.fourgeailabs.neuropath.data.model.AppLanguageDictionary
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.AppLogoIcon
+import com.fourgeailabs.neuropath.ui.t
 
 @Composable
 fun ParentPinSetupScreen(viewModel: NeuroPathViewModel, modifier: Modifier = Modifier) {
@@ -132,7 +133,7 @@ fun ParentPinSetupScreen(viewModel: NeuroPathViewModel, modifier: Modifier = Mod
                     IconButton(onClick = { showPin = !showPin }) {
                         Icon(
                             imageVector = if (showPin) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            contentDescription = "Toggle Passcode"
+                            contentDescription = t("toggle_passcode")
                         )
                     }
                 },

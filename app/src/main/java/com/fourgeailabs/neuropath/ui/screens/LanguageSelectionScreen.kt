@@ -51,6 +51,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 
 import com.fourgeailabs.neuropath.ui.components.AppLogoIcon
+import com.fourgeailabs.neuropath.ui.tf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,7 +117,7 @@ fun LanguageSelectionScreen(viewModel: NeuroPathViewModel, modifier: Modifier = 
                 ) {
                     languages.forEach { lang ->
                         DropdownMenuItem(
-                            text = { Text("${lang.flagEmoji} ${lang.displayName} - ${lang.nativeName}") },
+                            text = { Text(tf("str_8", lang.flagEmoji, lang.displayName, lang.nativeName)) },
                             onClick = {
                                 selectedLanguageCode = lang.code
                                 expanded = false

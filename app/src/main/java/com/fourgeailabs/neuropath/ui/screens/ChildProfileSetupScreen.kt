@@ -91,6 +91,8 @@ import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.ThemePreviewModal
 import com.fourgeailabs.neuropath.util.LocationComplianceHelper
 import androidx.compose.material.icons.filled.Visibility
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -212,7 +214,7 @@ fun ChildProfileSetupScreen(
                         },
                         modifier = Modifier.testTag("profile_setup_back_btn")
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("back"))
                     }
                 }
                 Spacer(Modifier.width(8.dp))
@@ -224,7 +226,7 @@ fun ChildProfileSetupScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "🔒 100% Local On-Device Storage (Private & Safe)",
+                        text = t("100_local_on_device_storage_private_safe"),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
@@ -254,7 +256,7 @@ fun ChildProfileSetupScreen(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        text = "To guarantee absolute safety and privacy, all profiles and learning telemetry are stored strictly on this device in an encrypted local database. Cloud sync is disabled until certified secure servers are configured.",
+                        text = t("to_guarantee_absolute_safety_and_privacy_all_pro"),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         lineHeight = 16.sp
@@ -282,7 +284,7 @@ fun ChildProfileSetupScreen(
                         }
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            "1. Learner Identity & School Level",
+                            t("1_learner_identity_school_level"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -296,7 +298,7 @@ fun ChildProfileSetupScreen(
                             childName = it
                             errorMessage = null
                         },
-                        label = { Text("Learner's First Name / Nickname") },
+                        label = { Text(t("learner_s_first_name_nickname")) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                         modifier = Modifier
@@ -324,13 +326,13 @@ fun ChildProfileSetupScreen(
                                     }
                                 }
                             },
-                            label = { Text("Age (Years)") },
+                            label = { Text(t("age_years")) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f).testTag("child_age_input")
                         )
 
                         Column(modifier = Modifier.weight(1.5f)) {
-                            Text("Current Grade", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(t("current_grade"), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(Modifier.height(4.dp))
                             Row(
                                 modifier = Modifier
@@ -360,13 +362,13 @@ fun ChildProfileSetupScreen(
                     Spacer(Modifier.height(16.dp))
 
                     Text(
-                        "Design Language & Interface Scale:",
+                        t("design_language_interface_scale"),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        "Choose the layout tailored to your child's age group so they are never stuck with an interface that feels too young or too complex.",
+                        t("choose_the_layout_tailored_to_your_child_s_age_g"),
                         fontSize = 11.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -399,7 +401,7 @@ fun ChildProfileSetupScreen(
                                             )
                                             Spacer(Modifier.width(6.dp))
                                             Text(
-                                                "(${tier.ageRange})",
+                                                tf("str_5", tier.ageRange),
                                                 fontSize = 11.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -413,7 +415,7 @@ fun ChildProfileSetupScreen(
                                     if (isSelected) {
                                         Icon(
                                             Icons.Default.CheckCircle,
-                                            contentDescription = "Selected",
+                                            contentDescription = t("selected"),
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
@@ -445,12 +447,12 @@ fun ChildProfileSetupScreen(
                         Spacer(Modifier.width(10.dp))
                         Column {
                             Text(
-                                "2. Learning Differences & Diagnoses",
+                                t("2_learning_differences_diagnoses"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Select all that apply to customize AI scaffolding & pacing",
+                                t("select_all_that_apply_to_customize_ai_scaffoldin"),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -475,7 +477,7 @@ fun ChildProfileSetupScreen(
                                         (selectedDiagnoses + opt.id).toMutableSet()
                                     }
                                 },
-                                label = { Text("${opt.emoji} ${opt.title}", fontSize = 12.sp) },
+                                label = { Text(tf("str_3", opt.emoji, opt.title), fontSize = 12.sp) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                                     selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -507,12 +509,12 @@ fun ChildProfileSetupScreen(
                         Spacer(Modifier.width(10.dp))
                         Column {
                             Text(
-                                "3. Key Learning Challenges / Focus Areas",
+                                t("3_key_learning_challenges_focus_areas"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "AI tutors scaffold these exact areas with targeted Socratic hints",
+                                t("ai_tutors_scaffold_these_exact_areas_with_target"),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -537,7 +539,7 @@ fun ChildProfileSetupScreen(
                                         (selectedStruggles + opt.title).toMutableSet()
                                     }
                                 },
-                                label = { Text("${opt.emoji} ${opt.title}", fontSize = 12.sp) }
+                                label = { Text(tf("str_3", opt.emoji, opt.title), fontSize = 12.sp) }
                             )
                         }
                     }
@@ -565,12 +567,12 @@ fun ChildProfileSetupScreen(
                         Spacer(Modifier.width(10.dp))
                         Column {
                             Text(
-                                "4. Learner's Strengths & Superpowers",
+                                t("4_learner_s_strengths_superpowers"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Lessons will leverage these natural gifts to teach new concepts",
+                                t("lessons_will_leverage_these_natural_gifts_to_tea"),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -595,7 +597,7 @@ fun ChildProfileSetupScreen(
                                         (selectedStrengths + opt.title).toMutableSet()
                                     }
                                 },
-                                label = { Text("${opt.emoji} ${opt.title}", fontSize = 12.sp) }
+                                label = { Text(tf("str_3", opt.emoji, opt.title), fontSize = 12.sp) }
                             )
                         }
                     }
@@ -623,12 +625,12 @@ fun ChildProfileSetupScreen(
                         Spacer(Modifier.width(10.dp))
                         Column {
                             Text(
-                                "5. Hyper-Fixations & Favorite Topics",
+                                t("5_hyper_fixations_favorite_topics"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "The app themes problems & stories directly around their passions!",
+                                t("the_app_themes_problems_stories_directly_around"),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -654,7 +656,7 @@ fun ChildProfileSetupScreen(
                                     }
                                     activeThemeId = opt.recommendedThemeId
                                 },
-                                label = { Text("${opt.emoji} ${opt.title}", fontSize = 12.sp) }
+                                label = { Text(tf("str_3", opt.emoji, opt.title), fontSize = 12.sp) }
                             )
                         }
                     }
@@ -682,12 +684,12 @@ fun ChildProfileSetupScreen(
                         Spacer(Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "5B. Theme World & Rotation Schedule",
+                                t("5b_theme_world_rotation_schedule"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "100 immersive themes tailored to their personality profile & growth",
+                                t("100_immersive_themes_tailored_to_their_personali"),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -727,7 +729,7 @@ fun ChildProfileSetupScreen(
                                     color = Color.White.copy(alpha = 0.8f)
                                 ) {
                                     Text(
-                                        "ACTIVE THEME",
+                                        t("active_theme"),
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF1E212B),
@@ -764,7 +766,7 @@ fun ChildProfileSetupScreen(
                                     )
                                     Spacer(Modifier.height(2.dp))
                                     Text(
-                                        "Companion Buddy: ${currentActiveThemeData.buddyName} (${currentActiveThemeData.buddyRole})",
+                                        tf("companion_buddy", currentActiveThemeData.buddyName, currentActiveThemeData.buddyRole),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color(0xFF374151)
@@ -787,7 +789,7 @@ fun ChildProfileSetupScreen(
                                     Text("💬", fontSize = 14.sp)
                                     Spacer(Modifier.width(8.dp))
                                     Text(
-                                        "\"${currentActiveThemeData.greeting}\"",
+                                        tf("str_4", currentActiveThemeData.greeting),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(0xFF1E212B),
@@ -808,31 +810,31 @@ fun ChildProfileSetupScreen(
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Text(
-                                    "CROSS-CURRICULAR INTEGRATION:",
+                                    t("cross_curricular_integration"),
                                     fontSize = 9.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF4B5563)
                                 )
                                 Text(
-                                    "🔢 Math: ${currentActiveThemeData.mathIntegration}",
+                                    tf("math_3", currentActiveThemeData.mathIntegration),
                                     fontSize = 11.5.sp,
                                     color = Color(0xFF1E212B),
                                     lineHeight = 16.sp
                                 )
                                 Text(
-                                    "📖 Reading: ${currentActiveThemeData.readingIntegration}",
+                                    tf("reading_2", currentActiveThemeData.readingIntegration),
                                     fontSize = 11.5.sp,
                                     color = Color(0xFF1E212B),
                                     lineHeight = 16.sp
                                 )
                                 Text(
-                                    "🔬 Science: ${currentActiveThemeData.scienceIntegration}",
+                                    tf("science_2", currentActiveThemeData.scienceIntegration),
                                     fontSize = 11.5.sp,
                                     color = Color(0xFF1E212B),
                                     lineHeight = 16.sp
                                 )
                                 Text(
-                                    "🏛️ Social Studies: ${currentActiveThemeData.socialStudiesIntegration}",
+                                    tf("social_studies_2", currentActiveThemeData.socialStudiesIntegration),
                                     fontSize = 11.5.sp,
                                     color = Color(0xFF1E212B),
                                     lineHeight = 16.sp
@@ -845,13 +847,13 @@ fun ChildProfileSetupScreen(
 
                     // Theme Rotation Frequency Configuration
                     Text(
-                        "Theme Rotation Preference:",
+                        t("theme_rotation_preference"),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        "Keep permanent or periodically rotate to fresh profile-matched worlds:",
+                        t("keep_permanent_or_periodically_rotate_to_fresh_p"),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -882,13 +884,13 @@ fun ChildProfileSetupScreen(
 
                     // AI Recommended Themes for Profile
                     Text(
-                        "AI Recommended Themes For This Profile:",
+                        t("ai_recommended_themes_for_this_profile"),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        "Synthesized based on diagnoses, strengths, struggles & interests:",
+                        t("synthesized_based_on_diagnoses_strengths_struggl"),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -905,7 +907,7 @@ fun ChildProfileSetupScreen(
                             FilterChip(
                                 selected = isSelected,
                                 onClick = { activeThemeId = theme.id },
-                                label = { Text("${theme.emoji} ${theme.title}", fontSize = 12.sp) }
+                                label = { Text(tf("str_3", theme.emoji, theme.title), fontSize = 12.sp) }
                             )
                         }
                     }
@@ -924,7 +926,7 @@ fun ChildProfileSetupScreen(
                         ) {
                             Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("100 Themes", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(t("100_themes"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
 
                         Button(
@@ -938,7 +940,7 @@ fun ChildProfileSetupScreen(
                         ) {
                             Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Preview Palette & Assets", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(t("preview_palette_assets"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                     }
                 }
@@ -965,12 +967,12 @@ fun ChildProfileSetupScreen(
                         Spacer(Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "6. Standards Jurisdiction & Location",
+                                t("6_standards_jurisdiction_location"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Detects state/province & school district curriculum standards",
+                                t("detects_state_province_school_district_curriculu"),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -995,7 +997,7 @@ fun ChildProfileSetupScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        "Location Services: In Use",
+                                        t("location_services_in_use"),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.5.sp,
                                         color = Color(0xFF2E7D32)
@@ -1006,7 +1008,7 @@ fun ChildProfileSetupScreen(
                                         color = Color(0xFF2E7D32)
                                     ) {
                                         Text(
-                                            "LOCALE ONLY",
+                                            t("locale_only"),
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = Color.White,
@@ -1015,7 +1017,7 @@ fun ChildProfileSetupScreen(
                                     }
                                 }
                                 Text(
-                                    "Used only to identify educational jurisdiction for official standards.",
+                                    t("used_only_to_identify_educational_jurisdiction_f"),
                                     fontSize = 11.sp,
                                     color = Color(0xFF388E3C)
                                 )
@@ -1033,19 +1035,19 @@ fun ChildProfileSetupScreen(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                "Current Educational Standards Mapping:",
+                                t("current_educational_standards_mapping"),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "🏛️ Jurisdiction: $configuredDistrict ($configuredState, $configuredCountry)",
+                                tf("jurisdiction", configuredDistrict, configuredState, configuredCountry),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                "📚 Standard: $configuredStandard Framework",
+                                tf("standard_framework", configuredStandard),
                                 fontSize = 11.5.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1065,19 +1067,19 @@ fun ChildProfileSetupScreen(
                     ) {
                         Icon(imageVector = Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("🗺️ Scan Location with Google Maps", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                        Text(t("scan_location_with_google_maps"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
                     }
 
                     Spacer(Modifier.height(14.dp))
 
                     // Manual Postal / Zip Code Override Fallback
                     Text(
-                        "Postal Code / ZIP Fallback:",
+                        t("postal_code_zip_fallback"),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )
                     Text(
-                        "If location services are denied or unavailable, enter a postal or ZIP code to lock curriculum standards.",
+                        t("if_location_services_are_denied_or_unavailable_e"),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1094,8 +1096,8 @@ fun ChildProfileSetupScreen(
                                 postalCodeOverride = it
                                 postalLookupMessage = null
                             },
-                            label = { Text("ZIP / Postal Code") },
-                            placeholder = { Text("e.g. 90210, SW1A 1AA, M5V 2T6") },
+                            label = { Text(t("zip_postal_code")) },
+                            placeholder = { Text(t("e_g_90210_sw1a_1aa_m5v_2t6")) },
                             singleLine = true,
                             modifier = Modifier.weight(1f).testTag("postal_code_input")
                         )
@@ -1115,7 +1117,7 @@ fun ChildProfileSetupScreen(
                             modifier = Modifier.testTag("apply_postal_code_btn"),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Apply")
+                            Text(t("apply"))
                         }
                     }
 
@@ -1172,7 +1174,7 @@ fun ChildProfileSetupScreen(
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Text(
-                        "7. Accessibility & Sensory Comfort",
+                        t("7_accessibility_sensory_comfort"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -1185,8 +1187,8 @@ fun ChildProfileSetupScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text("Text-To-Speech (Read Aloud)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Read question prompts aloud automatically (Default: OFF)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(t("text_to_speech_read_aloud"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(t("read_question_prompts_aloud_automatically_defaul"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(
                             checked = readAloudTts,
@@ -1204,8 +1206,8 @@ fun ChildProfileSetupScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text("OpenDyslexic Font Typography", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Weighted bottom-heavy letters for easier letter tracking", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(t("opendyslexic_font_typography"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(t("weighted_bottom_heavy_letters_for_easier_letter"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(
                             checked = dyslexiaFont,
@@ -1306,7 +1308,7 @@ fun ChildProfileSetupScreen(
             onDismissRequest = { showAllThemesDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🎨 100 Adaptive Neuro-Themes", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(t("100_adaptive_neuro_themes"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
             },
             text = {
@@ -1319,7 +1321,7 @@ fun ChildProfileSetupScreen(
                     OutlinedTextField(
                         value = themeSearchQuery,
                         onValueChange = { themeSearchQuery = it },
-                        placeholder = { Text("Search 100 themes, topics, subjects...", fontSize = 12.sp) },
+                        placeholder = { Text(t("search_100_themes_topics_subjects"), fontSize = 12.sp) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -1338,7 +1340,7 @@ fun ChildProfileSetupScreen(
                         FilterChip(
                             selected = selectedCategoryFilter == null,
                             onClick = { selectedCategoryFilter = null },
-                            label = { Text("All (100)", fontSize = 11.sp) }
+                            label = { Text(t("all_100"), fontSize = 11.sp) }
                         )
                         NeuroThemeCategory.entries.forEach { cat ->
                             FilterChip(
@@ -1346,7 +1348,7 @@ fun ChildProfileSetupScreen(
                                 onClick = {
                                     selectedCategoryFilter = if (selectedCategoryFilter == cat) null else cat
                                 },
-                                label = { Text("${cat.emoji} ${cat.title}", fontSize = 11.sp) }
+                                label = { Text(tf("str_3", cat.emoji, cat.title), fontSize = 11.sp) }
                             )
                         }
                     }
@@ -1354,7 +1356,7 @@ fun ChildProfileSetupScreen(
                     Spacer(Modifier.height(8.dp))
 
                     Text(
-                        "Found ${filteredThemes.size} themes:",
+                        tf("found_themes", filteredThemes.size),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold
@@ -1412,18 +1414,18 @@ fun ChildProfileSetupScreen(
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            "Buddy: ${theme.buddyName} (${theme.buddyRole})",
+                                            tf("buddy", theme.buddyName, theme.buddyRole),
                                             fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         Text(
-                                            "📐 Math: ${theme.mathIntegration}",
+                                            tf("math_2", theme.mathIntegration),
                                             fontSize = 10.sp,
                                             maxLines = 1,
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                                         )
                                         Text(
-                                            "🔬 Science: ${theme.scienceIntegration}",
+                                            tf("science_2", theme.scienceIntegration),
                                             fontSize = 10.sp,
                                             maxLines = 1,
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
@@ -1432,7 +1434,7 @@ fun ChildProfileSetupScreen(
                                     if (isSelected) {
                                         Icon(
                                             Icons.Default.CheckCircle,
-                                            contentDescription = "Selected",
+                                            contentDescription = t("selected"),
                                             tint = Color(theme.primaryHex),
                                             modifier = Modifier.size(22.dp)
                                         )
@@ -1446,7 +1448,7 @@ fun ChildProfileSetupScreen(
                                         ) {
                                             Icon(
                                                 Icons.Default.Visibility,
-                                                contentDescription = "Preview Theme",
+                                                contentDescription = t("preview_theme"),
                                                 tint = Color(theme.primaryHex),
                                                 modifier = Modifier.size(18.dp)
                                             )
@@ -1460,7 +1462,7 @@ fun ChildProfileSetupScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showAllThemesDialog = false }) {
-                    Text("Close", fontWeight = FontWeight.Bold)
+                    Text(t("close"), fontWeight = FontWeight.Bold)
                 }
             }
         )

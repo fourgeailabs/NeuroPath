@@ -73,6 +73,8 @@ import com.fourgeailabs.neuropath.data.model.GradeLevel
 import com.fourgeailabs.neuropath.data.model.WorldTheme
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @Composable
 fun HomeScreen(
@@ -118,13 +120,13 @@ fun HomeScreen(
                             Spacer(Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    "Downloading Curriculum for Offline Use...",
+                                    t("downloading_curriculum_for_offline_use"),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
                                     color = Color(0xFF856404)
                                 )
                                 Text(
-                                    "Saving interactive lessons & videos. You can learn anywhere!",
+                                    t("saving_interactive_lessons_videos_you_can_learn"),
                                     fontSize = 11.sp,
                                     color = Color(0xFF856404)
                                 )
@@ -165,7 +167,7 @@ fun HomeScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "${gradeObj.displayName} • ${tier.title}",
+                                text = tf("str_7", gradeObj.displayName, tier.title),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -188,7 +190,7 @@ fun HomeScreen(
                                 Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    "Profiles",
+                                    t("profiles"),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -211,7 +213,7 @@ fun HomeScreen(
                                 Text("🛍️", fontSize = 13.sp)
                                 Spacer(Modifier.width(3.dp))
                                 Text(
-                                    "Shop",
+                                    t("shop"),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -233,13 +235,13 @@ fun HomeScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Lock,
-                                    contentDescription = "Parent Dashboard",
+                                    contentDescription = t("parent_dashboard"),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(Modifier.width(3.dp))
                                 Text(
-                                    "Parents",
+                                    t("parents"),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -314,7 +316,7 @@ fun HomeScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                    contentDescription = "Read Quote",
+                                    contentDescription = t("read_quote"),
                                     tint = MaterialTheme.colorScheme.onTertiary,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -325,7 +327,7 @@ fun HomeScreen(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Daily Spark of Inspiration",
+                                t("daily_spark_of_inspiration"),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.5.sp,
                                 color = MaterialTheme.colorScheme.tertiary
@@ -347,7 +349,7 @@ fun HomeScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Autorenew,
-                                contentDescription = "Refresh Quote",
+                                contentDescription = t("refresh_quote"),
                                 tint = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -472,7 +474,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
     item {
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Text(
-                "🎮 Learning Games & Studio",
+                t("learning_games_studio"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -496,8 +498,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                             Box(contentAlignment = Alignment.Center) { Text("🌊", fontSize = 22.sp) }
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text("Ocean Reading", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF004977))
-                        Text("Word Safari", fontSize = 11.sp, color = Color(0xFF00629D))
+                        Text(t("ocean_reading"), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF004977))
+                        Text(t("word_safari"), fontSize = 11.sp, color = Color(0xFF00629D))
                     }
                 }
 
@@ -514,8 +516,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                             Box(contentAlignment = Alignment.Center) { Text("🎨", fontSize = 22.sp) }
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text("Art Studio", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF4A148C))
-                        Text("Draw & Create", fontSize = 11.sp, color = Color(0xFF6A1B9A))
+                        Text(t("art_studio"), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF4A148C))
+                        Text(t("draw_create"), fontSize = 11.sp, color = Color(0xFF6A1B9A))
                     }
                 }
             }
@@ -526,7 +528,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
     item {
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Text(
-                "🎯 20-Step Quest Map",
+                t("20_step_quest_map"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -571,7 +573,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
     // Elementary Subject Workbooks (Standard codes hidden from child)
     item {
         Text(
-            "📚 Learning Adventure Paths",
+            t("learning_adventure_paths"),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -634,7 +636,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                         maxLines = 1
                     )
                     Text(
-                        "Interactive Exploration • 20 adaptive steps",
+                        t("interactive_exploration_20_adaptive_steps"),
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
@@ -649,7 +651,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Start Lesson",
+                            contentDescription = t("start_lesson"),
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(20.dp)
                         )
@@ -694,13 +696,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                         Spacer(Modifier.width(8.dp))
                         Column {
                             Text(
-                                "Quest Command Center",
+                                t("quest_command_center"),
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                "Level ${1 + profile.totalStars / 10} Explorer • Streak: ${profile.currentStreakDays} Days",
+                                tf("level_explorer_streak_days", 1 + profile.totalStars / 10, profile.currentStreakDays),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
@@ -711,7 +713,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                         color = MaterialTheme.colorScheme.primary
                     ) {
                         Text(
-                            "${profile.totalStars * 50} XP",
+                            tf("xp", profile.totalStars * 50),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary,
@@ -741,7 +743,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
     item {
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Text(
-                "🎯 Daily Focus Missions",
+                t("daily_focus_missions"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -760,8 +762,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("🧘 Reset & Calm", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("4-7-8 Breathing", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(t("reset_calm"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(t("4_7_8_breathing_2"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
@@ -774,8 +776,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text("🫧 Sensory Fidget", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("Tactile Focus Loop", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(t("sensory_fidget"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(t("tactile_focus_loop"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -785,7 +787,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
     // Subject Mastery Modules
     item {
         Text(
-            "📖 Academic Quest Modules",
+            t("academic_quest_modules"),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -838,7 +840,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                     shape = RoundedCornerShape(10.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                 ) {
-                    Text("Launch", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(t("launch"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
         }
@@ -876,13 +878,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
                 ) {
                     Column {
                         Text(
-                            "🎓 Academic Productivity Studio",
+                            t("academic_productivity_studio"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            "Concept Mastery • Socratic Tutoring • Deep Work",
+                            t("concept_mastery_socratic_tutoring_deep_work"),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -892,7 +894,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
-                            "${profile.totalStars} Masteries",
+                            tf("masteries", profile.totalStars),
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -922,8 +924,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("💡 Socratic AI", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
-                    Text("Step-by-step guidance", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("socratic_ai"), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
+                    Text(t("step_by_step_guidance"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -937,8 +939,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("🧘 Focus Pacing", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
-                    Text("Decompress & align", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("focus_pacing"), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
+                    Text(t("decompress_align"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -947,7 +949,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
     // Advanced Academic Discipline Modules
     item {
         Text(
-            "📚 Academic Disciplines",
+            t("academic_disciplines"),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -1010,7 +1012,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
                     shape = RoundedCornerShape(10.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                 ) {
-                    Text("Study", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(t("study"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
         }

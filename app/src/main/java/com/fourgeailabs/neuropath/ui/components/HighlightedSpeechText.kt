@@ -32,6 +32,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.speech.SpeechManager
+import com.fourgeailabs.neuropath.ui.t
 
 @Composable
 fun HighlightedSpeechText(
@@ -106,7 +107,7 @@ fun HighlightedSpeechText(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = "Read aloud with word highlight",
+                            contentDescription = t("read_aloud_with_word_highlight"),
                             tint = if (isThisActive) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(20.dp)
                         )

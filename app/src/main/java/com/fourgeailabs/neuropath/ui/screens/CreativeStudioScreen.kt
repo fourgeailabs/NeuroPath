@@ -83,6 +83,8 @@ import com.fourgeailabs.neuropath.data.model.ThemeStoryPrompt
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import kotlinx.coroutines.launch
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 enum class CreativeMode(val title: String, val icon: String) {
     DRAWING_CANVAS("Art Studio", "🎨"),
@@ -169,7 +171,7 @@ fun CreativeStudioScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back to Home",
+                            contentDescription = t("back_to_home"),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -177,14 +179,14 @@ fun CreativeStudioScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("🎨 ", fontSize = 18.sp)
                             Text(
-                                "Creative Expression",
+                                t("creative_expression"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Text(
-                            "Theme: ${activeTheme.title}",
+                            tf("theme", activeTheme.title),
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -199,7 +201,7 @@ fun CreativeStudioScreen(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("⭐ +5 Stars", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF856404))
+                        Text(t("5_stars"), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF856404))
                     }
                 }
             }
@@ -310,7 +312,7 @@ fun CreativeStudioScreen(
                 // Sticker Drawer
                 Column(modifier = Modifier.padding(vertical = 4.dp)) {
                     Text(
-                        "✨ Themed Stamps (Tap a stamp, then tap on the canvas):",
+                        t("themed_stamps_tap_a_stamp_then_tap_on_the_canvas"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -471,7 +473,7 @@ fun CreativeStudioScreen(
                                 viewModel.triggerHapticPop()
                             }
                         ) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
+                            Icon(imageVector = Icons.AutoMirrored.Filled.Undo, contentDescription = t("undo"))
                         }
                         IconButton(
                             onClick = {
@@ -480,7 +482,7 @@ fun CreativeStudioScreen(
                                 viewModel.triggerHapticPop()
                             }
                         ) {
-                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Clear Canvas")
+                            Icon(imageVector = Icons.Default.Delete, contentDescription = t("clear_canvas"))
                         }
                     }
 
@@ -491,7 +493,7 @@ fun CreativeStudioScreen(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Icon(imageVector = Icons.Default.Save, contentDescription = "Save")
+                        Icon(imageVector = Icons.Default.Save, contentDescription = t("save"))
                         Spacer(Modifier.width(6.dp))
                         Text(if (isArtworkSaved) "Saved! ⭐" else "Save Artwork")
                     }
@@ -509,7 +511,7 @@ fun CreativeStudioScreen(
                 // Story Prompt Starter Selector
                 item {
                     Text(
-                        "📖 Choose an Adventure Prompt Starter:",
+                        t("choose_an_adventure_prompt_starter"),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -567,7 +569,7 @@ fun CreativeStudioScreen(
                                     Text("🤖", fontSize = 20.sp)
                                     Spacer(Modifier.width(6.dp))
                                     Text(
-                                        "Spark Ideas with Learning Buddy",
+                                        t("spark_ideas_with_learning_buddy"),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -583,7 +585,7 @@ fun CreativeStudioScreen(
                                             )
                                             aiSparkedIdea = idea
                                             isStoryGeneratingIdea = false
-                                            viewModel.speechManager.speak("Here is an idea: $idea")
+                                            viewModel.speechManager.speak(tf("here_is_an_idea", idea))
                                         }
                                     },
                                     shape = RoundedCornerShape(12.dp),
@@ -593,9 +595,9 @@ fun CreativeStudioScreen(
                                     if (isStoryGeneratingIdea) {
                                         CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
                                     } else {
-                                        Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = "Spark Idea", modifier = Modifier.size(16.dp))
+                                        Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = t("spark_idea"), modifier = Modifier.size(16.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text("Spark!", fontSize = 12.sp)
+                                        Text(t("spark"), fontSize = 12.sp)
                                     }
                                 }
                             }
@@ -609,7 +611,7 @@ fun CreativeStudioScreen(
                                 ) {
                                     Column(modifier = Modifier.padding(10.dp)) {
                                         Text(
-                                            "💡 Idea: $aiSparkedIdea",
+                                            tf("idea", aiSparkedIdea),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
@@ -622,7 +624,7 @@ fun CreativeStudioScreen(
                                             shape = RoundedCornerShape(8.dp),
                                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                                         ) {
-                                            Text("Add to My Story ➕", fontSize = 11.sp)
+                                            Text(t("add_to_my_story"), fontSize = 11.sp)
                                         }
                                     }
                                 }
@@ -636,7 +638,7 @@ fun CreativeStudioScreen(
                     OutlinedTextField(
                         value = storyTitle,
                         onValueChange = { storyTitle = it },
-                        label = { Text("Story Title") },
+                        label = { Text(t("story_title")) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -652,7 +654,7 @@ fun CreativeStudioScreen(
                         OutlinedTextField(
                             value = storyContent,
                             onValueChange = { storyContent = it },
-                            label = { Text("Write your adventure story...") },
+                            label = { Text(t("write_your_adventure_story")) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(220.dp),
@@ -684,15 +686,15 @@ fun CreativeStudioScreen(
                     ) {
                         Button(
                             onClick = {
-                                viewModel.speechManager.speak("$storyTitle. $storyContent")
+                                viewModel.speechManager.speak(tf("str_6", storyTitle, storyContent))
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
                         ) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.VolumeUp, contentDescription = "Read Aloud")
+                            Icon(imageVector = Icons.AutoMirrored.Filled.VolumeUp, contentDescription = t("read_aloud_3"))
                             Spacer(Modifier.width(6.dp))
-                            Text("Read Aloud 🔊")
+                            Text(t("read_aloud_2"))
                         }
 
                         Button(
@@ -704,7 +706,7 @@ fun CreativeStudioScreen(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Icon(imageVector = Icons.Default.Save, contentDescription = "Save Story")
+                            Icon(imageVector = Icons.Default.Save, contentDescription = t("save_story"))
                             Spacer(Modifier.width(6.dp))
                             Text(if (isStorySaved) "Saved! ⭐" else "Save Story")
                         }

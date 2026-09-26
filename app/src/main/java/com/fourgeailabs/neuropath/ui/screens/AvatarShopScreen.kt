@@ -52,6 +52,8 @@ import com.fourgeailabs.neuropath.data.model.AvatarCategory
 import com.fourgeailabs.neuropath.data.model.DEFAULT_AVATAR_SHOP_ITEMS
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @Composable
 fun AvatarShopScreen(
@@ -84,11 +86,11 @@ fun AvatarShopScreen(
                 onClick = { viewModel.navigateTo(AppScreen.HOME) },
                 modifier = Modifier.testTag("shop_back_btn")
             ) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("back"))
             }
 
             Text(
-                "🛍️ Avatar & Rewards Shop",
+                t("avatar_rewards_shop"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -101,7 +103,7 @@ fun AvatarShopScreen(
                     color = Color(0xFFFFF3CD)
                 ) {
                     Text(
-                        "⭐ ${profile.totalStars}",
+                        tf("str_2", profile.totalStars),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF856404),
@@ -113,7 +115,7 @@ fun AvatarShopScreen(
                     color = Color(0xFFD1ECF1)
                 ) {
                     Text(
-                        "💎 ${profile.totalGems}",
+                        tf("str", profile.totalGems),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF0C5460),
@@ -138,7 +140,7 @@ fun AvatarShopScreen(
             ) {
                 Column {
                     Text(
-                        "Currently Equipped",
+                        t("currently_equipped"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -150,7 +152,7 @@ fun AvatarShopScreen(
                     )
                     if (currentPet != null) {
                         Text(
-                            "Companion: ${currentPet.name}",
+                            tf("companion", currentPet.name),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.SemiBold
@@ -287,9 +289,9 @@ fun AvatarShopScreen(
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(imageVector = Icons.Default.Check, contentDescription = "Equipped", tint = Color.White, modifier = Modifier.size(14.dp))
+                                        Icon(imageVector = Icons.Default.Check, contentDescription = t("equipped"), tint = Color.White, modifier = Modifier.size(14.dp))
                                         Spacer(Modifier.width(4.dp))
-                                        Text("Equipped", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                        Text(t("equipped"), fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -299,7 +301,7 @@ fun AvatarShopScreen(
                                     color = MaterialTheme.colorScheme.secondaryContainer
                                 ) {
                                     Text(
-                                        "Tap to Equip",
+                                        t("tap_to_equip"),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -316,7 +318,7 @@ fun AvatarShopScreen(
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(imageVector = Icons.Default.Lock, contentDescription = "Locked", tint = Color(0xFF856404), modifier = Modifier.size(12.dp))
+                                        Icon(imageVector = Icons.Default.Lock, contentDescription = t("locked"), tint = Color(0xFF856404), modifier = Modifier.size(12.dp))
                                         Spacer(Modifier.width(4.dp))
                                         Text(
                                             if (item.gemCost > 0) "💎 ${item.gemCost}" else "⭐ ${item.starCost}",

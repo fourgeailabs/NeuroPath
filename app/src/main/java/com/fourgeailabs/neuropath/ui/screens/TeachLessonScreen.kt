@@ -60,6 +60,8 @@ import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.HighlightedSpeechText
 import com.fourgeailabs.neuropath.ui.components.OerMultimediaPlayerBottomSheet
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @Composable
 fun TeachLessonScreen(
@@ -157,20 +159,20 @@ fun TeachLessonScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to Home",
+                    contentDescription = t("back_to_home"),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "Concept Discovery",
+                    t("concept_discovery"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    "Step ${currentStepIndex + 1} of $totalSteps",
+                    tf("step_of", totalSteps, currentStepIndex + 1),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -188,11 +190,11 @@ fun TeachLessonScreen(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("20 Q's", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(t("20_q_s"), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     Spacer(Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Start Assessment",
+                        contentDescription = t("start_assessment"),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(16.dp)
                     )
@@ -231,7 +233,7 @@ fun TeachLessonScreen(
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Standard: ${lesson.stateStandardCode} • ${lesson.standardDescription}",
+                    tf("standard", lesson.stateStandardCode, lesson.standardDescription),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
@@ -250,7 +252,7 @@ fun TeachLessonScreen(
                                 Text("🎬", fontSize = 14.sp)
                                 Spacer(Modifier.width(6.dp))
                                 Text(
-                                    "OER Multimedia Learning Lab",
+                                    t("oer_multimedia_learning_lab"),
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -271,7 +273,7 @@ fun TeachLessonScreen(
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                         modifier = Modifier.weight(1f).testTag("watch_video_lesson_btn")
                                     ) {
-                                        Text("Watch Video 🎬", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text(t("watch_video"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
@@ -282,7 +284,7 @@ fun TeachLessonScreen(
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                                         modifier = Modifier.weight(1f).testTag("listen_audio_lecture_btn")
                                     ) {
-                                        Text("Audio Lecture 🎧", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Text(t("audio_lecture"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -361,7 +363,7 @@ fun TeachLessonScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Lightbulb,
-                            contentDescription = "Tip",
+                            contentDescription = t("tip"),
                             tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(24.dp)
                         )
@@ -389,7 +391,7 @@ fun TeachLessonScreen(
                 ) {
                     Text(theme.emoji, fontSize = 18.sp)
                     Spacer(Modifier.width(8.dp))
-                    Text("I'm confused, Learning Buddy help!", fontWeight = FontWeight.Bold)
+                    Text(t("ai_help_prompt"), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -402,7 +404,7 @@ fun TeachLessonScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "✨ Quick Interactive Practice",
+                        t("quick_interactive_practice"),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.primary
@@ -436,9 +438,9 @@ fun TeachLessonScreen(
                                         interactiveSelectedChoice = idx
                                         interactiveSubmitted = true
                                         if (isCorrect) {
-                                            viewModel.speechManager.speak("Spot on! That's correct.")
+                                            viewModel.speechManager.speak(t("spot_on_that_s_correct"))
                                         } else {
-                                            viewModel.speechManager.speak("Nice try! Look closely at the clues above.")
+                                            viewModel.speechManager.speak(t("nice_try_look_closely_at_the_clues_above"))
                                         }
                                     }
                                 }
@@ -474,9 +476,9 @@ fun TeachLessonScreen(
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.testTag("teach_prev_step_btn")
                 ) {
-                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous Step")
+                    Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("previous_step"))
                     Spacer(Modifier.width(6.dp))
-                    Text("Previous")
+                    Text(t("previous"))
                 }
             } else {
                 Spacer(Modifier.width(10.dp))
@@ -495,7 +497,7 @@ fun TeachLessonScreen(
                 Spacer(Modifier.width(6.dp))
                 Icon(
                     imageVector = if (currentStepIndex < totalSteps - 1) Icons.AutoMirrored.Filled.ArrowForward else Icons.Default.PlayArrow,
-                    contentDescription = "Next"
+                    contentDescription = t("next")
                 )
             }
         }

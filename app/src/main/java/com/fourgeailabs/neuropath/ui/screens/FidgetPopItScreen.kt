@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 enum class PopItColorStyle(val title: String, val colors: List<Color>) {
     RAINBOW("Rainbow", listOf(Color(0xFFFF9AA2), Color(0xFFFFB7B2), Color(0xFFFFDAC1), Color(0xFFE2F0CB), Color(0xFFB5EAD7), Color(0xFFC7CEEA))),
@@ -89,18 +91,18 @@ fun FidgetPopItScreen(
                 onClick = { viewModel.navigateTo(AppScreen.HOME) },
                 modifier = Modifier.testTag("popit_back_btn")
             ) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("back"))
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    "🫧 Tactile Silicone Pop-It",
+                    t("tactile_silicone_pop_it"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    "Decompression & Sensory Reset",
+                    t("decompression_sensory_reset"),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -111,7 +113,7 @@ fun FidgetPopItScreen(
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Text(
-                    "$totalPops Pops",
+                    tf("pops", totalPops),
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -209,9 +211,9 @@ fun FidgetPopItScreen(
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.testTag("reset_popit_btn")
             ) {
-                Icon(imageVector = Icons.Default.Refresh, contentDescription = "Reset Pad")
+                Icon(imageVector = Icons.Default.Refresh, contentDescription = t("reset_pad"))
                 Spacer(Modifier.width(6.dp))
-                Text("Flip Pad", fontWeight = FontWeight.Bold)
+                Text(t("flip_pad"), fontWeight = FontWeight.Bold)
             }
 
             Button(
@@ -219,7 +221,7 @@ fun FidgetPopItScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("4-7-8 Breathing 🧘", fontWeight = FontWeight.Bold)
+                Text(t("4_7_8_breathing"), fontWeight = FontWeight.Bold)
             }
         }
     }

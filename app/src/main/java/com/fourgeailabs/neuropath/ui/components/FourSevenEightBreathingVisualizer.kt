@@ -90,6 +90,8 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 /**
  * Visual themes for the 4-7-8 rhythm animation canvas.
@@ -250,7 +252,7 @@ fun FourSevenEightBreathingVisualizer(
                             .background(animatedPrimaryColor)
                     )
                     Text(
-                        text = "4-7-8 VAGUS RHYTHM",
+                        text = t("4_7_8_vagus_rhythm"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = animatedPrimaryColor,
@@ -272,12 +274,12 @@ fun FourSevenEightBreathingVisualizer(
                 ) {
                     Icon(
                         imageVector = Icons.Default.SelfImprovement,
-                        contentDescription = "Cycles",
+                        contentDescription = t("cycles_3"),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "$completedCycles / $targetCycles Cycles",
+                        text = tf("cycles_2", completedCycles, targetCycles),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -422,7 +424,7 @@ fun FourSevenEightBreathingVisualizer(
                 ) {
                     // Big Countdown Number
                     Text(
-                        text = "$secondsRemaining",
+                        text = tf("str_14", secondsRemaining),
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Black,
                         color = animatedPrimaryColor,
@@ -431,7 +433,7 @@ fun FourSevenEightBreathingVisualizer(
 
                     // Phase Title
                     Text(
-                        text = currentPhase.label.uppercase(),
+                        text = t(currentPhase.labelKey).uppercase(),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -446,7 +448,7 @@ fun FourSevenEightBreathingVisualizer(
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
                         Text(
-                            text = "${currentPhase.durationSec}s Phase",
+                            text = tf("s_phase", currentPhase.durationSec),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = animatedPrimaryColor,
@@ -470,7 +472,7 @@ fun FourSevenEightBreathingVisualizer(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = currentPhase.instruction,
+                    text = t(currentPhase.instructionKey),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = animatedPrimaryColor,
@@ -497,14 +499,14 @@ fun FourSevenEightBreathingVisualizer(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Calm Regulation Progress",
+                            text = t("calm_regulation_progress"),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val calmScore = ((completedCycles.toFloat() / targetCycles.coerceAtLeast(1).toFloat()) * 100).toInt().coerceAtMost(100)
                         Text(
-                            text = "$calmScore%",
+                            text = tf("str_10", calmScore),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = animatedPrimaryColor
@@ -578,12 +580,12 @@ fun FourSevenEightBreathingVisualizer(
             ) {
                 Icon(
                     imageVector = Icons.Default.MusicNote,
-                    contentDescription = "Ambient Sound",
+                    contentDescription = t("ambient_sound"),
                     tint = animatedPrimaryColor,
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
-                    text = "Background Soundscape",
+                    text = t("background_soundscape"),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -653,11 +655,11 @@ fun FourSevenEightBreathingVisualizer(
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = "Reset Cycles",
+                    contentDescription = t("reset_cycles"),
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(Modifier.width(4.dp))
-                Text("Reset", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(t("reset"), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

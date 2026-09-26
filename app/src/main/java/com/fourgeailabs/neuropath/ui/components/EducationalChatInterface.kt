@@ -136,6 +136,8 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 /**
  * Rebuilt Educational Chat Interface component.
@@ -218,7 +220,7 @@ fun EducationalChatInterface(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = t("back"),
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -314,7 +316,7 @@ fun EducationalChatInterface(
                                 onDismissRequest = { showModelMenu = false }
                             ) {
                                 Text(
-                                    "SELECT LLAMA MODEL",
+                                    t("select_llama_model"),
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
@@ -325,14 +327,14 @@ fun EducationalChatInterface(
                                         text = {
                                             Column {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text("${mode.icon} ${mode.displayName}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                    Text(tf("str_3", mode.icon, mode.displayName), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                                     if (mode.isFreeTier) {
                                                         Spacer(Modifier.width(6.dp))
                                                         Surface(
                                                             shape = RoundedCornerShape(4.dp),
                                                             color = Color(0xFF2E7D32).copy(alpha = 0.15f)
                                                         ) {
-                                                            Text("FREE MODEL", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                                            Text(t("free_model"), fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
                                                         }
                                                     }
                                                 }
@@ -345,7 +347,7 @@ fun EducationalChatInterface(
                                         },
                                         trailingIcon = {
                                             if (mode == activeChatMode) {
-                                                Icon(Icons.Default.Check, contentDescription = "Active", tint = MaterialTheme.colorScheme.primary)
+                                                Icon(Icons.Default.Check, contentDescription = t("active_2"), tint = MaterialTheme.colorScheme.primary)
                                             }
                                         }
                                     )
@@ -367,7 +369,7 @@ fun EducationalChatInterface(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Start New Topic",
+                                contentDescription = t("start_new_topic"),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(19.dp)
                             )
@@ -382,7 +384,7 @@ fun EducationalChatInterface(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.History,
-                                contentDescription = "Message History",
+                                contentDescription = t("message_history"),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -418,7 +420,7 @@ fun EducationalChatInterface(
                                 Text(activeExplanationMode.icon, fontSize = 12.sp)
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    "Mode: ${activeExplanationMode.title}",
+                                    tf("mode", activeExplanationMode.title),
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -431,7 +433,7 @@ fun EducationalChatInterface(
                             onDismissRequest = { showExplanationMenu = false }
                         ) {
                             Text(
-                                "PERSONALIZED EXPLANATION STYLE",
+                                t("personalized_explanation_style"),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -442,7 +444,7 @@ fun EducationalChatInterface(
                                     text = {
                                         Column {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text("${mode.icon} ${mode.title}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                Text(tf("str_3", mode.icon, mode.title), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                                 Spacer(Modifier.width(6.dp))
                                                 Surface(
                                                     shape = RoundedCornerShape(4.dp),
@@ -460,7 +462,7 @@ fun EducationalChatInterface(
                                     },
                                     trailingIcon = {
                                         if (mode == activeExplanationMode) {
-                                            Icon(Icons.Default.Check, contentDescription = "Active", tint = MaterialTheme.colorScheme.primary)
+                                            Icon(Icons.Default.Check, contentDescription = t("active_2"), tint = MaterialTheme.colorScheme.primary)
                                         }
                                     }
                                 )
@@ -531,7 +533,7 @@ fun EducationalChatInterface(
                                 color = if (activeChatMode.isFreeTier) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Personalized explanations tailored to ${profile.gradeLevel} & ${profile.schoolDistrict}.",
+                                text = tf("personalized_explanations_tailored_to", profile.gradeLevel, profile.schoolDistrict),
                                 fontSize = 10.sp,
                                 color = if (activeChatMode.isFreeTier) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -543,7 +545,7 @@ fun EducationalChatInterface(
 
                 // Subject Starter Prompts
                 Text(
-                    "SUGGESTED EDUCATIONAL TOPICS:",
+                    t("suggested_educational_topics"),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -602,8 +604,8 @@ fun EducationalChatInterface(
                         onSpeak = { text -> viewModel.speechManager.speak(text) },
                         onCopy = { text ->
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Explanation", text))
-                            Toast.makeText(context, "Copied to clipboard!", Toast.LENGTH_SHORT).show()
+                            clipboard.setPrimaryClip(ClipData.newPlainText(t("explanation"), text))
+                            Toast.makeText(context, t("copied_to_clipboard"), Toast.LENGTH_SHORT).show()
                         },
                         onExplainSimpler = { baseText ->
                             viewModel.requestSimplerExplanation(baseText)
@@ -652,7 +654,7 @@ fun EducationalChatInterface(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        "${theme.buddyName} is thinking gently with ${activeChatMode.displayName}...",
+                                        tf("is_thinking_gently_with", theme.buddyName, activeChatMode.displayName),
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -747,7 +749,7 @@ fun EducationalChatInterface(
                             } else {
                                 Icon(
                                     imageVector = if (isRecordingAudio) Icons.Default.Stop else Icons.Default.Mic,
-                                    contentDescription = "Transcribe Audio",
+                                    contentDescription = t("transcribe_audio"),
                                     tint = if (isRecordingAudio) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -772,7 +774,7 @@ fun EducationalChatInterface(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Send",
+                                contentDescription = t("send"),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -816,11 +818,11 @@ fun EducationalChatInterface(
     if (showNewSessionDialog) {
         AlertDialog(
             onDismissRequest = { showNewSessionDialog = false },
-            title = { Text("Start New Educational Topic", fontWeight = FontWeight.Bold) },
+            title = { Text(t("start_new_educational_topic"), fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Text(
-                        "Give this study topic a title (e.g., 'Fractions Practice', 'Photosynthesis', 'Civil War History'):",
+                        t("give_this_study_topic_a_title_e_g_fractions_prac"),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -828,7 +830,7 @@ fun EducationalChatInterface(
                     OutlinedTextField(
                         value = newSessionTitleInput,
                         onValueChange = { newSessionTitleInput = it },
-                        placeholder = { Text("e.g. 5th Grade Fractions") },
+                        placeholder = { Text(t("e_g_5th_grade_fractions")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -842,12 +844,12 @@ fun EducationalChatInterface(
                         showNewSessionDialog = false
                     }
                 ) {
-                    Text("Start Topic")
+                    Text(t("start_topic"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showNewSessionDialog = false }) {
-                    Text("Cancel")
+                    Text(t("cancel"))
                 }
             }
         )
@@ -1048,7 +1050,7 @@ private fun EducationalMessageBubble(
                             ) {
                                 Icon(
                                     imageVector = if (message.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                    contentDescription = "Save Explanation",
+                                    contentDescription = t("save_explanation"),
                                     tint = if (message.isBookmarked) Color(0xFFFBC02D) else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -1094,7 +1096,7 @@ private fun EducationalMessageBubble(
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("💡 Simpler", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                        Text(t("simpler"), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onTertiaryContainer)
                                     }
                                 }
 
@@ -1108,7 +1110,7 @@ private fun EducationalMessageBubble(
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("🪜 Steps", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                        Text(t("steps"), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                                     }
                                 }
                             }
@@ -1121,7 +1123,7 @@ private fun EducationalMessageBubble(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = "Copy Text",
+                                        contentDescription = t("copy_text"),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(15.dp)
                                     )
@@ -1133,7 +1135,7 @@ private fun EducationalMessageBubble(
                                 ) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                        contentDescription = "Read Aloud",
+                                        contentDescription = t("read_aloud_3"),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -1163,7 +1165,7 @@ private fun EducationalMessageBubble(
                         modifier = Modifier.clickable { onSelectFollowUp(followUp) }
                     ) {
                         Text(
-                            text = "✨ $followUp",
+                            text = tf("str_13", followUp),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -1216,12 +1218,12 @@ private fun EducationalChatHistorySheet(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.History,
-                        contentDescription = "History",
+                        contentDescription = t("history"),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Educational Chat History",
+                        t("educational_chat_history"),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }
@@ -1229,7 +1231,7 @@ private fun EducationalChatHistorySheet(
                 IconButton(onClick = { showClearDialog = true }) {
                     Icon(
                         imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Clear All History",
+                        contentDescription = t("clear_all_history"),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -1245,17 +1247,17 @@ private fun EducationalChatHistorySheet(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Topics (${sessionSummaries.size})", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                    text = { Text(tf("topics", sessionSummaries.size), fontSize = 12.sp, fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = { Text("Saved ⭐ (${bookmarkedMessages.size})", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                    text = { Text(tf("saved", bookmarkedMessages.size), fontSize = 12.sp, fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    text = { Text("Search 🔍", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                    text = { Text(t("search_2"), fontSize = 12.sp, fontWeight = FontWeight.Bold) }
                 )
             }
 
@@ -1273,7 +1275,7 @@ private fun EducationalChatHistorySheet(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "No past topic sessions found. Start chatting to build your study history!",
+                                t("no_past_topic_sessions_found_start_chatting_to_b"),
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp,
@@ -1323,7 +1325,7 @@ private fun EducationalChatHistorySheet(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Close,
-                                                contentDescription = "Delete Session",
+                                                contentDescription = t("delete_session"),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 modifier = Modifier.size(16.dp)
                                             )
@@ -1345,7 +1347,7 @@ private fun EducationalChatHistorySheet(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "No saved explanations yet. Tap the bookmark icon on any explanation to save it for study review!",
+                                t("no_saved_explanations_yet_tap_the_bookmark_icon"),
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp,
@@ -1372,7 +1374,7 @@ private fun EducationalChatHistorySheet(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
-                                                "⭐ ${msg.sessionTitle}",
+                                                tf("str_2", msg.sessionTitle),
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.primary
@@ -1411,10 +1413,10 @@ private fun EducationalChatHistorySheet(
                                 searchQuery = it
                                 viewModel.searchChatMessages(it)
                             },
-                            placeholder = { Text("Search past explanations (e.g. fractions, solar)...") },
+                            placeholder = { Text(t("search_past_explanations_e_g_fractions_solar")) },
                             singleLine = true,
                             leadingIcon = {
-                                Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.Search, contentDescription = t("search"), tint = MaterialTheme.colorScheme.primary)
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp)
@@ -1457,7 +1459,7 @@ private fun EducationalChatHistorySheet(
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
                                                 Text(
-                                                    "${result.sender}: in ${result.sessionTitle}",
+                                                    tf("in", result.sender, result.sessionTitle),
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.primary
@@ -1491,8 +1493,8 @@ private fun EducationalChatHistorySheet(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear All Message History?") },
-            text = { Text("This will remove all saved chat messages and topic sessions for this profile. This cannot be undone.") },
+            title = { Text(t("clear_all_message_history")) },
+            text = { Text(t("this_will_remove_all_saved_chat_messages_and_top")) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -1501,12 +1503,12 @@ private fun EducationalChatHistorySheet(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Clear All")
+                    Text(t("clear_all"))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) {
-                    Text("Cancel")
+                    Text(t("cancel"))
                 }
             }
         )
@@ -1570,7 +1572,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                         Text("🌐", fontSize = 18.sp)
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "OER Commons Curated Collections",
+                            t("oer_commons_curated_collections"),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
@@ -1583,7 +1585,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://oercommons.org/curated-collections"))
                                 context.startActivity(intent)
                             } catch (_: Exception) {
-                                Toast.makeText(context, "Opening browser...", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, t("opening_browser"), Toast.LENGTH_SHORT).show()
                             }
                         }
                     )
@@ -1597,12 +1599,12 @@ private fun OerCuratedCollectionsBrowserSheet(
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://oercommons.org/curated-collections"))
                             context.startActivity(intent)
                         } catch (_: Exception) {
-                            Toast.makeText(context, "Visit: https://oercommons.org/curated-collections", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, tf("visit_url", "https://oercommons.org/curated-collections"), Toast.LENGTH_SHORT).show()
                         }
                     }
                 ) {
                     Text(
-                        "Visit Site ↗",
+                        t("visit_site"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -1617,12 +1619,12 @@ private fun OerCuratedCollectionsBrowserSheet(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search curated units, standards (e.g. CCSS, NGSS)...", fontSize = 12.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", modifier = Modifier.size(18.dp)) },
+                placeholder = { Text(t("search_curated_units_standards_e_g_ccss_ngss"), fontSize = 12.sp) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = t("search"), modifier = Modifier.size(18.dp)) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Close, contentDescription = t("clear"), modifier = Modifier.size(16.dp))
                         }
                     }
                 },
@@ -1648,7 +1650,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                     modifier = Modifier.clickable { selectedSubjectFilter = null }
                 ) {
                     Text(
-                        "All Subjects (${allUnits.size})",
+                        tf("all_subjects", allUnits.size),
                         fontSize = 11.sp,
                         fontWeight = if (selectedSubjectFilter == null) FontWeight.Bold else FontWeight.Normal,
                         color = if (selectedSubjectFilter == null) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1732,7 +1734,7 @@ private fun OerCuratedCollectionsBrowserSheet(
 
                             // Standard code & concepts
                             Text(
-                                "Standard: ${unit.standardCode}",
+                                tf("standard_2", unit.standardCode),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.secondary
@@ -1767,7 +1769,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                                             horizontalArrangement = Arrangement.Center,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("🎬 Video", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1D4ED8))
+                                            Text(t("video"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1D4ED8))
                                         }
                                     }
                                 }
@@ -1786,7 +1788,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                                             horizontalArrangement = Arrangement.Center,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("🎧 Audio", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFBE185D))
+                                            Text(t("audio"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFBE185D))
                                         }
                                     }
                                 }
@@ -1805,7 +1807,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                                         horizontalArrangement = Arrangement.Center,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Ask Llama 🦙", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        Text(t("ask_llama"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                     }
                                 }
 
@@ -1825,7 +1827,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                                             horizontalArrangement = Arrangement.Center,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("Practice 📝", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(t("practice"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                 }

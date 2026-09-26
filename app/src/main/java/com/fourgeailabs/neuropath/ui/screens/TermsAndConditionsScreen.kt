@@ -61,6 +61,7 @@ import com.fourgeailabs.neuropath.data.model.LocaleLegalComplianceManager
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.AppLogoIcon
+import com.fourgeailabs.neuropath.ui.t
 
 @Composable
 fun TermsAndConditionsScreen(
@@ -139,7 +140,7 @@ fun TermsAndConditionsScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
-                        contentDescription = "Jurisdiction",
+                        contentDescription = t("jurisdiction_2"),
                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(15.dp)
                     )
