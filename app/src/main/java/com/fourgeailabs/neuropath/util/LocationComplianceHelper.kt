@@ -51,14 +51,181 @@ object LocationComplianceHelper {
         return fineGranted || coarseGranted
     }
 
-    private fun mapKnownUsZip(clean: String): Pair<String, String>? {
-        val zip = clean.take(5)
-        return when (zip) {
-            "85374", "85378", "85379", "85387", "85388" -> "Arizona" to "Surprise"
-            "90210", "90211", "90212" -> "California" to "Beverly Hills"
-            else -> null
-        }
-    }
+    // Exact-ZIP overrides checked before the range table and before the Android
+    // Geocoder: small cities that geocoders (and broad ZIP ranges) collapse
+    // into a nearby metro label.
+    private val US_ZIP_EXACT: Map<String, Pair<String, String>> = mapOf(
+        "85374" to ("Arizona" to "Surprise"),
+        "85378" to ("Arizona" to "Surprise"),
+        "85379" to ("Arizona" to "Surprise"),
+        "85387" to ("Arizona" to "Surprise"),
+        "85388" to ("Arizona" to "Surprise"),
+        "90210" to ("California" to "Beverly Hills"),
+        "90211" to ("California" to "Beverly Hills"),
+        "90212" to ("California" to "Beverly Hills")
+    )
+
+    private data class UsZipRange(val start: Int, val end: Int, val state: String, val city: String)
+
+    // Full 50-state (+ DC + Puerto Rico) ZIP coverage. Each range maps to a
+    // city that has a registry entry. Order matters: more specific ranges
+    // (DC, Maryland, Arizona city clusters, El Paso) come before the broader
+    // ranges they overlap, because the lookup takes the first match.
+    private val US_ZIP_RANGES: List<UsZipRange> = listOf(
+        UsZipRange(600, 999, "Puerto Rico", "San Juan"),
+        UsZipRange(1000, 2799, "Massachusetts", "Boston"),
+        UsZipRange(2800, 2999, "Rhode Island", "Providence"),
+        UsZipRange(3000, 3999, "New Hampshire", "Manchester"),
+        UsZipRange(4000, 4999, "Maine", "Portland"),
+        UsZipRange(5000, 5999, "Vermont", "Burlington"),
+        UsZipRange(6000, 6999, "Connecticut", "Bridgeport"),
+        UsZipRange(7000, 8999, "New Jersey", "Newark"),
+        UsZipRange(10000, 14999, "New York", "New York City"),
+        UsZipRange(15000, 19699, "Pennsylvania", "Philadelphia"),
+        UsZipRange(19700, 19999, "Delaware", "Wilmington"),
+        UsZipRange(20000, 20599, "Washington D.C.", "Washington"),
+        UsZipRange(20600, 21999, "Maryland", "Baltimore"),
+        UsZipRange(20100, 24658, "Virginia", "Fairfax"),
+        UsZipRange(24700, 26999, "West Virginia", "Charleston"),
+        UsZipRange(27000, 28999, "North Carolina", "Charlotte"),
+        UsZipRange(29000, 29999, "South Carolina", "Columbia"),
+        UsZipRange(30000, 31999, "Georgia", "Atlanta"),
+        UsZipRange(32000, 34999, "Florida", "Miami"),
+        UsZipRange(35000, 36999, "Alabama", "Birmingham"),
+        UsZipRange(37000, 38599, "Tennessee", "Nashville"),
+        UsZipRange(38600, 39999, "Mississippi", "Jackson"),
+        UsZipRange(40000, 42999, "Kentucky", "Louisville"),
+        UsZipRange(43000, 45999, "Ohio", "Columbus"),
+        UsZipRange(46000, 47999, "Indiana", "Indianapolis"),
+        UsZipRange(48000, 49999, "Michigan", "Detroit"),
+        UsZipRange(50000, 52999, "Iowa", "Des Moines"),
+        UsZipRange(53000, 54999, "Wisconsin", "Milwaukee"),
+        UsZipRange(55000, 56799, "Minnesota", "Minneapolis"),
+        UsZipRange(57000, 57999, "South Dakota", "Sioux Falls"),
+        UsZipRange(58000, 58999, "North Dakota", "Fargo"),
+        UsZipRange(59000, 59999, "Montana", "Billings"),
+        UsZipRange(60000, 62999, "Illinois", "Chicago"),
+        UsZipRange(63000, 65999, "Missouri", "Kansas City"),
+        UsZipRange(66000, 67999, "Kansas", "Wichita"),
+        UsZipRange(68000, 69999, "Nebraska", "Omaha"),
+        UsZipRange(70000, 71599, "Louisiana", "New Orleans"),
+        UsZipRange(71600, 72999, "Arkansas", "Little Rock"),
+        UsZipRange(73000, 74999, "Oklahoma", "Oklahoma City"),
+        UsZipRange(75000, 79999, "Texas", "Dallas"),
+        UsZipRange(88500, 88599, "Texas", "El Paso"),
+        UsZipRange(80000, 81658, "Colorado", "Denver"),
+        UsZipRange(82000, 83199, "Wyoming", "Cheyenne"),
+        UsZipRange(83200, 83999, "Idaho", "Boise"),
+        UsZipRange(84000, 84799, "Utah", "Salt Lake City"),
+        // Arizona city clusters (checked before the state-wide Phoenix range).
+        UsZipRange(85251, 85260, "Arizona", "Scottsdale"),
+        UsZipRange(85266, 85268, "Arizona", "Scottsdale"),
+        UsZipRange(85271, 85271, "Arizona", "Scottsdale"),
+        UsZipRange(85201, 85215, "Arizona", "Mesa"),
+        UsZipRange(85224, 85226, "Arizona", "Chandler"),
+        UsZipRange(85233, 85234, "Arizona", "Gilbert"),
+        UsZipRange(85295, 85297, "Arizona", "Gilbert"),
+        UsZipRange(85301, 85310, "Arizona", "Glendale"),
+        UsZipRange(85345, 85345, "Arizona", "Peoria"),
+        UsZipRange(85381, 85383, "Arizona", "Peoria"),
+        UsZipRange(85281, 85284, "Arizona", "Tempe"),
+        UsZipRange(85370, 85389, "Arizona", "Surprise"),
+        UsZipRange(85701, 85756, "Arizona", "Tucson"),
+        UsZipRange(86001, 86004, "Arizona", "Flagstaff"),
+        UsZipRange(85000, 86556, "Arizona", "Phoenix"),
+        UsZipRange(87000, 88499, "New Mexico", "Albuquerque"),
+        UsZipRange(89000, 89899, "Nevada", "Las Vegas"),
+        UsZipRange(90000, 96199, "California", "Los Angeles"),
+        UsZipRange(96700, 96899, "Hawaii", "Honolulu"),
+        UsZipRange(97000, 97999, "Oregon", "Portland"),
+        UsZipRange(98000, 99499, "Washington", "Seattle"),
+        UsZipRange(99500, 99999, "Alaska", "Anchorage")
+    )
+
+    // UK postcode areas (the letters before the first digit of the outward
+    // code, e.g. "BD" in "BD1 1AA") mapped to registry state/city pairs.
+    private val UK_POSTCODE_AREAS: Map<String, Pair<String, String>> = mapOf(
+        "BD" to ("England - Yorkshire & the Humber" to "Bradford"),
+        "HU" to ("England - Yorkshire & the Humber" to "Kingston upon Hull"),
+        "ST" to ("England - West Midlands" to "Stoke-on-Trent"),
+        "DE" to ("England - East Midlands" to "Derby"),
+        "SR" to ("England - North East" to "Sunderland"),
+        "PO" to ("England - South East" to "Portsmouth"),
+        "PR" to ("England - North West" to "Preston"),
+        "LU" to ("England - East of England" to "Luton"),
+        "LS" to ("England - Yorkshire & the Humber" to "Leeds"),
+        "NE" to ("England - North East" to "Newcastle upon Tyne"),
+        "BS" to ("England - South West" to "Bristol"),
+        "BN" to ("England - South East" to "Brighton"),
+        "SO" to ("England - South East" to "Southampton"),
+        "OX" to ("England - South East" to "Oxford"),
+        "CB" to ("England - East of England" to "Cambridge"),
+        "NR" to ("England - East of England" to "Norwich"),
+        "NG" to ("England - East Midlands" to "Nottingham"),
+        "LE" to ("England - East Midlands" to "Leicester"),
+        "PL" to ("England - South West" to "Plymouth"),
+        "BA" to ("England - South West" to "Bath"),
+        "CR" to ("England - Greater London" to "Croydon"),
+        "AB" to ("Scotland" to "Aberdeen"),
+        "G" to ("Scotland" to "Glasgow"),
+        "SA" to ("Wales" to "Swansea"),
+        "EH" to ("Scotland" to "Edinburgh"),
+        "CF" to ("Wales" to "Cardiff"),
+        "BT" to ("Northern Ireland" to "Belfast"),
+        "L" to ("England - North West" to "Liverpool"),
+        "M" to ("England - North West" to "Manchester"),
+        "B" to ("England - West Midlands" to "Birmingham"),
+        "S" to ("England - Yorkshire & the Humber" to "Sheffield"),
+        // London postal areas.
+        "E" to ("England - Greater London" to "London"),
+        "EC" to ("England - Greater London" to "London"),
+        "N" to ("England - Greater London" to "London"),
+        "NW" to ("England - Greater London" to "London"),
+        "SE" to ("England - Greater London" to "London"),
+        "SW" to ("England - Greater London" to "London"),
+        "W" to ("England - Greater London" to "London"),
+        "WC" to ("England - Greater London" to "London"),
+        "BR" to ("England - Greater London" to "London"),
+        "DA" to ("England - Greater London" to "London"),
+        "EN" to ("England - Greater London" to "London"),
+        "HA" to ("England - Greater London" to "London"),
+        "IG" to ("England - Greater London" to "London"),
+        "KT" to ("England - Greater London" to "London"),
+        "RM" to ("England - Greater London" to "London"),
+        "SM" to ("England - Greater London" to "London"),
+        "TW" to ("England - Greater London" to "London"),
+        "UB" to ("England - Greater London" to "London"),
+        "WD" to ("England - Greater London" to "London")
+    )
+
+    // Canadian postal-code prefixes (first two characters of the ANA NAN
+    // format, e.g. "M5" in "M5V 2T6") mapped to registry state/city pairs.
+    private val CA_POSTAL_PREFIXES: Map<String, Pair<String, String>> = mapOf(
+        "M5" to ("Ontario" to "Toronto"),
+        "M4" to ("Ontario" to "Toronto"),
+        "M6" to ("Ontario" to "Toronto"),
+        "M3" to ("Ontario" to "Toronto"),
+        "L4" to ("Ontario" to "Mississauga"),
+        "L5" to ("Ontario" to "Mississauga"),
+        "K1" to ("Ontario" to "Ottawa"),
+        "K2" to ("Ontario" to "Ottawa"),
+        "G1" to ("Quebec" to "Quebec City"),
+        "H2" to ("Quebec" to "Montreal"),
+        "H3" to ("Quebec" to "Montreal"),
+        "H4" to ("Quebec" to "Montreal"),
+        "V5" to ("British Columbia" to "Vancouver"),
+        "V6" to ("British Columbia" to "Vancouver"),
+        "V7" to ("British Columbia" to "Vancouver"),
+        "V8" to ("British Columbia" to "Victoria"),
+        "V9" to ("British Columbia" to "Victoria"),
+        "T2" to ("Alberta" to "Calgary"),
+        "T3" to ("Alberta" to "Calgary"),
+        "T5" to ("Alberta" to "Edmonton"),
+        "T6" to ("Alberta" to "Edmonton"),
+        "R2" to ("Manitoba" to "Winnipeg"),
+        "R3" to ("Manitoba" to "Winnipeg"),
+        "B3" to ("Nova Scotia" to "Halifax")
+    )
 
     suspend fun resolvePostalOrZipCode(context: Context, inputPostal: String): LocationComplianceResult = withContext(Dispatchers.IO) {
         val clean = inputPostal.trim().uppercase()
@@ -73,12 +240,13 @@ object LocationComplianceHelper {
 
         // Known postal mappings take precedence over Android Geocoder because
         // geocoders may collapse a ZIP into a nearby metro label.
-        val knownUsZip = mapKnownUsZip(clean)
-        if (knownUsZip != null) {
+        val zipStr = clean.take(5)
+        val exactUsZip = US_ZIP_EXACT[zipStr]
+        if (exactUsZip != null) {
             foundCountry = "United States"
             foundCountryCode = "US"
-            foundState = knownUsZip.first
-            foundCity = knownUsZip.second
+            foundState = exactUsZip.first
+            foundCity = exactUsZip.second
         } else {
             try {
                 val geocoder = Geocoder(context, Locale.getDefault())
@@ -96,136 +264,65 @@ object LocationComplianceHelper {
             }
         }
 
-        // Comprehensive Postal / ZIP Prefix Resolution if Geocoder returned partial or blank
+        // Comprehensive Postal / ZIP Prefix Resolution if Geocoder returned partial or blank.
+        // Table-driven: US ZIP ranges (all 50 states + DC + Puerto Rico), UK
+        // postcode areas, Canadian ANA NAN prefixes, Australian 4-digit
+        // postcodes vs Indian 6-digit PINs (disambiguated by length so that
+        // e.g. 400xxx can never again resolve to both Brisbane and Mumbai).
         if (foundState.isNullOrBlank()) {
             val usZipMatch = Regex("^\\d{5}(-\\d{4})?$").find(clean)
             if (usZipMatch != null) {
-                val zipStr = clean.take(5)
                 val num = zipStr.toIntOrNull() ?: 0
                 foundCountry = "United States"
                 foundCountryCode = "US"
-                when (zipStr) {
-                    "85374", "85378", "85379", "85387", "85388" -> { foundState = "Arizona"; foundCity = "Surprise" }
-                    "90210", "90211", "90212" -> { foundState = "California"; foundCity = "Beverly Hills" }
-                    else -> {
-                        when {
-                            zipStr in listOf("85374", "85378", "85379", "85387", "85388") -> { foundState = "Arizona"; foundCity = "Surprise" }
-                            num in 85251..85260 || num in 85266..85268 || num == 85271 -> { foundState = "Arizona"; foundCity = "Scottsdale" }
-                            num in 85201..85215 -> { foundState = "Arizona"; foundCity = "Mesa" }
-                            num in 85224..85226 -> { foundState = "Arizona"; foundCity = "Chandler" }
-                            num in 85233..85234 || num in 85295..85297 -> { foundState = "Arizona"; foundCity = "Gilbert" }
-                            num in 85301..85310 -> { foundState = "Arizona"; foundCity = "Glendale" }
-                            num == 85345 || num in 85381..85383 -> { foundState = "Arizona"; foundCity = "Peoria" }
-                            num in 85281..85284 -> { foundState = "Arizona"; foundCity = "Tempe" }
-                            num in 85701..85756 -> { foundState = "Arizona"; foundCity = "Tucson" }
-                            num in 86001..86004 -> { foundState = "Arizona"; foundCity = "Flagstaff" }
-                            num in 85000..85399 -> { foundState = "Arizona"; foundCity = if (num in 85370..85389) "Surprise" else "Phoenix" }
-                            num in 90000..96199 -> { foundState = "California"; foundCity = "Los Angeles" }
-                            num in 75000..79999 -> { foundState = "Texas"; foundCity = "Dallas" }
-                            num in 10000..14999 -> { foundState = "New York"; foundCity = "New York City" }
-                            num in 32000..34999 -> { foundState = "Florida"; foundCity = "Miami" }
-                            num in 60000..62999 -> { foundState = "Illinois"; foundCity = "Chicago" }
-                            num in 98000..99499 -> { foundState = "Washington"; foundCity = "Seattle" }
-                            num in 1000..2799 -> { foundState = "Massachusetts"; foundCity = "Boston" }
-                            num in 15000..19699 -> { foundState = "Pennsylvania"; foundCity = "Philadelphia" }
-                            num in 30000..31999 -> { foundState = "Georgia"; foundCity = "Atlanta" }
-                            num in 43000..45999 -> { foundState = "Ohio"; foundCity = "Columbus" }
-                            num in 48000..49999 -> { foundState = "Michigan"; foundCity = "Detroit" }
-                            num in 27000..28999 -> { foundState = "North Carolina"; foundCity = "Charlotte" }
-                            num in 20100..24658 -> { foundState = "Virginia"; foundCity = "Fairfax" }
-                            num in 80000..81658 -> { foundState = "Colorado"; foundCity = "Denver" }
-                            num in 85000..86556 -> { foundState = "Arizona"; foundCity = "Phoenix" }
-                            num in 20000..20599 -> { foundState = "Washington D.C."; foundCity = "Washington" }
-                            // Unknown ZIP: leave state/city unset rather than inventing a location.
-                            else -> { /* foundState/foundCity stay null = unknown */ }
-                        }
-                    }
+                val range = US_ZIP_RANGES.firstOrNull { num in it.start..it.end }
+                if (range != null) {
+                    foundState = range.state
+                    foundCity = range.city
                 }
-            } else if (clean.startsWith("SW") || clean.startsWith("EC") || clean.startsWith("W1") || clean.startsWith("E1") || clean.startsWith("N1") || clean.startsWith("SE") || clean.startsWith("WC")) {
-                foundCountry = "United Kingdom"
-                foundCountryCode = "GB"
-                foundState = "England - Greater London"
-                foundCity = "London"
-            } else if (clean.startsWith("M") && clean.length <= 4 && clean.any { it.isDigit() }) {
-                foundCountry = "United Kingdom"
-                foundCountryCode = "GB"
-                foundState = "England - North West"
-                foundCity = "Manchester"
-            } else if (clean.startsWith("B") && clean.length <= 4 && clean.any { it.isDigit() }) {
-                foundCountry = "United Kingdom"
-                foundCountryCode = "GB"
-                foundState = "England - West Midlands"
-                foundCity = "Birmingham"
-            } else if (clean.startsWith("EH")) {
-                foundCountry = "United Kingdom"
-                foundCountryCode = "GB"
-                foundState = "Scotland"
-                foundCity = "Edinburgh"
-            } else if (clean.startsWith("CF")) {
-                foundCountry = "United Kingdom"
-                foundCountryCode = "GB"
-                foundState = "Wales"
-                foundCity = "Cardiff"
-            } else if (clean.startsWith("BT")) {
-                foundCountry = "United Kingdom"
-                foundCountryCode = "GB"
-                foundState = "Northern Ireland"
-                foundCity = "Belfast"
-            } else if (clean.startsWith("M5") || clean.startsWith("M4") || clean.startsWith("M6") || clean.startsWith("M3")) {
-                foundCountry = "Canada"
-                foundCountryCode = "CA"
-                foundState = "Ontario"
-                foundCity = "Toronto"
-            } else if (clean.startsWith("K1") || clean.startsWith("K2")) {
-                foundCountry = "Canada"
-                foundCountryCode = "CA"
-                foundState = "Ontario"
-                foundCity = "Ottawa"
-            } else if (clean.startsWith("H2") || clean.startsWith("H3") || clean.startsWith("H4")) {
-                foundCountry = "Canada"
-                foundCountryCode = "CA"
-                foundState = "Quebec"
-                foundCity = "Montreal"
-            } else if (clean.startsWith("V5") || clean.startsWith("V6") || clean.startsWith("V7")) {
-                foundCountry = "Canada"
-                foundCountryCode = "CA"
-                foundState = "British Columbia"
-                foundCity = "Vancouver"
-            } else if (clean.startsWith("T2") || clean.startsWith("T3")) {
-                foundCountry = "Canada"
-                foundCountryCode = "CA"
-                foundState = "Alberta"
-                foundCity = "Calgary"
-            } else if (clean.startsWith("200") || clean.startsWith("201") || clean.startsWith("202")) {
+                // Unknown ZIP: leave state/city unset rather than inventing a location.
+            } else if (Regex("^[A-Z]\\d[A-Z]").containsMatchIn(clean)) {
+                // Canadian postal codes (ANA NAN shape). Checked before the UK
+                // branch: "M5V" would otherwise look like a Manchester postcode.
+                val caEntry = CA_POSTAL_PREFIXES[clean.take(2)]
+                if (caEntry != null) {
+                    foundCountry = "Canada"
+                    foundCountryCode = "CA"
+                    foundState = caEntry.first
+                    foundCity = caEntry.second
+                }
+            } else if (Regex("^[A-Z]{1,2}\\d").containsMatchIn(clean)) {
+                // UK postcodes: match on the postal area (letters before the
+                // first digit of the outward code, e.g. "BD" in "BD1 1AA").
+                val area = clean.takeWhile { it.isLetter() }
+                val ukEntry = UK_POSTCODE_AREAS[area]
+                if (ukEntry != null) {
+                    foundCountry = "United Kingdom"
+                    foundCountryCode = "GB"
+                    foundState = ukEntry.first
+                    foundCity = ukEntry.second
+                }
+            } else if (Regex("^\\d{4}$").matches(clean)) {
+                // Australian postcodes are exactly 4 digits.
                 foundCountry = "Australia"
                 foundCountryCode = "AU"
-                foundState = "New South Wales"
-                foundCity = "Sydney"
-            } else if (clean.startsWith("300") || clean.startsWith("301") || clean.startsWith("302")) {
-                foundCountry = "Australia"
-                foundCountryCode = "AU"
-                foundState = "Victoria"
-                foundCity = "Melbourne"
-            } else if (clean.startsWith("400") || clean.startsWith("401")) {
-                foundCountry = "Australia"
-                foundCountryCode = "AU"
-                foundState = "Queensland"
-                foundCity = "Brisbane"
-            } else if (clean.startsWith("110")) {
+                when (clean.first()) {
+                    '2' -> { foundState = "New South Wales"; foundCity = "Sydney" }
+                    '3' -> { foundState = "Victoria"; foundCity = "Melbourne" }
+                    '4' -> { foundState = "Queensland"; foundCity = "Brisbane" }
+                    '5' -> { foundState = "South Australia"; foundCity = "Adelaide" }
+                    '6' -> { foundState = "Western Australia"; foundCity = "Perth" }
+                    '7' -> { foundState = "Tasmania"; foundCity = "Hobart" }
+                }
+            } else if (Regex("^\\d{6}$").matches(clean)) {
+                // Indian PIN codes are exactly 6 digits.
                 foundCountry = "India"
                 foundCountryCode = "IN"
-                foundState = "National Capital Region (Delhi)"
-                foundCity = "New Delhi"
-            } else if (clean.startsWith("400")) {
-                foundCountry = "India"
-                foundCountryCode = "IN"
-                foundState = "Maharashtra"
-                foundCity = "Mumbai"
-            } else if (clean.startsWith("560")) {
-                foundCountry = "India"
-                foundCountryCode = "IN"
-                foundState = "Karnataka"
-                foundCity = "Bengaluru"
+                when {
+                    clean.startsWith("110") -> { foundState = "National Capital Region (Delhi)"; foundCity = "New Delhi" }
+                    clean.startsWith("400") -> { foundState = "Maharashtra"; foundCity = "Mumbai" }
+                    clean.startsWith("560") -> { foundState = "Karnataka"; foundCity = "Bengaluru" }
+                }
             }
         }
 
