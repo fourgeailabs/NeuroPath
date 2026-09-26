@@ -72,6 +72,9 @@ android {
     }
     debug {
       if (file("${rootDir}/debug.keystore").exists()) signingConfig = signingConfigs.getByName("debugConfig")
+      // Debug also ships x86_64 native libs (litertlm provides them) so instrumented
+      // tests can run on the x86_64 CI emulator. Release stays arm64-v8a-only.
+      ndk { abiFilters += listOf("x86_64") }
     }
   }
   compileOptions {
