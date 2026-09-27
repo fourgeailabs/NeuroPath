@@ -377,7 +377,7 @@ fun HomeScreen(
                 Text(theme.emoji, fontSize = 20.sp)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (tier == AgeGroupTier.HIGH_SCHOOL) "AI Socratic Tutor" else "Learning Buddy",
+                    if (tier == AgeGroupTier.HIGH_SCHOOL) "AI Socratic Tutor" else theme.buddyName,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
@@ -435,7 +435,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                         modifier = Modifier
                             .size(76.dp)
                             .clip(CircleShape)
-                            .background(Color(theme.cardHex)),
+                            .background(Color(theme.cardHex))
+                            .clickable { viewModel.navigateTo(AppScreen.AVATAR_SHOP) },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(avatarItem?.emoji ?: "🤖", fontSize = 36.sp)
@@ -452,6 +453,18 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                                 fontSize = 18.sp,
                                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 4.dp, bottom = 4.dp)
                             )
+                        }
+                        // Change-avatar affordance
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(24.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("✏️", fontSize = 12.sp)
+                            }
                         }
                     }
                 }

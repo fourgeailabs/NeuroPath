@@ -85,6 +85,11 @@ object LlamaLocalManager {
     val loadProgress: StateFlow<Float> = _loadProgress.asStateFlow()
     private val _loadStage = MutableStateFlow("")
     val loadStage: StateFlow<String> = _loadStage.asStateFlow()
+    // Human-readable load failure. Shown on the loading screen with a retry
+    // button — a failed load must never flash-dismiss the screen as if the
+    // model were ready when it never made it into memory.
+    private val _loadError = MutableStateFlow<String?>(null)
+    val loadError: StateFlow<String?> = _loadError.asStateFlow()
 
     private fun defaultLlamaConfig() = LlamaConfig(
         contextSize = DEFAULT_CONTEXT_SIZE,
@@ -107,17 +112,31 @@ object LlamaLocalManager {
         }
         releaseCachedModelLocked()
         Log.i(TAG, "Loading local model from storage: $path")
-        _loadStage.value = "Opening model file…"
-        _loadProgress.value = 0.15f
-        val model = Llama.loadModel(modelPath = path, config = defaultLlamaConfig())
-        _loadStage.value = "Warming up the brain…"
-        _loadProgress.value = 0.85f
-        cachedModel = model
-        cachedModelPath = path
-        cachedModelLastUsedAt = now
-        _loadProgress.value = 1f
-        _loadStage.value = "Ready!"
-        return model
+        _loadError.value = null
+        _loadProgress.value = 0f
+        try {
+            _loadStage.value = "Opening model file…"
+            _loadProgress.value = 0.15f
+            val model = Llama.loadModel(modelPath = path, config = defaultLlamaConfig())
+            // The weights are mapped — now prove the model actually runs before
+            // claiming "Ready!": a single-token warmup keeps the screen honest
+            // about when the brain is truly usable.
+            _loadStage.value = "Warming up the brain…"
+            _loadProgress.value = 0.85f
+            runCatching { Llama.complete(model, prompt = "Hi", systemPrompt = "", maxTokens = 1) }
+                .onFailure { Log.w(TAG, "Warmup token failed; model still usable", it) }
+            cachedModel = model
+            cachedModelPath = path
+            cachedModelLastUsedAt = System.currentTimeMillis()
+            _loadProgress.value = 1f
+            _loadStage.value = "Ready!"
+            return model
+        } catch (e: Exception) {
+            _loadError.value = "Couldn't load the AI brain into memory (${e.message ?: e.javaClass.simpleName}). Ask a parent to check AI Settings."
+            _loadStage.value = "Hmm, that didn't work…"
+            Log.e(TAG, "Local model load failed", e)
+            throw e
+        }
     }
 
     private fun releaseCachedModelLocked() {

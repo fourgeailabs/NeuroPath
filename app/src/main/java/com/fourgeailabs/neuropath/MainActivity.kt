@@ -20,6 +20,7 @@ import com.fourgeailabs.neuropath.ui.AppStrings
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.TopSensoryBar
 import com.fourgeailabs.neuropath.ui.screens.AvatarShopScreen
+import com.fourgeailabs.neuropath.ui.screens.AiSettingsScreen
 import com.fourgeailabs.neuropath.ui.screens.BreathingGuideScreen
 import com.fourgeailabs.neuropath.ui.screens.ChildProfileSetupScreen
 import com.fourgeailabs.neuropath.ui.screens.CreativeStudioScreen
@@ -116,6 +117,7 @@ class MainActivity : ComponentActivity() {
                             AppScreen.AVATAR_SHOP -> AvatarShopScreen(viewModel = viewModel)
                             AppScreen.PARENT_PIN_GATE -> ParentPinGateScreen(viewModel = viewModel)
                             AppScreen.PARENT_DASHBOARD -> ParentDashboardScreen(viewModel = viewModel)
+                            AppScreen.AI_SETTINGS -> AiSettingsScreen(viewModel = viewModel)
                         }
                     }
                 }

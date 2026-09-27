@@ -60,6 +60,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -172,6 +173,18 @@ fun ChildProfileSetupScreen(
     var configuredDistrict by remember { mutableStateOf(targetProfile.schoolDistrict) }
     var configuredStandard by remember { mutableStateOf(targetProfile.stateStandard) }
     var postalLookupMessage by remember { mutableStateOf<String?>(null) }
+
+    // When a GPS scan (or ZIP lookup routed through detectLocationCompliance)
+    // returns, mirror its mapping into the draft fields so the
+    // "Current Educational Standards Mapping" card always matches the scan —
+    // it must never show a stale district from a previous save.
+    LaunchedEffect(locationComplianceResult) {
+        val res = locationComplianceResult ?: return@LaunchedEffect
+        configuredCountry = res.matchedEducationalLocale?.countryName ?: res.detectedCountry
+        configuredState = if (res.detectedState.isNotBlank()) res.detectedState else res.matchedEducationalLocale?.defaultStateOrProvince ?: configuredState
+        configuredDistrict = if (res.detectedDistrict.isNotBlank()) res.detectedDistrict else res.matchedEducationalLocale?.schoolDistricts?.firstOrNull() ?: configuredDistrict
+        configuredStandard = res.matchedEducationalLocale?.stateCurriculumStandards?.firstOrNull() ?: configuredStandard
+    }
 
     var dyslexiaFont by remember { mutableStateOf(targetProfile.dyslexiaFontEnabled) }
     var highContrastMode by remember { mutableStateOf(targetProfile.highContrastMode) }

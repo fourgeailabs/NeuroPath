@@ -50,8 +50,22 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v2.06.05",
+        version = "v2.06.06",
         date = "Current Update",
+        title = "Honest Loading, AI Settings Home & Deeper Personalisation",
+        highlights = listOf(
+            "⚖️ AI Settings Section: All AI engine controls — model mode, local accelerator, GGUF model download, Hugging Face token — moved out of the Parent Dashboard into their own AI Settings screen. New buddy voice picker (choose and preview the TTS voice) plus a one-tap model warm-up button.",
+            "⏱️ Honest Loading Screen: The typewriter screen now stays up until the AI brain is genuinely in memory. A failed load shows an error with a retry button instead of vanishing, overlapping loads can't dismiss each other early, and a real warm-up proves the model runs before it says Ready.",
+            "📍 Location Mapping Fix: The GPS/ZIP scan result now flows straight into the Current Educational Standards Mapping card — no more stale district from a previous save.",
+            "🎭 Tap-to-Change Avatar: Tapping the home-screen avatar opens the avatar picker, with owned avatars sorted first.",
+            "🧠 Deeper Personalisation: Lesson hints, quiz hints, story starters and the Daily Spark now use the learner's strengths, struggles, interests and accuracy. The Daily Spark no longer asks for author citations and has safe original fallback lines.",
+            "🏷️ The home chat button now shows the theme buddy's real name (e.g. Professor Rex)."
+        ),
+        isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v2.06.05",
+        date = "September 27, 2026",
         title = "Typewriter Loading Screen & Brain Warm-Up Nibbles",
         highlights = listOf(
             "⌨️ Typewriter Loading Screen: While the on-device AI model loads, kids now see a white paper screen in a real worn-typewriter font, with fun learning facts that fade in and out every 6 seconds — a screensaver vibe instead of a dead spinner.",
@@ -59,7 +73,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
             "📊 Honest Loading Bar: The progress bar follows real load stages (opening the model file, warming up) instead of fake percentages, with a skip option for impatient learners.",
             "🧠 Smarter Brain Warm-Up: The loading screen only appears when the parent has chosen on-device AI and the model actually needs loading — a warm model opens chat instantly."
         ),
-        isCurrentVersion = true
+        isCurrentVersion = false
     ),
     ReleaseNote(
         version = "v2.06.04",

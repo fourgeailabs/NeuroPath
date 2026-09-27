@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.data.model.AvatarCategory
+import com.fourgeailabs.neuropath.data.model.AvatarItem
 import com.fourgeailabs.neuropath.data.model.DEFAULT_AVATAR_SHOP_ITEMS
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
@@ -210,8 +211,19 @@ fun AvatarShopScreen(
             }
         }
 
-        // Item Grid
-        val itemsForCategory = DEFAULT_AVATAR_SHOP_ITEMS.filter { it.category == selectedCategory }
+        // Item Grid — equipped first, then owned, then locked, so picking is instant.
+        val itemsForCategory = DEFAULT_AVATAR_SHOP_ITEMS
+            .filter { it.category == selectedCategory }
+            .sortedWith(
+                compareByDescending<AvatarItem> {
+                    when (it.category) {
+                        AvatarCategory.AVATAR -> profile.currentAvatarId == it.id
+                        AvatarCategory.HAT -> profile.equippedHatId == it.id
+                        AvatarCategory.PET -> profile.equippedPetId == it.id
+                        AvatarCategory.BADGE -> profile.equippedBadgeId == it.id
+                    }
+                }.thenByDescending { unlockedIds.contains(it.id) || (it.starCost == 0 && it.gemCost == 0) }
+            )
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),

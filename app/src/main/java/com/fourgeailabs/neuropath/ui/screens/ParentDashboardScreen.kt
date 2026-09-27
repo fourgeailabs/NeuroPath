@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -954,255 +955,52 @@ fun ParentDashboardScreen(
                     }
                 }
 
-                // AI Engine Service Info (Meta Llama 3.2 AI Engine)
+                // AI settings now live in their own section (AiSettingsScreen).
                 item {
                     Card(
                         shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        modifier = Modifier.testTag("ai_settings_entry_card")
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = t("ai_settings"), tint = MaterialTheme.colorScheme.primary)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.navigateTo(AppScreen.AI_SETTINGS) }
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    t("ai_engine_service_llama_3_2_3b"),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    t("ai_settings"),
                                     fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
                                     color = MaterialTheme.colorScheme.primary
                                 )
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        text = t("hugging_face_llama_3_2_3b_integration_active"),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                            }
-
-                            Text(
-                                t("neuropath_is_powered_globally_by_meta_llama_3_2"),
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-
-                            // Disable Learning Buddy toggle
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(t("disable_learning_buddy_collectively"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text(t("completely_hides_learning_buddy_from_the_child_s"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Switch(
-                                    checked = profile.learningBuddyDisabled,
-                                    onCheckedChange = { disabled ->
-                                        viewModel.updateParentAiConfig(disabled, profile.aiVersionMode, profile.localLlamaInstalled)
-                                    },
-                                    modifier = Modifier.testTag("disable_learning_buddy_switch")
+                                Text(
+                                    t("ai_settings_section_description"),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-
-                            Spacer(Modifier.height(4.dp))
-
-                            Text(t("child_ai_version_mode"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                listOf(
-                                    "SOCRATIC_ONLY" to "Socratic Only",
-                                    "FULL_AI" to "Llama 3.2 (Cloud)",
-                                    "LOCAL_OFFLINE" to "Llama 3.2 (Local)"
-                                ).forEach { (mode, label) ->
-                                    val isSelected = profile.aiVersionMode == mode
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .clickable {
-                                                viewModel.updateParentAiConfig(profile.learningBuddyDisabled, mode, profile.localLlamaInstalled)
-                                            }
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                label,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(Modifier.height(4.dp))
-
-                            // Local Offline Llama 3.2 3B Hardware & GPU Acceleration
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(t("llama_3_2_3b_hardware_gpu_acceleration"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.secondary)
-                                    }
-                                    Text(
-                                        if (profile.localLlamaInstalled) "Status: Llama 3.2 3B loaded on-device with LiteRT-LM Vulkan/OpenCL hardware acceleration active." else "Status: Enable LiteRT-LM Llama 3.2 3B on-device hardware acceleration without cloud dependency.",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Button(
-                                        onClick = {
-                                            viewModel.updateParentAiConfig(profile.learningBuddyDisabled, "LOCAL_OFFLINE", !profile.localLlamaInstalled)
-                                        },
-                                        modifier = Modifier.fillMaxWidth().testTag("install_local_llama_btn"),
-                                        shape = RoundedCornerShape(10.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                                    ) {
-                                        Text(if (profile.localLlamaInstalled) "Disable Local Llama 3.2 Accelerator" else "Enable Llama 3.2 Hardware Accelerator", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                    }
-                                }
-                            }
-
-                            Spacer(Modifier.height(6.dp))
-
-                            // Llama 3.2 3B Local GGUF Engine from Hugging Face
-                            val llamaState by LlamaLocalManager.downloadState.collectAsState()
-                            val llamaComp = remember(context) { LlamaLocalManager.checkDeviceCompatibility(context) }
-                            val isLlamaInstalled = remember(llamaState) { LlamaLocalManager.isLlamaInstalled(context) }
-
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(t("llama_3_2_3b_local_engine_hugging_face_meta_llam"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.tertiary)
-                                    }
-
-                                    Text(
-                                        tf("source", LlamaLocalManager.HUGGINGFACE_REPO_URL),
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.tertiary
-                                    )
-
-                                    Text(
-                                        llamaComp.compatibilitySummary,
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-
-                                    when (val state = llamaState) {
-                                        is LlamaDownloadState.NotInstalled, is LlamaDownloadState.Error -> {
-                                            if (state is LlamaDownloadState.Error) {
-                                                Text(
-                                                    tf("str_11", state.message),
-                                                    fontSize = 11.5.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.error
-                                                )
-                                            }
-
-                                            Text(t("official_repository_meta_llama_llama_3_2_3b_inst"), fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                                            OutlinedTextField(
-                                                value = hfTokenInput,
-                                                onValueChange = { hfTokenInput = it; hfTokenEdited = true },
-                                                label = { Text(t("hugging_face_access_token_hf_optional")) },
-                                                placeholder = { Text(t("stored_securely_on_this_device_never_displayed")) },
-                                                singleLine = true,
-                                                modifier = Modifier.fillMaxWidth().testTag("hf_token_input")
-                                            )
-
-                                            Button(
-                                                onClick = {
-                                                    if (hfTokenInput.isNotBlank()) {
-                                                        viewModel.updateAiSetup(profile.customAiPlatform, hfTokenInput.trim())
-                                                    }
-                                                    coroutineScope.launch {
-                                                        LlamaLocalManager.startLlamaDownload(context, hfTokenInput)
-                                                    }
-                                                },
-                                                modifier = Modifier.fillMaxWidth().testTag("download_llama_3b_btn"),
-                                                shape = RoundedCornerShape(10.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                                            ) {
-                                                Text(t("download_llama_3_2_3b_weights_from_hugging_face"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                            }
-                                        }
-                                        is LlamaDownloadState.Downloading -> {
-                                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                    Text(t("downloading_llama_3_2_3b_from_hugging_face"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                    Text("${(state.progress * 100).toInt()}% (${state.downloadSpeedKbps} KB/s)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
-                                                }
-                                                LinearProgressIndicator(
-                                                    progress = { state.progress },
-                                                    modifier = Modifier.fillMaxWidth().height(8.dp),
-                                                    color = MaterialTheme.colorScheme.tertiary
-                                                )
-                                            }
-                                        }
-                                        is LlamaDownloadState.Installed -> {
-                                            Text(
-                                                "Status: Hugging Face Llama 3.2 3B model package (${"%.2f".format(state.fileSizeBytes / (1024f * 1024f * 1024f))} GB) installed locally on device storage at ${state.localPath}. Active for on-device local inference!",
-                                                fontSize = 11.sp,
-                                                color = Color(0xFF1B5E20),
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                Button(
-                                                    onClick = {
-                                                        viewModel.updateParentAiConfig(profile.learningBuddyDisabled, "LLAMA_LOCAL", true)
-                                                    },
-                                                    modifier = Modifier.weight(1f).testTag("activate_llama_local_btn"),
-                                                    shape = RoundedCornerShape(10.dp),
-                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                                                ) {
-                                                    Text(t("set_active_engine"), fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
-                                                }
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        LlamaLocalManager.deleteLlamaModel(context)
-                                                    },
-                                                    modifier = Modifier.weight(1f).testTag("delete_llama_model_btn"),
-                                                    shape = RoundedCornerShape(10.dp)
-                                                ) {
-                                                    Text(t("delete_model"), fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

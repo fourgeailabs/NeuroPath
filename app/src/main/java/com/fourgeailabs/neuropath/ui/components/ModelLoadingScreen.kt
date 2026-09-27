@@ -57,6 +57,8 @@ fun ModelLoadingScreen(
     progress: Float,
     stage: String,
     onSkip: () -> Unit,
+    loadError: String? = null,
+    onRetry: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val facts = remember(themeId) { loadingFactsForTheme(themeId).shuffled() }
@@ -166,6 +168,25 @@ fun ModelLoadingScreen(
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(8.dp))
+            if (loadError != null) {
+                Text(
+                    text = loadError,
+                    fontFamily = TypewriterFont,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp,
+                    color = Color(0xFFB3261E),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = onRetry) {
+                    Text(
+                        text = "try again",
+                        fontFamily = TypewriterFont,
+                        fontSize = 14.sp,
+                        color = InkColor
+                    )
+                }
+            }
             TextButton(onClick = onSkip) {
                 Text(
                     text = "skip",

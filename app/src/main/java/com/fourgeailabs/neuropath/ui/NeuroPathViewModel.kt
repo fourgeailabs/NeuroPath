@@ -48,6 +48,7 @@ import com.fourgeailabs.neuropath.ui.components.BreathingVisualMode
 import com.fourgeailabs.neuropath.util.LocationComplianceHelper
 import com.fourgeailabs.neuropath.util.LocationComplianceResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,7 +80,8 @@ enum class AppScreen {
     NEURO_BUDDY_CHAT,
     AVATAR_SHOP,
     PARENT_PIN_GATE,
-    PARENT_DASHBOARD
+    PARENT_DASHBOARD,
+    AI_SETTINGS
 }
 
 enum class BreathingPhase(val labelKey: String, val durationSec: Int, val instructionKey: String, val scaleTarget: Float) {
@@ -744,13 +746,14 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 val prof = _currentProfile.value
                 val tier = AgeGroupTier.entries.find { it.id == prof.ageGroupTier } ?: AgeGroupTier.ELEMENTARY
                 val grade = GradeLevel.entries.find { it.code == prof.gradeLevel } ?: GradeLevel.GRADE_1
-                val prompt = "Give a 1-sentence encouraging, inspiring motivational quote with author citation (e.g. \"Quote...\" - Author) " +
+                val prompt = "Give a 1-sentence encouraging, inspiring motivational line (your own original words, no author name) " +
                     "for a ${tier.name.lowercase().replace('_', ' ')} student in ${grade.displayName} " +
                     "(${AppLanguage.fromCode(prof.appLanguageCode).displayName}), using a ${theme.title} theme. " +
                     "Make the vocabulary and themes age-appropriate for that grade level."
+                val personalizationProfile = com.fourgeailabs.neuropath.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), prof, "GENERAL", false)
                 val quote = LlamaClient.generateChatReply(
                     conversationHistory = listOf("user" to prompt),
-                    systemPrompt = getSystemPromptForProfile(prof, roleContext = "quote"),
+                    systemPrompt = getSystemPromptForProfile(prof, roleContext = "quote") + "\n" + personalizationProfile,
                     languageCode = prof.appLanguageCode,
                     schoolDistrict = prof.schoolDistrict,
                     modelMode = ChatModelMode.FAST,
@@ -758,9 +761,13 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 if (quote.isNotBlank()) {
                     _dailyQuote.value = quote
+                } else {
+                    // Safe curated fallback: original lines, no fabricated attribution.
+                    _dailyQuote.value = DAILY_SPARK_FALLBACKS.random()
                 }
             } catch (e: Throwable) {
                 Log.e("NeuroPathViewModel", "Failed to fetch daily quote", e)
+                if (_dailyQuote.value.isBlank()) _dailyQuote.value = DAILY_SPARK_FALLBACKS.random()
             }
         }
     }
@@ -942,9 +949,10 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             val step = _activeLesson.value?.teachSteps?.getOrNull(_currentTeachStep.value) ?: return@launch
             speechManager.speak(t("thinking_of_a_good_way_to_explain_this"))
             val prompt = "Explain '${step.title}' clearly for a student in ${prof.schoolDistrict} (${prof.city}). Use accessible concepts and the ${getActiveTheme().title} theme. Keep to 2 short sentences."
+            val personalizationProfile = com.fourgeailabs.neuropath.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), prof, _selectedSubject.value.name, false)
             val explanation = LlamaClient.generateChatReply(
                 conversationHistory = listOf("user" to prompt),
-                systemPrompt = getSystemPromptForProfile(prof, roleContext = "tutor"),
+                systemPrompt = getSystemPromptForProfile(prof, roleContext = "tutor") + "\n" + personalizationProfile,
                 languageCode = prof.appLanguageCode,
                 schoolDistrict = prof.schoolDistrict,
                 modelMode = ChatModelMode.GENERAL,
@@ -960,9 +968,10 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             val question = _activeLesson.value?.questions?.getOrNull(_journeyQuestionIndex.value) ?: return@launch
             speechManager.speak(t("let_s_look_at_this_together"))
             val prompt = "A student needs help with: '${question.questionText}'. Give a small hint without spoiling the answer. Use the ${getActiveTheme().title} theme. Keep to 2 short sentences."
+            val personalizationProfile = com.fourgeailabs.neuropath.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), prof, _selectedSubject.value.name, false)
             val explanation = LlamaClient.generateChatReply(
                 conversationHistory = listOf("user" to prompt),
-                systemPrompt = getSystemPromptForProfile(prof, roleContext = "tutor"),
+                systemPrompt = getSystemPromptForProfile(prof, roleContext = "tutor") + "\n" + personalizationProfile,
                 languageCode = prof.appLanguageCode,
                 schoolDistrict = prof.schoolDistrict,
                 modelMode = ChatModelMode.GENERAL,
@@ -1286,6 +1295,11 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     val modelLoadProgress: StateFlow<Float> = LlamaLocalManager.loadProgress
     val modelLoadStage: StateFlow<String> = LlamaLocalManager.loadStage
     private var modelLoadJob: Job? = null
+    // Guards the loading screen against stale jobs: only the latest load
+    // generation may dismiss the screen, so a superseded job finishing late
+    // can never hide a newer load that is still running.
+    private var modelLoadGeneration = 0
+    val modelLoadError: StateFlow<String?> = LlamaLocalManager.loadError
 
     /**
      * Ensures the on-device model is ready, showing the loading screen while a
@@ -1293,7 +1307,6 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
      * the model is already warm.
      */
     fun ensureLocalModelReady() {
-        modelLoadJob?.cancel()
         val ctx = getApplication<Application>().applicationContext
         val wantsLocal = !hasValidApiKey &&
             (_chatModelMode.value == ChatModelMode.LLAMA_LOCAL || LlamaLocalManager.isLlamaInstalled(ctx))
@@ -1301,21 +1314,52 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             _isModelLoading.value = false
             return
         }
+        modelLoadGeneration += 1
+        val generation = modelLoadGeneration
+        modelLoadJob?.cancel()
         _isModelLoading.value = true
         modelLoadJob = viewModelScope.launch {
             try {
-                LlamaLocalManager.preloadModel(ctx)
+                val ok = LlamaLocalManager.preloadModel(ctx)
+                // Dismiss only on success and only if no newer load started.
+                // On failure the screen stays up showing the error + retry —
+                // it must never flash away as if the model were ready.
+                if (ok && generation == modelLoadGeneration) {
+                    _isModelLoading.value = false
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) {
-            } finally {
-                _isModelLoading.value = false
+                // loadError is already set by the manager; screen stays up.
             }
         }
     }
 
     /** Lets the child skip the loading screen; the first message just takes longer. */
     fun skipModelLoading() {
+        // Retire any in-flight job's right to dismiss the screen.
+        modelLoadGeneration += 1
         modelLoadJob?.cancel()
         _isModelLoading.value = false
+    }
+
+    /** Retry a failed model load from the loading screen's error state. */
+    fun retryModelLoad() = ensureLocalModelReady()
+
+    // --- Buddy voice (AI settings section) ------------------------------------------
+    val availableTtsVoices: StateFlow<List<android.speech.tts.Voice>> = speechManager.availableVoices
+    val currentTtsVoiceName: StateFlow<String?> = speechManager.currentVoiceName
+
+    /** Picks a specific installed TTS voice for the buddy (AI settings screen). */
+    fun setTtsVoice(voiceName: String) {
+        viewModelScope.launch {
+            speechManager.setVoiceByName(voiceName)
+        }
+    }
+
+    /** Speaks a short sample so the parent can judge the voice. */
+    fun previewTtsVoice() {
+        speechManager.speak(t("buddy_voice_preview_line"))
     }
 
     // Holds the callback waiting for the SpeechManager recognition result for the
@@ -2051,9 +2095,10 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     suspend fun sparkStoryIdea(themeTitle: String, promptTopic: String): String {
         val prof = _currentProfile.value
         val prompt = "Give a 2-sentence creative story starter idea about $themeTitle and $promptTopic."
+        val personalizationProfile = com.fourgeailabs.neuropath.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), prof, "CREATIVE", false)
         return LlamaClient.generateChatReply(
             conversationHistory = listOf("user" to prompt),
-            systemPrompt = getSystemPromptForProfile(prof, roleContext = "story"),
+            systemPrompt = getSystemPromptForProfile(prof, roleContext = "story") + "\n" + personalizationProfile,
             languageCode = prof.appLanguageCode,
             schoolDistrict = prof.schoolDistrict,
             modelMode = ChatModelMode.FAST,
@@ -2089,10 +2134,21 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     companion object {
-        /** Maximum user message length accepted into prompts/history/DB. */
         private const val MAX_USER_PROMPT_CHARS = 2000
         private val CONTROL_CHARS_REGEX = Regex("[\\p{Cntrl}&&[^\r\n\t]]")
         private val RUNAWAY_SPACES_REGEX = Regex("[ \t]{3,}")
         private val RUNAWAY_NEWLINES_REGEX = Regex("\n{4,}")
+
+        /** Original, attribution-free fallback lines when the model has no quote ready. */
+        val DAILY_SPARK_FALLBACKS = listOf(
+            "Every try makes your brain a little bit stronger.",
+            "Mistakes are just practice wearing a disguise.",
+            "You don't have to be perfect — you just have to keep going.",
+            "Curious minds learn the coolest things.",
+            "One small step today is a giant leap for your learning.",
+            "Your brain loves a good challenge — give it one!",
+            "Asking questions is a superpower. Use it often.",
+            "Today is a brand-new page. Write something brilliant on it."
+        )
     }
 }

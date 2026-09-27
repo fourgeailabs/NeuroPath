@@ -79,6 +79,7 @@ fun NeuroBuddyChatScreen(
         val theme = viewModel.getActiveTheme()
         val loadProgress by viewModel.modelLoadProgress.collectAsState()
         val loadStage by viewModel.modelLoadStage.collectAsState()
+        val loadError by viewModel.modelLoadError.collectAsState()
         ModelLoadingScreen(
             buddyName = theme.buddyName,
             themeEmoji = theme.emoji,
@@ -86,6 +87,8 @@ fun NeuroBuddyChatScreen(
             progress = loadProgress,
             stage = loadStage.ifBlank { "Warming up…" },
             onSkip = { viewModel.skipModelLoading() },
+            loadError = loadError,
+            onRetry = { viewModel.retryModelLoad() },
             modifier = modifier
         )
         return
