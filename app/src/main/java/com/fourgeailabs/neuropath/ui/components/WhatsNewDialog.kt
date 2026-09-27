@@ -50,8 +50,20 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v2.06.04",
+        version = "v2.06.05",
         date = "Current Update",
+        title = "Typewriter Loading Screen & Brain Warm-Up Nibbles",
+        highlights = listOf(
+            "⌨️ Typewriter Loading Screen: While the on-device AI model loads, kids now see a white paper screen in a real worn-typewriter font, with fun learning facts that fade in and out every 6 seconds — a screensaver vibe instead of a dead spinner.",
+            "📚 Theme-Flavoured Nibbles: The loading facts match the child's active theme — dinosaur facts for Dino Safari, ocean facts for Ocean, and so on — each tagged by learning module (Science, Math, Reading, History, SEL, Art, Coding).",
+            "📊 Honest Loading Bar: The progress bar follows real load stages (opening the model file, warming up) instead of fake percentages, with a skip option for impatient learners.",
+            "🧠 Smarter Brain Warm-Up: The loading screen only appears when the parent has chosen on-device AI and the model actually needs loading — a warm model opens chat instantly."
+        ),
+        isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v2.06.04",
+        date = "September 26, 2026",
         title = "Real AI Buddy, Faster Local Llama & Sensory Sound Overhaul",
         highlights = listOf(
             "🧠 Honest AI Engine: The Learning Buddy now uses the real on-device Llama 3.2 model whenever it is installed — no more silent fallback to canned template replies. The chat header names the engine that actually answers (cloud, on-device, or offline).",
@@ -62,7 +74,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
             "💡 Age-Appropriate Daily Spark: The daily inspiration quote is now explicitly tuned to the student's grade level and age tier.",
             "📍 Location Scan Everywhere: The child profile setup screen now shows the same location scan result card as the parent dashboard."
         ),
-        isCurrentVersion = true
+        isCurrentVersion = false
     ),
     ReleaseNote(
         version = "v2.06.03",

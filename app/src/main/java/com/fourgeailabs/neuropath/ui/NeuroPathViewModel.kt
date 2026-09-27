@@ -1277,6 +1277,47 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    // --- Local model loading screen -------------------------------------------------
+    // Shown while the on-device Llama model cold-loads, so the wait becomes a
+    // typewriter "nibble" break instead of a dead spinner. Only appears when the
+    // parent has chosen local AI for the child and the model isn't warm yet.
+    private val _isModelLoading = MutableStateFlow(false)
+    val isModelLoading: StateFlow<Boolean> = _isModelLoading.asStateFlow()
+    val modelLoadProgress: StateFlow<Float> = LlamaLocalManager.loadProgress
+    val modelLoadStage: StateFlow<String> = LlamaLocalManager.loadStage
+    private var modelLoadJob: Job? = null
+
+    /**
+     * Ensures the on-device model is ready, showing the loading screen while a
+     * cold load runs. Returns immediately when the cloud engine will answer or
+     * the model is already warm.
+     */
+    fun ensureLocalModelReady() {
+        modelLoadJob?.cancel()
+        val ctx = getApplication<Application>().applicationContext
+        val wantsLocal = !hasValidApiKey &&
+            (_chatModelMode.value == ChatModelMode.LLAMA_LOCAL || LlamaLocalManager.isLlamaInstalled(ctx))
+        if (!wantsLocal || LlamaLocalManager.isModelWarm()) {
+            _isModelLoading.value = false
+            return
+        }
+        _isModelLoading.value = true
+        modelLoadJob = viewModelScope.launch {
+            try {
+                LlamaLocalManager.preloadModel(ctx)
+            } catch (_: Exception) {
+            } finally {
+                _isModelLoading.value = false
+            }
+        }
+    }
+
+    /** Lets the child skip the loading screen; the first message just takes longer. */
+    fun skipModelLoading() {
+        modelLoadJob?.cancel()
+        _isModelLoading.value = false
+    }
+
     // Holds the callback waiting for the SpeechManager recognition result for the
     // current voice input. Transcription always comes from Android's SpeechRecognizer
     // (there is no offline WAV-to-text engine in this build).

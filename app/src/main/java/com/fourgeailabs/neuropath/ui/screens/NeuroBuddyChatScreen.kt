@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.EducationalChatInterface
+import com.fourgeailabs.neuropath.ui.components.ModelLoadingScreen
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
 
@@ -68,9 +69,27 @@ fun NeuroBuddyChatScreen(
     modifier: Modifier = Modifier
 ) {
     val isVoiceMode by viewModel.isVoiceConversationMode.collectAsState()
+    val isModelLoading by viewModel.isModelLoading.collectAsState()
 
-    // Warm the on-device model while the chat opens so the first message is fast.
-    LaunchedEffect(Unit) { viewModel.prewarmLocalModel() }
+    // Ensure the on-device model is ready; shows the typewriter loading screen
+    // while a cold load runs (parent chose local AI and the model isn't warm).
+    LaunchedEffect(Unit) { viewModel.ensureLocalModelReady() }
+
+    if (isModelLoading) {
+        val theme = viewModel.getActiveTheme()
+        val loadProgress by viewModel.modelLoadProgress.collectAsState()
+        val loadStage by viewModel.modelLoadStage.collectAsState()
+        ModelLoadingScreen(
+            buddyName = theme.buddyName,
+            themeEmoji = theme.emoji,
+            themeId = theme.id,
+            progress = loadProgress,
+            stage = loadStage.ifBlank { "Warming up…" },
+            onSkip = { viewModel.skipModelLoading() },
+            modifier = modifier
+        )
+        return
+    }
 
     if (isVoiceMode) {
         // Live Voice Conversation Stage

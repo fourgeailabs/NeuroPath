@@ -79,6 +79,13 @@ object LlamaLocalManager {
     private var cachedModelLastUsedAt: Long = 0L
     private const val MODEL_IDLE_RELEASE_MS = 10 * 60 * 1000L
 
+    // Loading-screen progress: the GGUF mmap itself doesn't report byte-level
+    // progress, so we report honest stages instead of fake percentages.
+    private val _loadProgress = MutableStateFlow(0f)
+    val loadProgress: StateFlow<Float> = _loadProgress.asStateFlow()
+    private val _loadStage = MutableStateFlow("")
+    val loadStage: StateFlow<String> = _loadStage.asStateFlow()
+
     private fun defaultLlamaConfig() = LlamaConfig(
         contextSize = DEFAULT_CONTEXT_SIZE,
         threads = Runtime.getRuntime().availableProcessors().coerceIn(2, 6)
@@ -100,10 +107,16 @@ object LlamaLocalManager {
         }
         releaseCachedModelLocked()
         Log.i(TAG, "Loading local model from storage: $path")
+        _loadStage.value = "Opening model file…"
+        _loadProgress.value = 0.15f
         val model = Llama.loadModel(modelPath = path, config = defaultLlamaConfig())
+        _loadStage.value = "Warming up the brain…"
+        _loadProgress.value = 0.85f
         cachedModel = model
         cachedModelPath = path
         cachedModelLastUsedAt = now
+        _loadProgress.value = 1f
+        _loadStage.value = "Ready!"
         return model
     }
 

@@ -18,8 +18,8 @@ android {
     applicationId = "com.fourgeailabs.neuropath"
     minSdk = 24
     targetSdk = 36
-    versionCode = 50
-    versionName = "2.06.04"
+    versionCode = 51
+    versionName = "2.06.05"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     ndk { abiFilters += listOf("arm64-v8a") }
   }
