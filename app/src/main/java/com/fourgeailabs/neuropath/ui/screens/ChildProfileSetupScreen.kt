@@ -109,6 +109,7 @@ fun ChildProfileSetupScreen(
     val currentProfile by viewModel.currentProfile.collectAsState()
     val allProfiles by viewModel.allProfiles.collectAsState()
     val isVerifyingLocation by viewModel.isVerifyingLocation.collectAsState()
+    val locationComplianceResult by viewModel.locationComplianceResult.collectAsState()
 
     // Runtime location permission: the scan button requests it on demand so the
     // GPS/network path in detectLocationCompliance can actually run.
@@ -1089,6 +1090,28 @@ fun ChildProfileSetupScreen(
                         Icon(imageVector = Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(t("scan_location_with_google_maps"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+                    }
+
+                    // Scan result card: shows what the scan found (or why GPS
+                    // gave no fix), mirroring the parent dashboard.
+                    locationComplianceResult?.let { res ->
+                        Spacer(Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (res.isGoogleMapsVerified) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    if (res.isGoogleMapsVerified) "🗺️ Google Maps Verified: ${res.detectedCity}, ${res.detectedState}, ${res.detectedCountry}" else "📍 Location Detected: ${res.detectedCountry} (${res.detectedState})",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = if (res.isGoogleMapsVerified) Color(0xFF1B5E20) else MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(tf("district_alignment", res.detectedDistrict, res.educationalStandard), fontSize = 11.sp, color = if (res.isGoogleMapsVerified) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(tf("source", res.verificationSource), fontSize = 10.sp, color = if (res.isGoogleMapsVerified) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
 
                     Spacer(Modifier.height(14.dp))
