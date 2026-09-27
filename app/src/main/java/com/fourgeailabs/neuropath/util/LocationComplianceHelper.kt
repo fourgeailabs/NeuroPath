@@ -6,15 +6,22 @@ import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
+import android.os.Bundle
+import android.os.CancellationSignal
+import android.os.Looper
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
 import com.fourgeailabs.neuropath.data.model.EducationalLocale
 import com.fourgeailabs.neuropath.data.model.GLOBAL_EDUCATIONAL_LOCALES
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
+import java.util.concurrent.Executor
 
 data class LocationComplianceResult(
     val detectedCountry: String,
@@ -228,6 +235,94 @@ object LocationComplianceHelper {
 
     private fun mapKnownUsZip(clean: String): Pair<String, String>? = US_ZIP_EXACT[clean.take(5)]
 
+    /**
+     * Requests one live location fix (network first for speed, GPS for
+     * precision) and waits up to [timeoutMs]. Returns null on timeout or when
+     * no provider is enabled. Callers must guard with [hasLocationPermission].
+     */
+    private suspend fun requestFreshLocation(
+        locationManager: LocationManager?,
+        timeoutMs: Long = 30_000L
+    ): Location? {
+        if (locationManager == null) return null
+        val providers = listOf(
+            LocationManager.NETWORK_PROVIDER,
+            LocationManager.GPS_PROVIDER
+        ).filter { provider ->
+            try {
+                locationManager.isProviderEnabled(provider)
+            } catch (e: Exception) {
+                false
+            }
+        }
+        if (providers.isEmpty()) return null
+        return withTimeoutOrNull(timeoutMs) {
+            suspendCancellableCoroutine { cont ->
+                val cancelSignal = CancellationSignal()
+                cont.invokeOnCancellation {
+                    try { cancelSignal.cancel() } catch (e: Exception) { /* already settled */ }
+                }
+                val directExecutor = Executor { command -> command.run() }
+                var settled = false
+                fun settle(location: Location?) {
+                    if (!settled) {
+                        settled = true
+                        try { cancelSignal.cancel() } catch (e: Exception) { /* already settled */ }
+                        cont.resume(location, null)
+                    }
+                }
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        for (provider in providers) {
+                            try {
+                                locationManager.getCurrentLocation(
+                                    provider,
+                                    cancelSignal,
+                                    directExecutor,
+                                    ::settle
+                                )
+                            } catch (e: Exception) {
+                                // Provider refused; the other one may still answer.
+                            }
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        val listener = object : LocationListener {
+                            override fun onLocationChanged(location: Location) {
+                                if (!settled) {
+                                    settled = true
+                                    try { locationManager.removeUpdates(this) } catch (e: Exception) { /* ignore */ }
+                                    cont.resume(location, null)
+                                }
+                            }
+                            override fun onProviderEnabled(provider: String) {}
+                            override fun onProviderDisabled(provider: String) {}
+                            @Deprecated("Deprecated in Java")
+                            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+                        }
+                        cont.invokeOnCancellation {
+                            try { locationManager.removeUpdates(listener) } catch (e: Exception) { /* ignore */ }
+                        }
+                        var requested = false
+                        for (provider in providers) {
+                            try {
+                                locationManager.requestLocationUpdates(
+                                    provider, 0L, 0f, listener, Looper.getMainLooper()
+                                )
+                                requested = true
+                            } catch (e: Exception) {
+                                // Provider refused; try the next one.
+                            }
+                        }
+                        if (!requested) settle(null)
+                    }
+                } catch (e: Exception) {
+                    settle(null)
+                }
+            }
+        }
+    }
+
     suspend fun resolvePostalOrZipCode(context: Context, inputPostal: String): LocationComplianceResult = withContext(Dispatchers.IO) {
         val clean = inputPostal.trim().uppercase()
         if (clean.isBlank()) {
@@ -363,7 +458,16 @@ object LocationComplianceHelper {
         try {
             if (hasLocationPermission(context)) {
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-                val lastLocation: Location? = try {
+                // Ask the radio for a live fix first: getLastKnownLocation() is
+                // null when nothing has recently woken the providers, which used
+                // to make the scan silently fall back to the SIM country with no
+                // city/state. A live fix makes the scan actually use GPS.
+                val liveLocation: Location? = try {
+                    requestFreshLocation(locationManager)
+                } catch (e: SecurityException) {
+                    null
+                }
+                val lastLocation: Location? = liveLocation ?: try {
                     locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                         ?: locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                         ?: locationManager?.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
