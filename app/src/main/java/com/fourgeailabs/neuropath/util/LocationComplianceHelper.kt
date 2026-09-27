@@ -271,7 +271,7 @@ object LocationComplianceHelper {
                     if (location != null && !settled) {
                         settled = true
                         try { cancelSignal.cancel() } catch (e: Exception) { /* already settled */ }
-                        cont.resume(location, null)
+                        cont.resume(location) { _, _, _ -> }
                     }
                 }
                 try {
@@ -295,7 +295,7 @@ object LocationComplianceHelper {
                                 if (!settled) {
                                     settled = true
                                     try { locationManager.removeUpdates(this) } catch (e: Exception) { /* ignore */ }
-                                    cont.resume(location, null)
+                                    cont.resume(location) { _, _, _ -> }
                                 }
                             }
                             override fun onProviderEnabled(provider: String) {}
