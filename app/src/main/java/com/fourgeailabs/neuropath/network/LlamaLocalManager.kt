@@ -158,7 +158,14 @@ object LlamaLocalManager {
     /** Pre-warms the model so the first chat message doesn't pay the load cost. */
     suspend fun preloadModel(context: Context): Boolean = withContext(inferenceDispatcher) {
         val modelFile = getLlamaModelFile(context)
-        if (!isLlamaInstalled(context)) return@withContext false
+        if (!isLlamaInstalled(context)) {
+            // Never fail silently: with no model on disk the loading screen
+            // would otherwise sit at 0% forever with no error and no way out.
+            _loadError.value = "The AI brain isn't downloaded yet. Ask a parent to download it in AI Settings."
+            _loadStage.value = "Brain not downloaded yet"
+            _loadProgress.value = 0f
+            return@withContext false
+        }
         runCatching { getOrLoadModel(context, modelFile) }.isSuccess
     }
 
@@ -293,26 +300,21 @@ object LlamaLocalManager {
         return deleted || litertDeleted
     }
 
-    suspend fun generateLlamaResponse(
-        context: Context,
-        prompt: String,
+    /**
+     * Assembles the Llama 3.2 chat-templated prompt for on-device inference.
+     * Pure function (no Android dependencies) so the AI audit test can verify
+     * the template, grounding, and history handling without loading a 2GB model.
+     */
+    fun buildLocalLlamaPrompt(
+        userPrompt: String,
         systemPrompt: String = "",
         schoolDistrict: String = "",
         stateOrProvince: String = "",
         country: String = "",
         standardTitle: String = "",
-        languageCode: String = "en-US",
-        conversationHistory: List<Pair<String, String>> = emptyList(),
         curriculumContext: String = "",
-        hasValidApiKey: Boolean = false,
-        activeApiKey: String = ""
-    ): String = withContext(inferenceDispatcher) {
-        val modelFile = getLlamaModelFile(context)
-        if (!isLlamaInstalled(context)) return@withContext "🦙 [Llama 3.2 3B Local Engine]: The local GGUF model is not installed. Open Parent Dashboard → Local Llama 3.2 Manager and download it first."
-        if (!checkDeviceCompatibility(context).isSupportedYear2020Plus) return@withContext "🦙 [Llama 3.2 3B Local Engine]: This Android version is below the recommended Android 10 baseline for local Llama 3.2 inference."
-        val userPrompt = prompt.trim()
-        if (userPrompt.isBlank()) return@withContext "🦙 [Llama 3.2 3B Local Engine]: Please ask me a learning question."
-
+        conversationHistory: List<Pair<String, String>> = emptyList()
+    ): String {
         val recentHistory = conversationHistory
             .filter { it.first.equals("user", ignoreCase = true) || it.first.equals("model", ignoreCase = true) || it.first.equals("assistant", ignoreCase = true) }
             .map { (role, text) -> role.lowercase() to text.trim() }
@@ -338,7 +340,39 @@ object LlamaLocalManager {
             if (curriculumContext.isNotBlank()) append("Curriculum context: $curriculumContext. ")
             if (systemPrompt.isNotBlank()) append("\n$systemPrompt\n")
         }
-        val llamaPrompt = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n$grounding\n<|eot_id|><|start_header_id|>user<|end_header_id|>\n$historyBlock$userPrompt<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n"
+        return "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n$grounding\n<|eot_id|><|start_header_id|>user<|end_header_id|>\n$historyBlock$userPrompt<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n"
+    }
+
+    suspend fun generateLlamaResponse(
+        context: Context,
+        prompt: String,
+        systemPrompt: String = "",
+        schoolDistrict: String = "",
+        stateOrProvince: String = "",
+        country: String = "",
+        standardTitle: String = "",
+        languageCode: String = "en-US",
+        conversationHistory: List<Pair<String, String>> = emptyList(),
+        curriculumContext: String = "",
+        hasValidApiKey: Boolean = false,
+        activeApiKey: String = ""
+    ): String = withContext(inferenceDispatcher) {
+        val modelFile = getLlamaModelFile(context)
+        if (!isLlamaInstalled(context)) return@withContext "🦙 [Llama 3.2 3B Local Engine]: The local GGUF model is not installed. Open Parent Dashboard → Local Llama 3.2 Manager and download it first."
+        if (!checkDeviceCompatibility(context).isSupportedYear2020Plus) return@withContext "🦙 [Llama 3.2 3B Local Engine]: This Android version is below the recommended Android 10 baseline for local Llama 3.2 inference."
+        val userPrompt = prompt.trim()
+        if (userPrompt.isBlank()) return@withContext "🦙 [Llama 3.2 3B Local Engine]: Please ask me a learning question."
+
+        val llamaPrompt = buildLocalLlamaPrompt(
+            userPrompt = userPrompt,
+            systemPrompt = systemPrompt,
+            schoolDistrict = schoolDistrict,
+            stateOrProvince = stateOrProvince,
+            country = country,
+            standardTitle = standardTitle,
+            curriculumContext = curriculumContext,
+            conversationHistory = conversationHistory
+        )
 
         // The accelerated path gets the same Llama-3 chat template as the GGUF path so the
         // Instruct model sees identical formatting whichever runtime serves it.

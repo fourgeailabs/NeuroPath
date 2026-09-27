@@ -55,7 +55,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
         title = "Honest Loading, AI Settings Home & Deeper Personalisation",
         highlights = listOf(
             "⚖️ AI Settings Section: All AI engine controls — model mode, local accelerator, GGUF model download, Hugging Face token — moved out of the Parent Dashboard into their own AI Settings screen. New buddy voice picker (choose and preview the TTS voice) plus a one-tap model warm-up button.",
-            "⏱️ Honest Loading Screen: The typewriter screen now stays up until the AI brain is genuinely in memory. A failed load shows an error with a retry button instead of vanishing, overlapping loads can't dismiss each other early, and a real warm-up proves the model runs before it says Ready.",
+            "⏱️ Honest Loading Screen: The typewriter screen now stays up until the AI brain is genuinely in memory. A failed load shows an error with a retry button instead of vanishing, overlapping loads can't dismiss each other early, and a real warm-up proves the model runs before it says Ready. If the brain was never downloaded, the screen says so plainly and points the parent to AI Settings.",
             "📍 Location Mapping Fix: The GPS/ZIP scan result now flows straight into the Current Educational Standards Mapping card — no more stale district from a previous save.",
             "🎭 Tap-to-Change Avatar: Tapping the home-screen avatar opens the avatar picker, with owned avatars sorted first.",
             "🧠 Deeper Personalisation: Lesson hints, quiz hints, story starters and the Daily Spark now use the learner's strengths, struggles, interests and accuracy. The Daily Spark no longer asks for author citations and has safe original fallback lines.",
