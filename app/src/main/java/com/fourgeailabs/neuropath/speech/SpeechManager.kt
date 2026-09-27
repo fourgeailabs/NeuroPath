@@ -10,6 +10,8 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
+import android.util.Log
 import com.fourgeailabs.neuropath.data.model.AppLanguage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,12 +48,20 @@ class SpeechManager(private val context: Context) {
     private val _currentWordIndex = MutableStateFlow<Int>(-1)
     val currentWordIndex: StateFlow<Int> = _currentWordIndex.asStateFlow()
 
-    private var speechRate: Float = 0.88f
-    private val _speechRateFlow = MutableStateFlow(0.88f)
+    private var speechRate: Float = 0.92f
+    private val _speechRateFlow = MutableStateFlow(0.92f)
     val speechRateFlow: StateFlow<Float> = _speechRateFlow.asStateFlow()
 
-    private var speechPitch: Float = 1.05f
+    private var speechPitch: Float = 0.95f
     private var currentLanguage: AppLanguage = AppLanguage.ENGLISH_US
+
+    // Voice selection: the available device voices for the current language and
+    // the chosen soothing voice. The engine default is often a harsh low-quality
+    // voice, so we actively pick the highest-quality one available.
+    private val _availableVoices = MutableStateFlow<List<Voice>>(emptyList())
+    val availableVoices: StateFlow<List<Voice>> = _availableVoices.asStateFlow()
+    private val _currentVoiceName = MutableStateFlow<String?>(null)
+    val currentVoiceName: StateFlow<String?> = _currentVoiceName.asStateFlow()
 
     init {
         tts = TextToSpeech(context) { status ->
@@ -61,8 +71,58 @@ class SpeechManager(private val context: Context) {
                 tts?.setPitch(speechPitch)
                 _speechRateFlow.value = speechRate
                 isInitialized = true
+                selectBestVoice()
                 setupUtteranceListener()
             }
+        }
+    }
+
+    /**
+     * Picks the smoothest available voice for the current language: highest
+     * reported quality first, preferring on-device voices (no network latency)
+     * when quality ties. Falls back to the engine default when none qualify.
+     */
+    private fun selectBestVoice() {
+        val engine = tts ?: return
+        try {
+            val lang = currentLanguage.locale.language
+            val candidates = engine.voices
+                ?.filter { it.locale.language == lang && !it.isNetworkConnectionRequired }
+                ?.sortedWith(
+                    compareByDescending<Voice> { it.quality }
+                        .thenByDescending { it.name.contains("female", ignoreCase = true) }
+                        .thenBy { it.name }
+                )
+                ?: emptyList()
+            // If no offline voice exists for the language, allow network voices too.
+            val pool = candidates.ifEmpty {
+                engine.voices
+                    ?.filter { it.locale.language == lang }
+                    ?.sortedByDescending { it.quality }
+                    ?: emptyList()
+            }
+            _availableVoices.value = pool
+            val best = pool.firstOrNull() ?: return
+            if (engine.setVoice(best) == TextToSpeech.SUCCESS) {
+                _currentVoiceName.value = best.name
+                Log.i("SpeechManager", "Selected TTS voice: ${best.name} (quality=${best.quality})")
+            }
+        } catch (e: Exception) {
+            Log.w("SpeechManager", "Voice selection failed; using engine default", e)
+        }
+    }
+
+    /** Lets the user pick a specific installed voice (used by the AI settings section). */
+    fun setVoiceByName(voiceName: String): Boolean {
+        val engine = tts ?: return false
+        if (!isInitialized) return false
+        return try {
+            val voice = _availableVoices.value.find { it.name == voiceName } ?: return false
+            val ok = engine.setVoice(voice) == TextToSpeech.SUCCESS
+            if (ok) _currentVoiceName.value = voice.name
+            ok
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -75,6 +135,8 @@ class SpeechManager(private val context: Context) {
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts?.language = Locale.US
                 }
+                // Re-pick the smoothest voice for the new language.
+                selectBestVoice()
             } catch (_: Exception) {
                 tts?.language = Locale.US
             }

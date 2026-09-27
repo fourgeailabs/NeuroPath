@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.fourgeailabs.neuropath.util.rememberReducedMotion
@@ -67,6 +68,9 @@ fun NeuroBuddyChatScreen(
     modifier: Modifier = Modifier
 ) {
     val isVoiceMode by viewModel.isVoiceConversationMode.collectAsState()
+
+    // Warm the on-device model while the chat opens so the first message is fast.
+    LaunchedEffect(Unit) { viewModel.prewarmLocalModel() }
 
     if (isVoiceMode) {
         // Live Voice Conversation Stage

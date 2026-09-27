@@ -50,16 +50,63 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v2.04.00",
+        version = "v2.06.04",
         date = "Current Update",
+        title = "Real AI Buddy, Faster Local Llama & Sensory Sound Overhaul",
+        highlights = listOf(
+            "🧠 Honest AI Engine: The Learning Buddy now uses the real on-device Llama 3.2 model whenever it is installed — no more silent fallback to canned template replies. The chat header names the engine that actually answers (cloud, on-device, or offline).",
+            "⚡ Faster Local AI: The ~2GB model stays warm between messages and pre-loads when the chat opens, instead of reloading from storage on every single message.",
+            "🔔 Rebuilt Soundscapes: Gentle Rain now has real droplet plinks, Ocean Swells roll on slow ~16s waves, Forest Breeze wanders with gusts and distant birdsong, and Zen Chimes are true struck pentatonic chimes instead of a flat drone.",
+            "🫧 Pop-It Sounds & Haptics: The fidget pad now pops with fun synthesized bubble sounds (5 playful pitch variations) and a gentle vibration on every pop.",
+            "🗣️ Smoother TTS Voice: The app now picks the highest-quality installed voice automatically and uses a slightly slower, warmer delivery instead of the harsh system default.",
+            "💡 Age-Appropriate Daily Spark: The daily inspiration quote is now explicitly tuned to the student's grade level and age tier.",
+            "📍 Location Scan Everywhere: The child profile setup screen now shows the same location scan result card as the parent dashboard."
+        ),
+        isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v2.06.03",
+        date = "September 26, 2026",
+        title = "Location Scan Result Card on Child Profile Setup",
+        highlights = listOf(
+            "📍 The child profile setup screen now displays the location scan result (detected location, district alignment, and source) just like the parent dashboard."
+        )
+    ),
+    ReleaseNote(
+        version = "v2.06.02",
+        date = "September 26, 2026",
+        title = "GPS Reliability & Scan Diagnostics",
+        highlights = listOf(
+            "🛰️ Fixed a race where one location provider's empty answer could cancel the other provider's fix early — the scan now listens the full 30 seconds.",
+            "🔍 The scan result card now explains why GPS gave no fix (permission, providers disabled, timeout, or geocoder failure)."
+        )
+    ),
+    ReleaseNote(
+        version = "v2.06.01",
+        date = "September 26, 2026",
+        title = "Live GPS Location Requests",
+        highlights = listOf(
+            "🛰️ The location scan now actively requests a fresh GPS/network fix instead of relying only on the last cached location."
+        )
+    ),
+    ReleaseNote(
+        version = "v2.06.00",
+        date = "September 26, 2026",
+        title = "Nationwide & Global Jurisdiction Mapping",
+        highlights = listOf(
+            "🗺️ Location registry expanded from 167 to 213 locales: all 50 US states plus DC and Puerto Rico, 8 new UK cities, and smarter US ZIP, UK postcode, Canadian, Australian, and Indian postal-code resolution."
+        )
+    ),
+    ReleaseNote(
+        version = "v2.04.00",
+        date = "September 2026",
         title = "Hugging Face Access Token Configuration & Llama 3.2 Model Provisioning",
         highlights = listOf(
             "🔑 Hugging Face Access Token Integration: Configured Hugging Face credentials directly in Parent Dashboard AI Settings and local configuration for authenticated Llama model downloading.",
             "🦙 Gated Llama 3.2 Model Access: Seamless authenticated access to official Meta Llama repositories (meta-llama/Llama-3.2-3B-Instruct) and high-performance quantized mirrors.",
             "⚡ Dual-Path Weight Acquisition: Accelerated local inference preparation with support for both GGUF local weights and LiteRT-LM hardware-accelerated binaries.",
             "🛡️ Secure Token Storage: Token securely managed within local profile configuration without unauthorized transmission."
-        ),
-        isCurrentVersion = true
+        )
     ),
     ReleaseNote(
         version = "v2.03.00",
@@ -357,11 +404,15 @@ fun WhatsNewDialog(
                 ) {
                     itemsIndexed(HISTORICAL_RELEASE_NOTES) { index, note ->
                         val isExpanded = expandedIndex == index
+                        // The "current" badge follows the real installed version, so it
+                        // stays correct even when notes are added without flipping flags.
+                        val isCurrent = note.isCurrentVersion ||
+                            note.version == "v${com.fourgeailabs.neuropath.BuildConfig.VERSION_NAME}"
 
                         Card(
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (note.isCurrentVersion) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant
+                                containerColor = if (isCurrent) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant
                             ),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -386,7 +437,7 @@ fun WhatsNewDialog(
                                                 color = MaterialTheme.colorScheme.primary
                                             )
                                             Spacer(Modifier.width(8.dp))
-                                            if (note.isCurrentVersion) {
+                                            if (isCurrent) {
                                                 Surface(
                                                     shape = RoundedCornerShape(8.dp),
                                                     color = Color(0xFFD4EDDA)

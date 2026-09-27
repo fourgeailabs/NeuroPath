@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import com.fourgeailabs.neuropath.audio.AmbientSoundType
 import com.fourgeailabs.neuropath.audio.CalmSoundManager
+import com.fourgeailabs.neuropath.audio.PopSoundPlayer
 import com.fourgeailabs.neuropath.data.curriculum.CurriculumCatalog
 import com.fourgeailabs.neuropath.data.curriculum.oer.OerCommonsCurriculumItem
 import com.fourgeailabs.neuropath.data.curriculum.oer.OerSyncResult
@@ -219,6 +220,35 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _chatModelMode = MutableStateFlow(ChatModelMode.GENERAL)
     val chatModelMode: StateFlow<ChatModelMode> = _chatModelMode.asStateFlow()
+
+    /**
+     * Honest header label for the chat model picker: names the engine that will
+     * actually answer (cloud Llama, on-device Llama, or the offline Socratic
+     * fallback) instead of always claiming "Llama 3.2 3B".
+     */
+    private val _chatEngineLabel = MutableStateFlow("Llama 3.2 3B")
+    val chatEngineLabel: StateFlow<String> = _chatEngineLabel.asStateFlow()
+
+    fun refreshChatEngineLabel() {
+        val mode = _chatModelMode.value
+        _chatEngineLabel.value = when (mode) {
+            ChatModelMode.OFFLINE -> "Offline"
+            ChatModelMode.LLAMA_LOCAL -> "Llama Local"
+            else -> {
+                val cloudLabel = when (mode) {
+                    ChatModelMode.FAST -> "Llama 3.2 Fast"
+                    ChatModelMode.COMPLEX -> "Llama Reasoning"
+                    else -> "Llama 3.2 3B"
+                }
+                when {
+                    hasValidApiKey -> cloudLabel
+                    LlamaLocalManager.isLlamaInstalled(getApplication<Application>().applicationContext) ->
+                        "$cloudLabel (On-device)"
+                    else -> "Socratic Offline"
+                }
+            }
+        }
+    }
 
     private val _explanationMode = MutableStateFlow(EducationalExplanationMode.STEP_BY_STEP)
     val explanationMode: StateFlow<EducationalExplanationMode> = _explanationMode.asStateFlow()
@@ -712,13 +742,19 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 val theme = getActiveTheme()
                 val prof = _currentProfile.value
-                val prompt = "Give a 1-sentence encouraging, inspiring motivational quote with author citation (e.g. \"Quote...\" - Author) for a student in ${AppLanguage.fromCode(prof.appLanguageCode).displayName}, using a ${theme.title} theme."
+                val tier = AgeGroupTier.entries.find { it.id == prof.ageGroupTier } ?: AgeGroupTier.ELEMENTARY
+                val grade = GradeLevel.entries.find { it.code == prof.gradeLevel } ?: GradeLevel.GRADE_1
+                val prompt = "Give a 1-sentence encouraging, inspiring motivational quote with author citation (e.g. \"Quote...\" - Author) " +
+                    "for a ${tier.name.lowercase().replace('_', ' ')} student in ${grade.displayName} " +
+                    "(${AppLanguage.fromCode(prof.appLanguageCode).displayName}), using a ${theme.title} theme. " +
+                    "Make the vocabulary and themes age-appropriate for that grade level."
                 val quote = LlamaClient.generateChatReply(
                     conversationHistory = listOf("user" to prompt),
                     systemPrompt = getSystemPromptForProfile(prof, roleContext = "quote"),
                     languageCode = prof.appLanguageCode,
                     schoolDistrict = prof.schoolDistrict,
-                    modelMode = ChatModelMode.FAST
+                    modelMode = ChatModelMode.FAST,
+                    appContext = getApplication()
                 )
                 if (quote.isNotBlank()) {
                     _dailyQuote.value = quote
@@ -911,7 +947,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 systemPrompt = getSystemPromptForProfile(prof, roleContext = "tutor"),
                 languageCode = prof.appLanguageCode,
                 schoolDistrict = prof.schoolDistrict,
-                modelMode = ChatModelMode.GENERAL
+                modelMode = ChatModelMode.GENERAL,
+                appContext = getApplication()
             )
             speechManager.speak(explanation)
         }
@@ -928,7 +965,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 systemPrompt = getSystemPromptForProfile(prof, roleContext = "tutor"),
                 languageCode = prof.appLanguageCode,
                 schoolDistrict = prof.schoolDistrict,
-                modelMode = ChatModelMode.GENERAL
+                modelMode = ChatModelMode.GENERAL,
+                appContext = getApplication()
             )
             speechManager.speak(explanation)
         }
@@ -1046,6 +1084,11 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     // Sensory Tools
+    private var popSoundPlayer: PopSoundPlayer? = null
+    private fun getPopSoundPlayer(): PopSoundPlayer =
+        popSoundPlayer ?: PopSoundPlayer(getApplication<Application>().applicationContext, viewModelScope)
+            .also { popSoundPlayer = it }
+
     fun popBubble(index: Int) {
         if (index in 0 until 16) {
             val bubbles = _popItBubbles.value.clone()
@@ -1055,6 +1098,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             // Count only actual pops (un-popped -> popped), not un-pops.
             if (!wasPopped) {
                 _totalPoppedCount.value += 1
+                getPopSoundPlayer().playPop()
             }
             triggerHapticPop()
         }
@@ -1214,6 +1258,23 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun setChatModelMode(mode: ChatModelMode) {
         _chatModelMode.value = mode
+        refreshChatEngineLabel()
+    }
+
+    /**
+     * Pre-warms the on-device model when the buddy chat opens so the first message
+     * doesn't pay the ~2GB storage load. No-op when the cloud engine will answer.
+     */
+    fun prewarmLocalModel() {
+        viewModelScope.launch {
+            try {
+                val ctx = getApplication<Application>().applicationContext
+                val wantsLocal = _chatModelMode.value == ChatModelMode.LLAMA_LOCAL ||
+                    (!hasValidApiKey && LlamaLocalManager.isLlamaInstalled(ctx))
+                if (wantsLocal) LlamaLocalManager.preloadModel(ctx)
+            } catch (_: Exception) {
+            }
+        }
     }
 
     // Holds the callback waiting for the SpeechManager recognition result for the
@@ -1629,7 +1690,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         standardTitle = profile.stateStandard,
                         curriculumContext = currSummary,
                         modelMode = currentModel,
-                        customApiKey = activeApiKey
+                        customApiKey = activeApiKey,
+                        appContext = getApplication()
                     )
                 } else {
                     delay(500)
@@ -1953,14 +2015,17 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             systemPrompt = getSystemPromptForProfile(prof, roleContext = "story"),
             languageCode = prof.appLanguageCode,
             schoolDistrict = prof.schoolDistrict,
-            modelMode = ChatModelMode.FAST
+            modelMode = ChatModelMode.FAST,
+            appContext = getApplication()
         )
     }
 
     fun triggerHapticPop() {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
+                // Gentle but noticeable: 35ms at ~60% amplitude reads as a soft
+                // silicone "thock" rather than the previous barely-felt 20ms tick.
+                vibrator?.vibrate(VibrationEffect.createOneShot(35, 150))
             }
         } catch (_: Exception) {}
     }
@@ -1978,6 +2043,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         chatSessionCollectJob?.cancel()
         speechManager.shutdown()
         soundManager.stopSound()
+        runCatching { popSoundPlayer?.release() }
+        popSoundPlayer = null
     }
 
     companion object {

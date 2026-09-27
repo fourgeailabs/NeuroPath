@@ -163,6 +163,11 @@ fun EducationalChatInterface(
     val chatMessages by viewModel.chatMessages.collectAsState()
     val isGenerating by viewModel.isChatGenerating.collectAsState()
     val activeChatMode by viewModel.chatModelMode.collectAsState()
+    val chatEngineLabel by viewModel.chatEngineLabel.collectAsState()
+
+    // Refresh the honest engine label whenever the chat opens (model may have
+    // been downloaded or deleted since the label was last computed).
+    LaunchedEffect(Unit) { viewModel.refreshChatEngineLabel() }
     val activeExplanationMode by viewModel.explanationMode.collectAsState()
     val activeSubjectTag by viewModel.selectedSubjectTag.collectAsState()
     val currentSessionTitle by viewModel.currentSessionTitle.collectAsState()
@@ -281,13 +286,9 @@ fun EducationalChatInterface(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // Free Model / Model Mode Dropdown Pill
                         Box {
-                            val modelLabel = when (activeChatMode) {
-                                ChatModelMode.FAST -> "Llama 3.2 Fast"
-                                ChatModelMode.GENERAL -> "Llama 3.2 3B"
-                                ChatModelMode.COMPLEX -> "Llama Reasoning"
-                                ChatModelMode.LLAMA_LOCAL -> "Llama Local"
-                                ChatModelMode.OFFLINE -> "Offline"
-                            }
+                            // Honest engine label: cloud Llama, on-device Llama, or the
+                            // offline Socratic fallback — whichever will actually answer.
+                            val modelLabel = chatEngineLabel
 
                             Surface(
                                 shape = RoundedCornerShape(14.dp),

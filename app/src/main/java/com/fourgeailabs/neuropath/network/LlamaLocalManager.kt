@@ -7,11 +7,15 @@ import android.util.Log
 import com.fourgeailabs.neuropath.BuildConfig
 import dev.ffmpegkit.llama.Llama
 import dev.ffmpegkit.llama.LlamaConfig
+import dev.ffmpegkit.llama.LlamaModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -64,6 +68,72 @@ object LlamaLocalManager {
     // Native inference is heavy and must never run two sessions at once; a dedicated
     // single-thread dispatcher keeps it off the shared Default/IO pools.
     private val inferenceDispatcher = Dispatchers.Default.limitedParallelism(1)
+    private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // Warm model cache: loading the ~2GB GGUF from storage takes tens of seconds,
+    // so the loaded model is kept alive between messages and released only after
+    // a period of inactivity. All access happens on inferenceDispatcher, which is
+    // single-threaded, so no extra locking is needed.
+    private var cachedModel: LlamaModel? = null
+    private var cachedModelPath: String? = null
+    private var cachedModelLastUsedAt: Long = 0L
+    private const val MODEL_IDLE_RELEASE_MS = 10 * 60 * 1000L
+
+    private fun defaultLlamaConfig() = LlamaConfig(
+        contextSize = DEFAULT_CONTEXT_SIZE,
+        threads = Runtime.getRuntime().availableProcessors().coerceIn(2, 6)
+    )
+
+    /**
+     * Returns the loaded model, reusing the warm cache when the same model file
+     * was used recently. Loads from storage only on a cold start, model swap, or
+     * after the idle timeout. Must be called on [inferenceDispatcher].
+     */
+    private suspend fun getOrLoadModel(context: Context, modelFile: File): LlamaModel {
+        val path = modelFile.absolutePath
+        val now = System.currentTimeMillis()
+        val warm = cachedModel
+        if (warm != null && cachedModelPath == path && now - cachedModelLastUsedAt < MODEL_IDLE_RELEASE_MS) {
+            cachedModelLastUsedAt = now
+            Log.d(TAG, "Reusing warm local model (skipping ~2GB reload)")
+            return warm
+        }
+        releaseCachedModelLocked()
+        Log.i(TAG, "Loading local model from storage: $path")
+        val model = Llama.loadModel(modelPath = path, config = defaultLlamaConfig())
+        cachedModel = model
+        cachedModelPath = path
+        cachedModelLastUsedAt = now
+        return model
+    }
+
+    private fun releaseCachedModelLocked() {
+        val model = cachedModel
+        cachedModel = null
+        cachedModelPath = null
+        cachedModelLastUsedAt = 0L
+        if (model != null) {
+            runCatching { Llama.releaseModel(model) }
+                .onFailure { Log.w(TAG, "Cached model release failed", it) }
+        }
+    }
+
+    /** Releases the warm model (e.g. when the app goes to background or the model is deleted). */
+    suspend fun releaseCachedModel() = withContext(inferenceDispatcher) {
+        releaseCachedModelLocked()
+    }
+
+    /** Pre-warms the model so the first chat message doesn't pay the load cost. */
+    suspend fun preloadModel(context: Context): Boolean = withContext(inferenceDispatcher) {
+        val modelFile = getLlamaModelFile(context)
+        if (!isLlamaInstalled(context)) return@withContext false
+        runCatching { getOrLoadModel(context, modelFile) }.isSuccess
+    }
+
+    fun isModelWarm(): Boolean {
+        val now = System.currentTimeMillis()
+        return cachedModel != null && now - cachedModelLastUsedAt < MODEL_IDLE_RELEASE_MS
+    }
 
     fun getLlamaModelFile(context: Context): File {
         val modelsDir = File(context.filesDir, "models")
@@ -177,6 +247,8 @@ object LlamaLocalManager {
     }
 
     fun deleteLlamaModel(context: Context): Boolean {
+        // Drop the warm cache too, otherwise the deleted file's model stays resident.
+        managerScope.launch { releaseCachedModel() }
         val file = getLlamaModelFile(context)
         val deleted = if (file.exists()) file.delete() else false
         File(file.parentFile, "${file.name}.tmp").delete()
@@ -247,15 +319,11 @@ object LlamaLocalManager {
             }
 
         try {
-            val model = Llama.loadModel(
-                modelPath = modelFile.absolutePath,
-                config = LlamaConfig(contextSize = DEFAULT_CONTEXT_SIZE, threads = Runtime.getRuntime().availableProcessors().coerceIn(2, 6))
-            )
-            val result = try {
-                Llama.complete(model, prompt = llamaPrompt, systemPrompt = "", maxTokens = DEFAULT_MAX_TOKENS)
-            } finally {
-                Llama.releaseModel(model)
-            }
+            // Warm cache: reuse the loaded model instead of paying the ~2GB
+            // storage load on every message (the old per-message load/release
+            // cycle is what made local chat feel impossibly slow).
+            val model = getOrLoadModel(context, modelFile)
+            val result = Llama.complete(model, prompt = llamaPrompt, systemPrompt = "", maxTokens = DEFAULT_MAX_TOKENS)
             val text = result.text.trim()
             if (text.isBlank()) "🦙 [Llama 3.2 3B Local Engine]: I couldn't generate a response. Please try asking the question another way." else text
         } catch (e: Exception) {

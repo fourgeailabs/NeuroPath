@@ -208,6 +208,25 @@ object LlamaClient {
         }
 
         if (modelMode == ChatModelMode.OFFLINE || apiKey.isBlank()) {
+            // No cloud key: prefer the real on-device Llama 3.2 model when it is
+            // installed instead of silently serving canned template replies.
+            // The canned Socratic engine is the last resort, not the default.
+            val ctx = appContext
+            if (ctx != null && LlamaLocalManager.isLlamaInstalled(ctx)) {
+                Log.i(TAG, "No cloud API key; routing ${modelMode.name} through the installed on-device Llama 3.2 model")
+                return@withContext LlamaLocalManager.generateLlamaResponse(
+                    context = ctx,
+                    prompt = lastUserMessage,
+                    systemPrompt = systemPrompt,
+                    schoolDistrict = schoolDistrict,
+                    stateOrProvince = stateOrProvince,
+                    country = country,
+                    standardTitle = standardTitle,
+                    languageCode = languageCode,
+                    conversationHistory = conversationHistory,
+                    curriculumContext = curriculumContext
+                )
+            }
             return@withContext generateLocalSocraticReply(
                 lastUserMessage = lastUserMessage,
                 schoolDistrict = schoolDistrict,
