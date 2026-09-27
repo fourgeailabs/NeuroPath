@@ -132,7 +132,8 @@ import com.fourgeailabs.neuropath.ui.tf
 
 enum class ParentDashboardTab(val title: String, val iconEmoji: String) {
     PROFILES("Child Profiles", "👥"),
-    SETTINGS("Settings & AI", "⚙️"),
+    SETTINGS("Settings", "⚙️"),
+    AI("AI", "🤖"),
     STANDARDS("Standards & Locale", "🏛️"),
     DISCLAIMERS("Disclaimers & Legal", "⚖️")
 }
@@ -162,6 +163,13 @@ fun ParentDashboardScreen(
     val oerUnits by viewModel.oerCurriculumUnits.collectAsState()
     val isOerSyncing by viewModel.isOerSyncing.collectAsState()
     val oerSyncResult by viewModel.oerSyncResult.collectAsState()
+    // AI menu state (collected here — the tab branches below run inside the
+    // LazyColumn's non-composable scope, so collectAsState can't be called there).
+    val llamaDownloadState by LlamaLocalManager.downloadState.collectAsState()
+    val modelInstalledOnDisk = remember { LlamaLocalManager.isLlamaInstalled(context) }
+    val isAiModelLoading by viewModel.isModelLoading.collectAsState()
+    val aiLoadProgress by viewModel.modelLoadProgress.collectAsState()
+    val aiLoadStage by viewModel.modelLoadStage.collectAsState()
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -285,6 +293,7 @@ fun ParentDashboardScreen(
                     val tabTitle = when (tab) {
                         ParentDashboardTab.PROFILES -> AppLanguageDictionary.getString("tab_profiles", selectedLanguageCode)
                         ParentDashboardTab.SETTINGS -> AppLanguageDictionary.getString("tab_settings", selectedLanguageCode)
+                        ParentDashboardTab.AI -> AppLanguageDictionary.getString("tab_ai", selectedLanguageCode)
                         ParentDashboardTab.STANDARDS -> AppLanguageDictionary.getString("tab_standards", selectedLanguageCode)
                         ParentDashboardTab.DISCLAIMERS -> AppLanguageDictionary.getString("tab_disclaimers", selectedLanguageCode)
                     }
@@ -955,56 +964,6 @@ fun ParentDashboardScreen(
                     }
                 }
 
-                // AI settings now live in their own section (AiSettingsScreen).
-                item {
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        modifier = Modifier.testTag("ai_settings_entry_card")
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.navigateTo(AppScreen.AI_SETTINGS) }
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                                modifier = Modifier.size(44.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    t("ai_settings"),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    t("ai_settings_section_description"),
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
                 // Analytics & Progress Metrics
                 item {
                     ElevatedCard(
@@ -1067,6 +1026,132 @@ fun ParentDashboardScreen(
                                     Text(tf("str_10", score), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            // TAB: AI MENU — split out of the Settings tab so every AI control
+            // (engine mode, local model, warm-up, full AI settings) lives in its
+            // own menu instead of being merged into general settings.
+            ParentDashboardTab.AI -> {
+                val aiModeLabel = when (profile.aiVersionMode) {
+                    "SOCRATIC_ONLY" -> "Socratic Only"
+                    "FULL_AI" -> "Llama 3.2 (Cloud)"
+                    "LOCAL_OFFLINE", "LLAMA_LOCAL" -> "Llama 3.2 (Local)"
+                    else -> profile.aiVersionMode.ifBlank { "Socratic Only" }
+                }
+
+                // AI status overview
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    AppLanguageDictionary.getString("tab_ai", selectedLanguageCode),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(t("child_ai_version_mode"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text(aiModeLabel, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+
+                            val modelStatusText = when (val state = llamaDownloadState) {
+                                is LlamaDownloadState.Installed -> "Installed (${"%.2f".format(state.fileSizeBytes / (1024f * 1024f * 1024f))} GB)"
+                                is LlamaDownloadState.Downloading -> "Downloading ${(state.progress * 100).toInt()}%"
+                                is LlamaDownloadState.Error -> "Error"
+                                is LlamaDownloadState.NotInstalled ->
+                                    if (modelInstalledOnDisk) "Installed on device" else "Not downloaded"
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    t("llama_3_2_3b_local_engine_hugging_face_meta_llam"),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Text(modelStatusText, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+
+                            OutlinedButton(
+                                onClick = { viewModel.ensureLocalModelReady() },
+                                enabled = !isAiModelLoading,
+                                modifier = Modifier.fillMaxWidth().testTag("ai_menu_warm_up_btn"),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text(
+                                    if (isAiModelLoading) "${aiLoadStage.ifBlank { "Warming up…" }} ${(aiLoadProgress * 100).toInt()}%"
+                                    else t("warm_up_model_now"),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Full AI settings (moved here from the Settings tab).
+                item {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        modifier = Modifier.testTag("ai_settings_entry_card")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.navigateTo(AppScreen.AI_SETTINGS) }
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                modifier = Modifier.size(44.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    t("ai_settings"),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    t("ai_settings_section_description"),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

@@ -50,8 +50,20 @@ data class ReleaseNote(
 
 val HISTORICAL_RELEASE_NOTES = listOf(
     ReleaseNote(
-        version = "v2.06.06",
+        version = "v2.06.07",
         date = "Current Update",
+        title = "Separate AI Menu & Verified AI Brain Loading",
+        highlights = listOf(
+            "🤖 Separate AI Menu: Settings and AI are now two distinct menus in the Parent Dashboard. The new AI tab shows the engine mode, local model status and a one-tap warm-up button, with full AI settings one tap away.",
+            "🧠 Verified Brain Loading: The AI brain is now only reported Ready after it actually generates a test token. A model that loads but can't think fails honestly with a retry button instead of pretending to work — the loading screen can no longer finish faster than the real load.",
+            "⏱️ Hang Protection: Model loading, warm-up and inference now have hard timeouts, so a stuck AI surfaces an error instead of spinning forever.",
+            "🔌 Engine Choice That Works: The parent's AI engine choice in AI Settings now actually switches the chat engine, and the choice is restored on every app start and profile switch."
+        ),
+        isCurrentVersion = true
+    ),
+    ReleaseNote(
+        version = "v2.06.06",
+        date = "September 27, 2026",
         title = "Honest Loading, AI Settings Home & Deeper Personalisation",
         highlights = listOf(
             "⚖️ AI Settings Section: All AI engine controls — model mode, local accelerator, GGUF model download, Hugging Face token — moved out of the Parent Dashboard into their own AI Settings screen. New buddy voice picker (choose and preview the TTS voice) plus a one-tap model warm-up button.",
@@ -61,7 +73,7 @@ val HISTORICAL_RELEASE_NOTES = listOf(
             "🧠 Deeper Personalisation: Lesson hints, quiz hints, story starters and the Daily Spark now use the learner's strengths, struggles, interests and accuracy. The Daily Spark no longer asks for author citations and has safe original fallback lines.",
             "🏷️ The home chat button now shows the theme buddy's real name (e.g. Professor Rex)."
         ),
-        isCurrentVersion = true
+        isCurrentVersion = false
     ),
     ReleaseNote(
         version = "v2.06.05",

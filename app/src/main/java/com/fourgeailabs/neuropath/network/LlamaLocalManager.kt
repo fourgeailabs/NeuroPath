@@ -8,15 +8,20 @@ import com.fourgeailabs.neuropath.BuildConfig
 import dev.ffmpegkit.llama.Llama
 import dev.ffmpegkit.llama.LlamaConfig
 import dev.ffmpegkit.llama.LlamaModel
+import dev.ffmpegkit.llama.LlamaResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -38,6 +43,26 @@ data class LlamaDeviceCompatibility(
     val compatibilitySummary: String
 )
 
+/**
+ * Thin seam over the native llama.cpp binding (`dev.ffmpegkit.llama.Llama`).
+ * The production implementation delegates straight to the real object; tests
+ * swap in a fake to prove the load-state machine stays honest when native
+ * inference throws, hangs, or returns garbage — without needing a 2GB model.
+ */
+internal interface LlamaRuntime {
+    suspend fun loadModel(modelPath: String, config: LlamaConfig): LlamaModel
+    suspend fun complete(model: LlamaModel, prompt: String, systemPrompt: String, maxTokens: Int): LlamaResult
+    fun releaseModel(model: LlamaModel)
+}
+
+internal class RealLlamaRuntime : LlamaRuntime {
+    override suspend fun loadModel(modelPath: String, config: LlamaConfig): LlamaModel =
+        Llama.loadModel(modelPath = modelPath, config = config)
+    override suspend fun complete(model: LlamaModel, prompt: String, systemPrompt: String, maxTokens: Int): LlamaResult =
+        Llama.complete(model, prompt = prompt, systemPrompt = systemPrompt, maxTokens = maxTokens)
+    override fun releaseModel(model: LlamaModel) = Llama.releaseModel(model)
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 object LlamaLocalManager {
     private const val TAG = "LlamaLocalManager"
@@ -50,6 +75,13 @@ object LlamaLocalManager {
     private const val GGUF_MAGIC = 0x46554747
     private const val DEFAULT_CONTEXT_SIZE = 2048
     private const val DEFAULT_MAX_TOKENS = 384
+    // Native calls get hard timeouts: a hung load or inference must surface as
+    // an error with retry, never wedge the single inference thread forever.
+    // Vars (not consts) so unit tests can shrink them; never touched by app code.
+    internal var MODEL_LOAD_TIMEOUT_MS = 5 * 60 * 1000L
+    internal var WARMUP_TIMEOUT_MS = 3 * 60 * 1000L
+    internal var GENERATION_TIMEOUT_MS = 5 * 60 * 1000L
+    internal var ACCELERATOR_TIMEOUT_MS = 8 * 60 * 1000L
     private const val MAX_HISTORY_TURNS = 6
     private const val MAX_HISTORY_CHARS_PER_TURN = 900
     private const val PUBLIC_HUGGINGFACE_GGUF_URL = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf?download=true"
@@ -68,6 +100,9 @@ object LlamaLocalManager {
     // Native inference is heavy and must never run two sessions at once; a dedicated
     // single-thread dispatcher keeps it off the shared Default/IO pools.
     private val inferenceDispatcher = Dispatchers.Default.limitedParallelism(1)
+    // Serializes the actual blocking native calls (which run on Dispatchers.IO
+    // via runNativeGuarded so a hung native call can't wedge the dispatcher).
+    private val inferenceMutex = Mutex()
     private val managerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // Warm model cache: loading the ~2GB GGUF from storage takes tens of seconds,
@@ -91,6 +126,12 @@ object LlamaLocalManager {
     private val _loadError = MutableStateFlow<String?>(null)
     val loadError: StateFlow<String?> = _loadError.asStateFlow()
 
+    // Swappable native runtime (see LlamaRuntime). Production uses the real
+    // llama.cpp binding; unit tests inject a fake. Internal so tests in the
+    // same module can replace it; never touched by app code.
+    @Volatile
+    internal var llamaRuntime: LlamaRuntime = RealLlamaRuntime()
+
     private fun defaultLlamaConfig() = LlamaConfig(
         contextSize = DEFAULT_CONTEXT_SIZE,
         threads = Runtime.getRuntime().availableProcessors().coerceIn(2, 6)
@@ -100,6 +141,12 @@ object LlamaLocalManager {
      * Returns the loaded model, reusing the warm cache when the same model file
      * was used recently. Loads from storage only on a cold start, model swap, or
      * after the idle timeout. Must be called on [inferenceDispatcher].
+     *
+     * Honesty contract: "Ready!" is only ever set after the model has actually
+     * generated a token. If the weights map but inference fails (or hangs past
+     * [WARMUP_TIMEOUT_MS]), the broken handle is released, nothing is cached,
+     * and the failure is thrown so the loading screen keeps showing the error
+     * with Retry instead of claiming the brain is ready.
      */
     private suspend fun getOrLoadModel(context: Context, modelFile: File): LlamaModel {
         val path = modelFile.absolutePath
@@ -114,29 +161,76 @@ object LlamaLocalManager {
         Log.i(TAG, "Loading local model from storage: $path")
         _loadError.value = null
         _loadProgress.value = 0f
-        try {
-            _loadStage.value = "Opening model file…"
-            _loadProgress.value = 0.15f
-            val model = Llama.loadModel(modelPath = path, config = defaultLlamaConfig())
-            // The weights are mapped — now prove the model actually runs before
-            // claiming "Ready!": a single-token warmup keeps the screen honest
-            // about when the brain is truly usable.
-            _loadStage.value = "Warming up the brain…"
-            _loadProgress.value = 0.85f
-            runCatching { Llama.complete(model, prompt = "Hi", systemPrompt = "", maxTokens = 1) }
-                .onFailure { Log.w(TAG, "Warmup token failed; model still usable", it) }
-            cachedModel = model
-            cachedModelPath = path
-            cachedModelLastUsedAt = System.currentTimeMillis()
-            _loadProgress.value = 1f
-            _loadStage.value = "Ready!"
-            return model
+        _loadStage.value = "Opening model file…"
+        _loadProgress.value = 0.15f
+        val model = try {
+            withTimeout(MODEL_LOAD_TIMEOUT_MS) {
+                runNativeGuarded { llamaRuntime.loadModel(modelPath = path, config = defaultLlamaConfig()) }
+            }
         } catch (e: Exception) {
-            _loadError.value = "Couldn't load the AI brain into memory (${e.message ?: e.javaClass.simpleName}). Ask a parent to check AI Settings."
-            _loadStage.value = "Hmm, that didn't work…"
-            Log.e(TAG, "Local model load failed", e)
-            throw e
+            failLoad("Couldn't load the AI brain into memory", e)
         }
+        // The weights are mapped — now PROVE the model actually runs before
+        // claiming "Ready!": the warmup uses the real chat template so it
+        // exercises the exact path real messages take.
+        _loadStage.value = "Warming up the brain…"
+        _loadProgress.value = 0.85f
+        try {
+            withTimeout(WARMUP_TIMEOUT_MS) {
+                val warmupPrompt = buildLocalLlamaPrompt(userPrompt = "Say hello.")
+                runNativeGuarded {
+                    llamaRuntime.complete(model, prompt = warmupPrompt, systemPrompt = "", maxTokens = 1)
+                }
+            }
+        } catch (e: Exception) {
+            // Never cache a model that can't think: a later retry must start
+            // clean instead of reusing this broken handle.
+            if (e is TimeoutCancellationException) {
+                // The native call may still be running on its abandoned IO
+                // thread: freeing the model underneath it could segfault the
+                // process, so the handle is deliberately leaked, NOT cached,
+                // and the error advises a restart. A retry loads a fresh model.
+                Log.e(TAG, "Warmup timed out; abandoning model handle without freeing (native call may still be in flight)", e)
+            } else {
+                runCatching { llamaRuntime.releaseModel(model) }
+            }
+            cachedModel = null
+            cachedModelPath = null
+            cachedModelLastUsedAt = 0L
+            failLoad("The AI brain loaded but couldn't think", e)
+        }
+        cachedModel = model
+        cachedModelPath = path
+        cachedModelLastUsedAt = System.currentTimeMillis()
+        _loadProgress.value = 1f
+        _loadStage.value = "Ready!"
+        Log.i(TAG, "Local model verified: warmup token generated, brain is ready")
+        return model
+    }
+
+    /**
+     * Runs a blocking native call on Dispatchers.IO, serialized by a mutex so
+     * native inference never runs two sessions at once. Timeouts actually
+     * recover here: if the native call hangs, the abandoned IO thread is left
+     * behind while the mutex is released, so the next inference can proceed
+     * instead of wedging the whole local-AI pipeline forever.
+     */
+    private suspend fun <T> runNativeGuarded(block: suspend () -> T): T =
+        inferenceMutex.withLock {
+            withContext(Dispatchers.IO) { block() }
+        }
+
+    /** Records a failed load in the UI state and throws so callers see the failure. */
+    private fun failLoad(prefix: String, cause: Throwable): Nothing {
+        val reason = when (cause) {
+            is TimeoutCancellationException -> "timed out — if this keeps happening, restart the app and retry"
+            else -> (cause.message ?: cause.javaClass.simpleName)
+        }
+        _loadError.value = "$prefix ($reason). Ask a parent to check AI Settings."
+        _loadStage.value = "Hmm, that didn't work…"
+        _loadProgress.value = 0f
+        Log.e(TAG, "Local model load failed: $prefix", cause)
+        throw cause
     }
 
     private fun releaseCachedModelLocked() {
@@ -145,7 +239,7 @@ object LlamaLocalManager {
         cachedModelPath = null
         cachedModelLastUsedAt = 0L
         if (model != null) {
-            runCatching { Llama.releaseModel(model) }
+            runCatching { llamaRuntime.releaseModel(model) }
                 .onFailure { Log.w(TAG, "Cached model release failed", it) }
         }
     }
@@ -376,7 +470,9 @@ object LlamaLocalManager {
 
         // The accelerated path gets the same Llama-3 chat template as the GGUF path so the
         // Instruct model sees identical formatting whichever runtime serves it.
-        runCatching { LlamaAccelerator.generate(context, llamaPrompt) }
+        // Hard timeout: a hung accelerator backend must fall through to the GGUF
+        // path (or a clean error), never hang the chat forever.
+        runCatching { withTimeout(ACCELERATOR_TIMEOUT_MS) { LlamaAccelerator.generate(context, llamaPrompt) } }
             .onFailure { Log.w(TAG, "LiteRT-LM accelerated inference unavailable", it) }
             .getOrNull()
             ?.let { result ->
@@ -389,12 +485,19 @@ object LlamaLocalManager {
             // storage load on every message (the old per-message load/release
             // cycle is what made local chat feel impossibly slow).
             val model = getOrLoadModel(context, modelFile)
-            val result = Llama.complete(model, prompt = llamaPrompt, systemPrompt = "", maxTokens = DEFAULT_MAX_TOKENS)
+            // Hard timeout so a hung native inference surfaces as an error
+            // instead of leaving the chat spinner going forever.
+            val result = withTimeout(GENERATION_TIMEOUT_MS) {
+                runNativeGuarded {
+                    llamaRuntime.complete(model, prompt = llamaPrompt, systemPrompt = "", maxTokens = DEFAULT_MAX_TOKENS)
+                }
+            }
             val text = result.text.trim()
             if (text.isBlank()) "🦙 [Llama 3.2 3B Local Engine]: I couldn't generate a response. Please try asking the question another way." else text
         } catch (e: Exception) {
             Log.e(TAG, "Local Llama 3.2 3B inference failed", e)
-            "🦙 [Llama 3.2 3B Local Engine]: Local inference failed safely: ${e.message ?: e.javaClass.simpleName}. The model is installed, but the device could not complete inference."
+            val reason = if (e is TimeoutCancellationException) "timed out" else (e.message ?: e.javaClass.simpleName)
+            "🦙 [Llama 3.2 3B Local Engine]: Local inference failed safely: $reason. The model is installed, but the device could not complete inference."
         }
     }
 }

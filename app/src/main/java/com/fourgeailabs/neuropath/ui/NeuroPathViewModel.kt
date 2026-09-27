@@ -372,6 +372,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     if (completed != null) {
                         val rotated = checkAndApplyThemeRotation(completed)
                         _currentProfile.value = rotated
+                        // Restore the parent's chosen AI engine on cold start.
+                        syncChatModelModeFromProfile(rotated)
                         initializeSecureCredentials(profiles)
                         runCatching { speechManager.setLanguage(rotated.appLanguageCode) }
                         runCatching { speechManager.setSpeechParameters(rotated.ttsSpeed, rotated.ttsVoicePitch) }
@@ -453,7 +455,25 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             )
             repository.updateProfile(updated)
             _currentProfile.value = updated
+            // The parent's engine choice must actually drive the chat: without
+            // this, "Set Active Engine" only wrote a profile string while the
+            // chat kept using whatever engine was selected before.
+            syncChatModelModeFromProfile(updated)
             speechManager.speak(t("ai_and_learning_buddy_configuration_updated"))
+        }
+    }
+
+    /**
+     * Maps the parent's AI engine choice (stored on the profile) onto the chat
+     * engine the buddy actually uses. Unknown/legacy values leave the current
+     * chat mode untouched.
+     */
+    private fun syncChatModelModeFromProfile(profile: ChildProfileEntity) {
+        when (profile.aiVersionMode) {
+            "LOCAL_OFFLINE", "LLAMA_LOCAL" -> setChatModelMode(ChatModelMode.LLAMA_LOCAL)
+            "FULL_AI" -> setChatModelMode(ChatModelMode.GENERAL)
+            "SOCRATIC_ONLY" -> setChatModelMode(ChatModelMode.OFFLINE)
+            else -> Unit
         }
     }
 
@@ -465,6 +485,9 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         chatSessionCollectJob?.cancel()
         chatSessionCollectJob = null
         _currentProfile.value = rotated
+        // Restore the parent's chosen AI engine for this profile so the choice
+        // survives app restarts and profile switches.
+        syncChatModelModeFromProfile(rotated)
         initDefaultChatGreeting()
         speechManager.setLanguage(rotated.appLanguageCode)
         speechManager.setSpeechParameters(rotated.ttsSpeed, rotated.ttsVoicePitch)
@@ -487,6 +510,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             repository.updateProfile(profile)
             if (_currentProfile.value.id == profile.id) {
                 _currentProfile.value = profile
+                syncChatModelModeFromProfile(profile)
                 speechManager.setLanguage(profile.appLanguageCode)
                 speechManager.setSpeechParameters(profile.ttsSpeed, profile.ttsVoicePitch)
             }
