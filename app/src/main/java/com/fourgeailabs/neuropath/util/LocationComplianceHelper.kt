@@ -265,7 +265,10 @@ object LocationComplianceHelper {
                 val directExecutor = Executor { command -> command.run() }
                 var settled = false
                 fun settle(location: Location?) {
-                    if (!settled) {
+                    // Only a real fix settles the race: a null callback from one
+                    // provider must not cancel the other provider's attempt.
+                    // The timeout handles giving up.
+                    if (location != null && !settled) {
                         settled = true
                         try { cancelSignal.cancel() } catch (e: Exception) { /* already settled */ }
                         cont.resume(location, null)
@@ -454,70 +457,99 @@ object LocationComplianceHelper {
         var detectedState: String? = null
         var detectedCity: String? = null
         var isFromGps = false
+        // Human-readable reason the GPS path did not produce a fix. Surfaced
+        // in resolutionSource so the result card in the UI says exactly what
+        // happened instead of silently showing a fallback city.
+        var gpsFailure: String? = null
 
         try {
             if (hasLocationPermission(context)) {
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-                // Ask the radio for a live fix first: getLastKnownLocation() is
-                // null when nothing has recently woken the providers, which used
-                // to make the scan silently fall back to the SIM country with no
-                // city/state. A live fix makes the scan actually use GPS.
-                val liveLocation: Location? = try {
-                    requestFreshLocation(locationManager)
-                } catch (e: SecurityException) {
-                    null
+                val enabledProviders = listOf(
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.GPS_PROVIDER
+                ).filter { provider ->
+                    try {
+                        locationManager?.isProviderEnabled(provider) == true
+                    } catch (e: Exception) {
+                        false
+                    }
                 }
-                val lastLocation: Location? = liveLocation ?: try {
-                    locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                        ?: locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                        ?: locationManager?.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
-                } catch (e: SecurityException) {
-                    null
-                }
+                if (enabledProviders.isEmpty()) {
+                    gpsFailure = "system location providers are all disabled"
+                } else {
+                    // Ask the radio for a live fix first: getLastKnownLocation() is
+                    // null when nothing has recently woken the providers, which used
+                    // to make the scan silently fall back to the SIM country with no
+                    // city/state. A live fix makes the scan actually use GPS.
+                    val liveLocation: Location? = try {
+                        requestFreshLocation(locationManager)
+                    } catch (e: SecurityException) {
+                        null
+                    }
+                    val lastLocation: Location? = liveLocation ?: try {
+                        locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                            ?: locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                            ?: locationManager?.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
+                    } catch (e: SecurityException) {
+                        null
+                    }
 
-                if (lastLocation != null) {
-                    // Never guess Phoenix/Surprise from a broad coordinate box.
-                    // Reverse geocoding supplies the actual city/state.
-                    val geocoder = Geocoder(context, Locale.getDefault())
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        // For API 33+, geocoder has async callback, but standard synchronous list works via deprecated fallback in IO dispatcher
-                        val addresses: List<Address>? = try {
-                            @Suppress("DEPRECATION")
-                            geocoder.getFromLocation(lastLocation.latitude, lastLocation.longitude, 1)
-                        } catch (e: Exception) {
-                            null
-                        }
-                        if (!addresses.isNullOrEmpty()) {
-                            val addr = addresses[0]
-                            addr.countryName?.let { detectedCountryName = it }
-                            addr.countryCode?.let { detectedCountryCode = it.uppercase() }
-                            addr.adminArea?.let { detectedState = it }
-                            val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality
-                            if (!reportedCity.isNullOrBlank()) {
-                                detectedCity = reportedCity
-                                isFromGps = true
-                            } else if (!detectedState.isNullOrBlank()) {
-                                isFromGps = true
-                            }
-                        }
+                    if (lastLocation == null) {
+                        gpsFailure = "no fix within 30s and no cached location (providers on: ${enabledProviders.joinToString()})"
                     } else {
-                        @Suppress("DEPRECATION")
-                        val addresses = geocoder.getFromLocation(lastLocation.latitude, lastLocation.longitude, 1)
-                        if (!addresses.isNullOrEmpty()) {
-                            val addr = addresses[0]
-                            addr.countryName?.let { detectedCountryName = it }
-                            addr.countryCode?.let { detectedCountryCode = it.uppercase() }
-                            addr.adminArea?.let { detectedState = it }
-                            val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality
-                            if (!reportedCity.isNullOrBlank()) {
-                                detectedCity = reportedCity
-                                isFromGps = true
-                            } else if (!detectedState.isNullOrBlank()) {
-                                isFromGps = true
+                        // Never guess Phoenix/Surprise from a broad coordinate box.
+                        // Reverse geocoding supplies the actual city/state.
+                        val geocoder = Geocoder(context, Locale.getDefault())
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            // For API 33+, geocoder has async callback, but standard synchronous list works via deprecated fallback in IO dispatcher
+                            val addresses: List<Address>? = try {
+                                @Suppress("DEPRECATION")
+                                geocoder.getFromLocation(lastLocation.latitude, lastLocation.longitude, 1)
+                            } catch (e: Exception) {
+                                null
                             }
+                            if (!addresses.isNullOrEmpty()) {
+                                val addr = addresses[0]
+                                addr.countryName?.let { detectedCountryName = it }
+                                addr.countryCode?.let { detectedCountryCode = it.uppercase() }
+                                addr.adminArea?.let { detectedState = it }
+                                val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality
+                                if (!reportedCity.isNullOrBlank()) {
+                                    detectedCity = reportedCity
+                                    isFromGps = true
+                                } else if (!detectedState.isNullOrBlank()) {
+                                    isFromGps = true
+                                }
+                            }
+                        } else {
+                            @Suppress("DEPRECATION")
+                            val addresses = try {
+                                geocoder.getFromLocation(lastLocation.latitude, lastLocation.longitude, 1)
+                            } catch (e: Exception) {
+                                null
+                            }
+                            if (!addresses.isNullOrEmpty()) {
+                                val addr = addresses[0]
+                                addr.countryName?.let { detectedCountryName = it }
+                                addr.countryCode?.let { detectedCountryCode = it.uppercase() }
+                                addr.adminArea?.let { detectedState = it }
+                                val reportedCity = addr.locality ?: addr.subAdminArea ?: addr.subLocality
+                                if (!reportedCity.isNullOrBlank()) {
+                                    detectedCity = reportedCity
+                                    isFromGps = true
+                                } else if (!detectedState.isNullOrBlank()) {
+                                    isFromGps = true
+                                }
+                            }
+                        }
+                        if (!isFromGps) {
+                            gpsFailure = "fix acquired but the geocoder returned no address"
                         }
                     }
                 }
+            } else {
+                gpsFailure = "location permission not granted"
             }
 
             // Fallback to Telephony or System Locale if GPS not available or permission withheld
@@ -573,7 +605,8 @@ object LocationComplianceHelper {
             isVerified = true,
             complianceMessage = complianceMsg,
             isGoogleMapsVerified = false,
-            resolutionSource = if (isFromGps) "Android Geocoder GPS / Network Location" else "System Locale Preset"
+            resolutionSource = if (isFromGps) "Android Geocoder GPS / Network Location"
+                else "System Locale Preset" + (gpsFailure?.let { " (GPS: $it)" } ?: "")
         )
     }
 
