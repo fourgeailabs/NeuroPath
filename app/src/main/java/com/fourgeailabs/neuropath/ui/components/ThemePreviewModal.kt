@@ -181,7 +181,12 @@ fun ThemePreviewModal(
                             modifier = Modifier.size(40.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(previewTheme.emoji, fontSize = 20.sp)
+                                BuddyAvatar(
+                                    themeId = previewTheme.id,
+                                    pose = BuddyPose.IDLE,
+                                    size = 36.dp,
+                                    contentDescription = previewTheme.buddyName
+                                )
                             }
                         }
                         Column {
@@ -374,7 +379,12 @@ fun ThemePreviewModal(
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(itemTheme.emoji, fontSize = 16.sp)
+                                        BuddyAvatar(
+                                            themeId = itemTheme.id,
+                                            pose = BuddyPose.IDLE,
+                                            size = 22.dp,
+                                            contentDescription = itemTheme.buddyName
+                                        )
                                         Spacer(Modifier.width(8.dp))
                                         Text(
                                             itemTheme.title,
@@ -646,7 +656,12 @@ private fun LiveScreenSimulationView(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(theme.emoji, fontSize = 18.sp)
+                                BuddyAvatar(
+                                    themeId = theme.id,
+                                    pose = BuddyPose.IDLE,
+                                    size = 24.dp,
+                                    contentDescription = theme.buddyName
+                                )
                                 Spacer(Modifier.width(6.dp))
                                 Text(
                                     theme.title.substringBefore(":"),
@@ -678,7 +693,12 @@ private fun LiveScreenSimulationView(
                             modifier = Modifier.size(46.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(theme.emoji, fontSize = 24.sp)
+                                BuddyAvatar(
+                                    themeId = theme.id,
+                                    pose = BuddyPose.IDLE,
+                                    size = 42.dp,
+                                    contentDescription = theme.buddyName
+                                )
                             }
                         }
 
@@ -829,30 +849,30 @@ private fun ColorPaletteInspectorView(
 
         // Palette Swatch Cards
         PaletteSwatchRow(
-            title = "Primary Accent",
-            role = "Main actions, active milestones, header banners",
+            title = t("swatch_primary_accent"),
+            role = t("swatch_primary_role"),
             color = primaryColor,
             hex = "#" + theme.primaryHex.toString(16).uppercase().takeLast(6)
         )
 
         PaletteSwatchRow(
-            title = "Secondary Accent",
-            role = "Badges, progress sparkles, buddy companion trims",
+            title = t("swatch_secondary_accent"),
+            role = t("swatch_secondary_role"),
             color = secondaryColor,
             hex = "#" + theme.secondaryHex.toString(16).uppercase().takeLast(6)
         )
 
         PaletteSwatchRow(
-            title = "Surface Background",
-            role = "Screen canvas backdrop, low visual clutter",
+            title = t("swatch_surface_background"),
+            role = t("swatch_surface_role"),
             color = surfaceColor,
             hex = "#" + theme.surfaceHex.toString(16).uppercase().takeLast(6),
             isLight = true
         )
 
         PaletteSwatchRow(
-            title = "Card Container",
-            role = "Lesson question trays, dialog surfaces, chat bubbles",
+            title = t("swatch_card_container"),
+            role = t("swatch_card_role"),
             color = cardColor,
             hex = "#" + theme.cardHex.toString(16).uppercase().takeLast(6),
             isLight = true
@@ -1001,7 +1021,12 @@ private fun CurriculumAndBuddyView(
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(theme.emoji, fontSize = 32.sp)
+                    BuddyAvatar(
+                        themeId = theme.id,
+                        pose = BuddyPose.IDLE,
+                        size = 48.dp,
+                        contentDescription = theme.buddyName
+                    )
                     Spacer(Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(

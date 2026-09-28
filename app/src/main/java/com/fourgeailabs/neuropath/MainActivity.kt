@@ -6,15 +6,18 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.AppStrings
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
@@ -46,12 +49,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)?.isAppearanceLightStatusBars = true
 
         setContent {
             val profile by viewModel.currentProfile.collectAsState()
             val neuroTheme = viewModel.getActiveNeuroTheme()
             val currentScreen by viewModel.currentScreen.collectAsState()
+
+            // Dark mode auto-follows the system setting. The parent's manual
+            // TWILIGHT_DARK contrast-mode override keeps working independently.
+            val followSystemDarkTheme = isSystemInDarkTheme()
 
             // System Back Button Behavior: Navigate back one page instead of closing the app
             BackHandler(enabled = true) {
@@ -64,9 +70,18 @@ class MainActivity : ComponentActivity() {
 
             val colorScheme = getThemeColorScheme(
                 neuroTheme = neuroTheme,
-                contrastMode = profile.highContrastMode
+                contrastMode = profile.highContrastMode,
+                darkTheme = followSystemDarkTheme
             )
             val typography = getDyslexiaTypography(profile.dyslexiaFontEnabled)
+
+            // Status-bar icons must stay visible: dark icons on light bars,
+            // light icons when the app is effectively dark (system or manual override).
+            val appEffectivelyDark = profile.highContrastMode == "TWILIGHT_DARK" || followSystemDarkTheme
+            SideEffect {
+                WindowCompat.getInsetsController(window, window.decorView)
+                    ?.isAppearanceLightStatusBars = !appEffectivelyDark
+            }
 
             MaterialTheme(
                 colorScheme = colorScheme,

@@ -1,6 +1,7 @@
 package com.fourgeailabs.neuropath.data.curriculum.oer
 
 import android.util.Log
+import com.fourgeailabs.neuropath.BuildConfig
 import com.fourgeailabs.neuropath.data.curriculum.CurriculumResolver
 import com.fourgeailabs.neuropath.data.local.AppDatabase
 import com.fourgeailabs.neuropath.data.local.entity.OerCurriculumEntity
@@ -18,6 +19,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
         .build()
 
     @Volatile
@@ -31,7 +33,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
             val entities = preinstalled.map { OerCurriculumEntity.fromDomainModel(it, isPreinstalled = true) }
             dao.insertUnits(entities)
             memoryCache = preinstalled
-            Log.d("OerCurriculumService", "Pre-installed ${preinstalled.size} OER Commons K-12 curriculum units into Room database.")
+            if (BuildConfig.DEBUG) Log.d("OerCurriculumService", "Pre-installed ${preinstalled.size} OER Commons K-12 curriculum units into Room database.")
         } else {
             val entities = dao.getAllCurriculumUnitsDirect()
             val items = entities.mapNotNull { entity ->
@@ -44,7 +46,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
                 Log.w("OerCurriculumService", "Skipped ${entities.size - items.size} unit(s) with unrecognized codes.")
             }
             memoryCache = items
-            Log.d("OerCurriculumService", "Loaded ${memoryCache.size} OER Commons curriculum units from Room database.")
+            if (BuildConfig.DEBUG) Log.d("OerCurriculumService", "Loaded ${memoryCache.size} OER Commons curriculum units from Room database.")
         }
         if (memoryCache.isEmpty()) {
             memoryCache = PreinstalledOerCurriculumCatalog.getAllPreinstalledCurriculum()
@@ -99,7 +101,7 @@ class OerCommonsCurriculumService(private val db: AppDatabase) {
         val preinstalled = PreinstalledOerCurriculumCatalog.getAllPreinstalledCurriculum()
         val repaired = dao.ensureUnitsPresent(preinstalled.map { OerCurriculumEntity.fromDomainModel(it, isPreinstalled = true) })
         if (repaired > 0) {
-            Log.d("OerCurriculumService", "Repaired $repaired missing pre-installed curriculum unit(s).")
+            if (BuildConfig.DEBUG) Log.d("OerCurriculumService", "Repaired $repaired missing pre-installed curriculum unit(s).")
         }
 
         val entities = dao.getAllCurriculumUnitsDirect()

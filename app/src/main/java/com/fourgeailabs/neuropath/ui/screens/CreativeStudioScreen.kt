@@ -85,6 +85,9 @@ import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import kotlinx.coroutines.launch
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
 
 enum class CreativeMode(val title: String, val icon: String) {
     DRAWING_CANVAS("Art Studio", "🎨"),
@@ -177,7 +180,8 @@ fun CreativeStudioScreen(
                     }
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🎨 ", fontSize = 18.sp)
+                            BuddyAvatar(themeId = "magic", pose = BuddyPose.HAPPY, size = 32.dp)
+                            Spacer(Modifier.width(SpacingTokens.xs))
                             Text(
                                 t("creative_expression"),
                                 style = MaterialTheme.typography.titleMedium,
@@ -566,7 +570,7 @@ fun CreativeStudioScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("🤖", fontSize = 20.sp)
+                                    BuddyAvatar(themeId = "robotics", pose = BuddyPose.HAPPY, size = 28.dp)
                                     Spacer(Modifier.width(6.dp))
                                     Text(
                                         t("spark_ideas_with_learning_buddy"),

@@ -62,6 +62,8 @@ import com.fourgeailabs.neuropath.ui.components.HighlightedSpeechText
 import com.fourgeailabs.neuropath.ui.components.OerMultimediaPlayerBottomSheet
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
 
 @Composable
 fun TeachLessonScreen(
@@ -249,7 +251,7 @@ fun TeachLessonScreen(
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("🎬", fontSize = 14.sp)
+                                BuddyAvatar(themeId = "space", pose = BuddyPose.WAVING, size = 24.dp)
                                 Spacer(Modifier.width(6.dp))
                                 Text(
                                     t("oer_multimedia_learning_lab"),

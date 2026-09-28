@@ -58,6 +58,12 @@ import com.fourgeailabs.neuropath.audio.AmbientSoundType
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
+import androidx.compose.foundation.layout.sizeIn
+import com.fourgeailabs.neuropath.ui.theme.ElevationTokens
+import com.fourgeailabs.neuropath.ui.theme.ShapeTokens
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -75,32 +81,32 @@ fun TopSensoryBar(
     Surface(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
         tonalElevation = 4.dp,
-        shadowElevation = 2.dp,
+        shadowElevation = ElevationTokens.Card,
         modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .statusBarsPadding()
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xs)
         ) {
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
             ) {
                 // Sensory Badge
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = ShapeTokens.Large,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.padding(end = 4.dp)
+                    modifier = Modifier.padding(end = SpacingTokens.xxs)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("🌿", fontSize = 14.sp)
-                        Spacer(Modifier.width(4.dp))
+                        BuddyAvatar(themeId = "wildlife", pose = BuddyPose.IDLE, size = SpacingTokens.xxl)
+                        Spacer(Modifier.width(SpacingTokens.xxs))
                         Text(
                             t("sensory_suite"),
                             fontSize = 12.sp,
@@ -112,8 +118,9 @@ fun TopSensoryBar(
 
                 // 1. Pop-It Fidget Quick Launch
                 SensoryPillButton(
-                    icon = "🫧",
-                    label = "Pop-It",
+                    buddyThemeId = "games",
+                    buddyPose = BuddyPose.HAPPY,
+                    label = t("sensory_popit"),
                     onClick = {
                         viewModel.recordSensoryBreakTaken()
                         viewModel.navigateTo(AppScreen.FIDGET_POPIT)
@@ -123,8 +130,9 @@ fun TopSensoryBar(
 
                 // 2. 4-7-8 Breathing Quick Launch
                 SensoryPillButton(
-                    icon = "🧘",
-                    label = "4-7-8 Calm",
+                    buddyThemeId = "wildlife",
+                    buddyPose = BuddyPose.COMFORTING,
+                    label = t("sensory_breathing_calm"),
                     onClick = {
                         viewModel.recordSensoryBreakTaken()
                         viewModel.navigateTo(AppScreen.BREATHING_GUIDE)
@@ -136,7 +144,7 @@ fun TopSensoryBar(
                 val isMusicActive = activeSound != AmbientSoundType.OFF
                 SensoryPillButton(
                     icon = if (isMusicActive) activeSound.emoji else "🔇",
-                    label = if (isMusicActive) activeSound.title else "Soundscapes",
+                    label = if (isMusicActive) activeSound.title else t("sensory_soundscapes"),
                     isActive = isMusicActive,
                     onClick = { showSoundDialog = true },
                     testTag = "sensory_soundscape_pill"
@@ -145,7 +153,7 @@ fun TopSensoryBar(
                 // 4. Dyslexia Font Toggle
                 SensoryPillButton(
                     icon = "📖",
-                    label = if (profile.dyslexiaFontEnabled) "Dyslexic: ON" else "Dyslexic: OFF",
+                    label = if (profile.dyslexiaFontEnabled) t("dyslexic_on") else t("dyslexic_off"),
                     isActive = profile.dyslexiaFontEnabled,
                     onClick = {
                         viewModel.updateProfileSettings(
@@ -166,8 +174,9 @@ fun TopSensoryBar(
 
                 // 5. Contrast Palette Selector
                 SensoryPillButton(
-                    icon = "🎨",
-                    label = "Theme Mode",
+                    buddyThemeId = "magic",
+                    buddyPose = BuddyPose.WAVING,
+                    label = t("sensory_theme_mode"),
                     onClick = { showContrastDialog = true },
                     testTag = "sensory_contrast_picker"
                 )
@@ -175,23 +184,24 @@ fun TopSensoryBar(
                 // 6. Stop TTS if currently speaking
                 if (isSpeaking) {
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = ShapeTokens.Large,
                         color = Color(0xFFEF5350),
                         modifier = Modifier
+                            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                             .clickable { viewModel.speechManager.stop() }
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = SpacingTokens.xxs)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.VolumeMute,
                                 contentDescription = t("stop_speech"),
                                 tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(SpacingTokens.xl)
                             )
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(SpacingTokens.xxs))
                             Text(t("stop_audio_btn"), fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -212,8 +222,8 @@ fun TopSensoryBar(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(SpacingTokens.xxl),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -235,7 +245,7 @@ fun TopSensoryBar(
                 AmbientSoundType.entries.filter { it != AmbientSoundType.OFF }.forEach { sound ->
                     val isPlaying = activeSound == sound
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeTokens.Medium,
                         color = if (isPlaying) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -246,11 +256,11 @@ fun TopSensoryBar(
                             .testTag("soundscape_pick_${sound.name.lowercase()}")
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = SpacingTokens.l),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(sound.emoji, fontSize = 22.sp)
-                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.width(SpacingTokens.l))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(sound.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                 Text(
@@ -264,7 +274,7 @@ fun TopSensoryBar(
                                     Icons.AutoMirrored.Filled.VolumeUp,
                                     contentDescription = t("playing_tap_to_stop"),
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(SpacingTokens.xxl)
                                 )
                             }
                         }
@@ -275,15 +285,15 @@ fun TopSensoryBar(
                     OutlinedButton(
                         onClick = { viewModel.toggleAmbientSound(activeSound) },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = ShapeTokens.Medium
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.VolumeMute, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.AutoMirrored.Filled.VolumeMute, contentDescription = null, modifier = Modifier.size(SpacingTokens.xl))
+                        Spacer(Modifier.width(SpacingTokens.s))
                         Text(t("stop_soundscape"))
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(SpacingTokens.xxxl))
             }
         }
     }
@@ -294,19 +304,19 @@ fun TopSensoryBar(
             onDismissRequest = { showContrastDialog = false },
             title = { Text(t("sensory_color_contrast_palettes"), fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                     val modes = listOf(
-                        Triple("PASTEL", "Soft Pastel (Low Stimulation)", "🌱 Calm low-saturation pastel theme"),
-                        Triple("BUTTERCREAM", "Warm Buttercream (Low Strain)", "🧈 Soothing yellow/warm background"),
-                        Triple("TWILIGHT_DARK", "Twilight Soft Dark", "🌙 Reduced blue light night mode"),
-                        Triple("MINT", "Gentle Mint Calm", "🍃 Restful botanical green palette"),
-                        Triple("HIGH_CONTRAST", "Accessible High Contrast", "⚡ Maximum legibility without harsh flashing")
+                        ContrastMode("PASTEL", "contrast_pastel_title", "contrast_pastel_desc", "magic"),
+                        ContrastMode("BUTTERCREAM", "contrast_buttercream_title", "contrast_buttercream_desc", "trains"),
+                        ContrastMode("TWILIGHT_DARK", "contrast_twilight_title", "contrast_twilight_desc", "space"),
+                        ContrastMode("MINT", "contrast_mint_title", "contrast_mint_desc", "wildlife"),
+                        ContrastMode("HIGH_CONTRAST", "contrast_high_contrast_title", "contrast_high_contrast_desc", "knights")
                     )
 
-                    modes.forEach { (modeCode, title, desc) ->
-                        val isSelected = profile.highContrastMode == modeCode
+                    modes.forEach { mode ->
+                        val isSelected = profile.highContrastMode == mode.code
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = ShapeTokens.Medium,
                             color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -318,23 +328,30 @@ fun TopSensoryBar(
                                         themeId = profile.activeThemeId,
                                         neuroTypes = profile.neurodivergentTypesCsv,
                                         dyslexiaFont = profile.dyslexiaFontEnabled,
-                                        contrastMode = modeCode,
+                                        contrastMode = mode.code,
                                         ttsSpeed = profile.ttsSpeed,
                                         readAloud = profile.readAnswersAloud,
                                         dailyMinutes = profile.dailyGoalMinutes
                                     )
                                     showContrastDialog = false
                                 }
-                                .padding(2.dp)
+                                .padding(SpacingTokens.xxxs)
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    title,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(desc, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(
+                                modifier = Modifier.padding(SpacingTokens.l),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                BuddyAvatar(themeId = mode.buddyThemeId, pose = BuddyPose.IDLE, size = 28.dp)
+                                Spacer(Modifier.width(SpacingTokens.s))
+                                Column {
+                                    Text(
+                                        t(mode.titleKey),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(t(mode.descKey), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
                         }
                     }
@@ -349,9 +366,18 @@ fun TopSensoryBar(
     }
 }
 
+private data class ContrastMode(
+    val code: String,
+    val titleKey: String,
+    val descKey: String,
+    val buddyThemeId: String
+)
+
 @Composable
 private fun SensoryPillButton(
-    icon: String,
+    icon: String = "",
+    buddyThemeId: String? = null,
+    buddyPose: BuddyPose = BuddyPose.IDLE,
     label: String,
     onClick: () -> Unit,
     isActive: Boolean = false,
@@ -362,15 +388,20 @@ private fun SensoryPillButton(
         color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
         shadowElevation = if (isActive) 2.dp else 0.dp,
         modifier = Modifier
+            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
             .clickable { onClick() }
             .testTag(testTag)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(icon, fontSize = 14.sp)
-            Spacer(Modifier.width(6.dp))
+            if (buddyThemeId != null) {
+                BuddyAvatar(themeId = buddyThemeId, pose = buddyPose, size = SpacingTokens.xxl)
+            } else {
+                Text(icon, fontSize = 14.sp)
+            }
+            Spacer(Modifier.width(SpacingTokens.xs))
             Text(
                 label,
                 fontSize = 12.sp,

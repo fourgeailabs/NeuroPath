@@ -62,6 +62,8 @@ import com.fourgeailabs.neuropath.data.model.AppLanguageDictionary
 import com.fourgeailabs.neuropath.data.model.WorldTheme
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
 
@@ -101,15 +103,7 @@ fun ProfileSelectionScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(72.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text("🧠", fontSize = 36.sp)
-                    }
-                }
+                BuddyAvatar(themeId = "dino", pose = BuddyPose.IDLE, size = 72.dp)
                 Spacer(Modifier.height(14.dp))
                 Text(
                     text = AppLanguageDictionary.getString("app_title", langCode),
@@ -157,7 +151,12 @@ fun ProfileSelectionScreen(
                             modifier = Modifier.size(54.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(theme.emoji, fontSize = 28.sp)
+                                BuddyAvatar(
+                                    themeId = theme.id,
+                                    pose = BuddyPose.IDLE,
+                                    size = 50.dp,
+                                    contentDescription = theme.buddyName
+                                )
                             }
                         }
 

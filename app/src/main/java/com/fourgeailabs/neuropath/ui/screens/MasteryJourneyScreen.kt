@@ -59,6 +59,8 @@ import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.components.HighlightedSpeechText
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
 
 @Composable
 fun MasteryJourneyScreen(
@@ -138,7 +140,7 @@ fun MasteryJourneyScreen(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("🫧", fontSize = 14.sp)
+                    BuddyAvatar(themeId = "games", pose = BuddyPose.HAPPY, size = 20.dp)
                     Spacer(Modifier.width(4.dp))
                     Text(t("break"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                 }

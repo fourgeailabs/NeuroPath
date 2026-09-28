@@ -1,5 +1,8 @@
 package com.fourgeailabs.neuropath.data.model
 
+import com.squareup.moshi.JsonClass
+
+@JsonClass(generateAdapter = true)
 data class ConceptStep(
     val stepNumber: Int,
     val title: String,
@@ -16,6 +19,7 @@ data class ConceptStep(
     val answerIndex: Int get() = correctOptionIndex ?: interactiveCorrectIndex ?: 0
 }
 
+@JsonClass(generateAdapter = true)
 data class QuestionItem(
     val id: Int,
     val questionText: String,
@@ -27,6 +31,7 @@ data class QuestionItem(
     val visualAidEmoji: String = "✨"
 )
 
+@JsonClass(generateAdapter = true)
 data class FullLesson(
     val id: String,
     val subject: EducationalSubject,

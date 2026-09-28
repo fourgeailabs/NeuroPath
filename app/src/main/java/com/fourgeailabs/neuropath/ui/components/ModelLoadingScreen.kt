@@ -33,12 +33,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.R
+import com.fourgeailabs.neuropath.ui.theme.isAppInDarkTheme
 import kotlinx.coroutines.delay
 import androidx.compose.animation.core.animateFloatAsState
+import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 private val TypewriterFont = FontFamily(Font(R.font.special_elite))
 private val InkColor = Color(0xFF2E2A26)
 private val FadedInkColor = Color(0xFF6B645C)
+private val DarkPaperBg = Color(0xFF232733)
+private val DarkInkColor = Color(0xFFEDE7D8)
+private val DarkFadedInkColor = Color(0xFFA79C88)
+private val DarkTrackColor = Color(0xFF3A3F4D)
 
 private const val FADE_MS = 900
 
@@ -84,10 +91,18 @@ fun ModelLoadingScreen(
         label = "modelLoadProgress"
     )
 
+    // The typewriter "paper" aesthetic adapts to dark mode: dark paper with
+    // light ink instead of a glaring white screen.
+    val inDarkPaper = isAppInDarkTheme()
+    val paperBg = if (inDarkPaper) DarkPaperBg else Color.White
+    val ink = if (inDarkPaper) DarkInkColor else InkColor
+    val fadedInk = if (inDarkPaper) DarkFadedInkColor else FadedInkColor
+    val track = if (inDarkPaper) DarkTrackColor else Color(0xFFE8E2D8)
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(paperBg),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -98,11 +113,11 @@ fun ModelLoadingScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "DID YOU KNOW?",
+                text = t("did_you_know"),
                 fontFamily = TypewriterFont,
                 fontSize = 14.sp,
                 letterSpacing = 4.sp,
-                color = FadedInkColor,
+                color = fadedInk,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(24.dp))
@@ -122,11 +137,11 @@ fun ModelLoadingScreen(
                 ) { fact ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "${fact.module.uppercase()} NIBBLE",
+                            text = tf("loading_fact_nibble", fact.module.uppercase()),
                             fontFamily = TypewriterFont,
                             fontSize = 12.sp,
                             letterSpacing = 3.sp,
-                            color = FadedInkColor,
+                            color = fadedInk,
                             textAlign = TextAlign.Center
                         )
                         Spacer(Modifier.height(12.dp))
@@ -135,7 +150,7 @@ fun ModelLoadingScreen(
                             fontFamily = TypewriterFont,
                             fontSize = 19.sp,
                             lineHeight = 30.sp,
-                            color = InkColor,
+                            color = ink,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -144,11 +159,19 @@ fun ModelLoadingScreen(
 
             Spacer(Modifier.height(32.dp))
 
+            BuddyAvatar(
+                themeId = themeId,
+                pose = BuddyPose.THINKING,
+                size = 88.dp,
+                contentDescription = buddyName
+            )
+            Spacer(Modifier.height(12.dp))
+
             Text(
-                text = "$themeEmoji $buddyName is warming up…",
+                text = tf("buddy_warming_up", buddyName),
                 fontFamily = TypewriterFont,
                 fontSize = 15.sp,
-                color = InkColor,
+                color = ink,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(16.dp))
@@ -156,15 +179,15 @@ fun ModelLoadingScreen(
             LinearProgressIndicator(
                 progress = { animatedProgress },
                 modifier = Modifier.fillMaxWidth(),
-                color = InkColor,
-                trackColor = Color(0xFFE8E2D8)
+                color = ink,
+                trackColor = track
             )
             Spacer(Modifier.height(10.dp))
             Text(
                 text = stage,
                 fontFamily = TypewriterFont,
                 fontSize = 13.sp,
-                color = FadedInkColor,
+                color = fadedInk,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(8.dp))
@@ -180,19 +203,19 @@ fun ModelLoadingScreen(
                 Spacer(Modifier.height(8.dp))
                 TextButton(onClick = onRetry) {
                     Text(
-                        text = "try again",
+                        text = t("try_again"),
                         fontFamily = TypewriterFont,
                         fontSize = 14.sp,
-                        color = InkColor
+                        color = ink
                     )
                 }
             }
             TextButton(onClick = onSkip) {
                 Text(
-                    text = "skip",
+                    text = t("skip"),
                     fontFamily = TypewriterFont,
                     fontSize = 13.sp,
-                    color = FadedInkColor
+                    color = fadedInk
                 )
             }
         }

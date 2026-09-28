@@ -53,6 +53,9 @@ import com.fourgeailabs.neuropath.data.model.AvatarItem
 import com.fourgeailabs.neuropath.data.model.DEFAULT_AVATAR_SHOP_ITEMS
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
+import com.fourgeailabs.neuropath.ui.components.avatarShopIdToThemeId
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
 
@@ -176,7 +179,17 @@ fun AvatarShopScreen(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(currentAvatar?.emoji ?: "🤖", fontSize = 38.sp)
+                    val stageThemeId = currentAvatar?.let { avatarShopIdToThemeId(it.id) }
+                    if (stageThemeId != null) {
+                        BuddyAvatar(
+                            themeId = stageThemeId,
+                            pose = BuddyPose.IDLE,
+                            size = 72.dp,
+                            contentDescription = currentAvatar?.name
+                        )
+                    } else {
+                        Text(currentAvatar?.emoji ?: "🤖", fontSize = 38.sp)
+                    }
                     if (currentHat != null) {
                         Text(
                             currentHat.emoji,
@@ -270,7 +283,17 @@ fun AvatarShopScreen(
                             modifier = Modifier.size(54.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(item.emoji, fontSize = 28.sp)
+                                val itemThemeId = avatarShopIdToThemeId(item.id)
+                                if (itemThemeId != null) {
+                                    BuddyAvatar(
+                                        themeId = itemThemeId,
+                                        pose = BuddyPose.IDLE,
+                                        size = 48.dp,
+                                        contentDescription = item.name
+                                    )
+                                } else {
+                                    Text(item.emoji, fontSize = 28.sp)
+                                }
                             }
                         }
 

@@ -18,8 +18,8 @@ android {
     applicationId = "com.fourgeailabs.neuropath"
     minSdk = 24
     targetSdk = 36
-    versionCode = 53
-    versionName = "2.06.07"
+    versionCode = 54
+    versionName = "2.07.00"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     ndk { abiFilters += listOf("arm64-v8a") }
   }
@@ -66,14 +66,15 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
       if (file("${rootDir}/debug.keystore").exists()) signingConfig = signingConfigs.getByName("debugConfig")
-      // Debug also ships x86_64 native libs (litertlm provides them) so instrumented
-      // tests can run on the x86_64 CI emulator. Release stays arm64-v8a-only.
+      // Debug also ships x86_64 native libs (llama.cpp JNI provides them) so
+      // instrumented tests can run on the x86_64 CI emulator. Release stays arm64-v8a-only.
       ndk { abiFilters += listOf("x86_64") }
     }
   }
@@ -143,7 +144,6 @@ dependencies {
   implementation(libs.okhttp)
   implementation(libs.retrofit)
   implementation(libs.llama.android)
-  implementation("com.google.ai.edge.litertlm:litertlm-android:0.16.1")
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)

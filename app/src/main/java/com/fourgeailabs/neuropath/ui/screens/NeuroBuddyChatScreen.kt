@@ -57,6 +57,10 @@ import com.fourgeailabs.neuropath.ui.components.EducationalChatInterface
 import com.fourgeailabs.neuropath.ui.components.ModelLoadingScreen
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.theme.ElevationTokens
+import com.fourgeailabs.neuropath.ui.theme.ShapeTokens
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
+import androidx.compose.foundation.layout.sizeIn
 
 /**
  * Screen hosting the Educational Learning Buddy.
@@ -125,7 +129,7 @@ private fun VoiceConversationScreenWrapper(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp),
+            .padding(SpacingTokens.xl),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // Top Header
@@ -151,7 +155,7 @@ private fun VoiceConversationScreenWrapper(
                         Text(theme.emoji, fontSize = 20.sp)
                     }
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(SpacingTokens.s))
                 Column {
                     Text(
                         theme.buddyName,
@@ -161,7 +165,7 @@ private fun VoiceConversationScreenWrapper(
                     )
                     Text(
                         t("live_voice_mode"),
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -169,23 +173,24 @@ private fun VoiceConversationScreenWrapper(
 
             // Switch back to Chat Interface
             Surface(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier
+                    .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                     .clickable { onExitVoice() }
                     .testTag("toggle_voice_mode_btn")
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xs),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.GraphicEq,
                         contentDescription = t("switch_to_text_chat"),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(SpacingTokens.xl)
                     )
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(SpacingTokens.xxs))
                     Text(
                         t("chat_view"),
                         fontSize = 12.sp,
@@ -238,29 +243,29 @@ private fun VoiceConversationStage(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(12.dp),
+            .padding(SpacingTokens.l),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // Voice Mode Header Badge
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = ShapeTokens.Large,
             color = MaterialTheme.colorScheme.tertiaryContainer
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = SpacingTokens.l, vertical = SpacingTokens.xs),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     imageVector = Icons.Default.RecordVoiceOver,
                     contentDescription = t("live_api"),
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(SpacingTokens.xl)
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(SpacingTokens.xs))
                 Text(
                     t("live_voice_conversation_llama_3_2_3b"),
-                    fontSize = 11.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
@@ -292,7 +297,7 @@ private fun VoiceConversationStage(
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
-                shadowElevation = 8.dp,
+                shadowElevation = ElevationTokens.Level5,
                 modifier = Modifier.size(110.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -314,25 +319,25 @@ private fun VoiceConversationStage(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(SpacingTokens.s))
 
             if (!liveTranscript.isNullOrBlank()) {
                 ElevatedCard(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = ShapeTokens.Large,
                     colors = CardDefaults.elevatedCardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
+                        .padding(horizontal = SpacingTokens.s)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(t("live_transcript"), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.weight(1f))
-                            Text(tf("curriculum", profile.stateStandard), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(tf("curriculum", profile.stateStandard), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(SpacingTokens.xs))
                         Text(
                             liveTranscript ?: "",
                             fontSize = 13.sp,
@@ -347,7 +352,7 @@ private fun VoiceConversationStage(
         // Push-to-Talk Big Action Button
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = SpacingTokens.l)
         ) {
             Surface(
                 shape = CircleShape,
@@ -356,9 +361,10 @@ private fun VoiceConversationStage(
                     isLiveActive || isTranscribing -> MaterialTheme.colorScheme.tertiary
                     else -> MaterialTheme.colorScheme.primary
                 },
-                shadowElevation = 6.dp,
+                shadowElevation = ElevationTokens.Fab,
                 modifier = Modifier
                     .size(76.dp)
+                    .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                     .clickable {
                         if (isRecording) {
                             viewModel.stopAudioRecordingAndTranscribe { spokenText ->
@@ -388,7 +394,7 @@ private fun VoiceConversationStage(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(SpacingTokens.s))
             Text(
                 if (isRecording) "Tap to send voice turn" else "Tap microphone to speak",
                 fontSize = 12.sp,

@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.filled.Wifi
+import com.fourgeailabs.neuropath.network.ChatModelMode
 import com.fourgeailabs.neuropath.network.LlamaClient
 import com.fourgeailabs.neuropath.network.LlamaDownloadState
 import com.fourgeailabs.neuropath.network.LlamaLocalManager
@@ -129,6 +130,12 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Refresh
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.theme.ColorTokens
+import com.fourgeailabs.neuropath.ui.theme.ShapeTokens
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
+import androidx.compose.foundation.layout.sizeIn
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
 
 enum class ParentDashboardTab(val title: String, val iconEmoji: String) {
     PROFILES("Child Profiles", "👥"),
@@ -172,6 +179,10 @@ fun ParentDashboardScreen(
     val aiLoadStage by viewModel.modelLoadStage.collectAsState()
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
+    // Offline material pack state for the active profile (parent-gated controls).
+    val offlinePack by viewModel.offlinePack.collectAsState()
+    val offlinePackProgress by viewModel.offlinePackProgress.collectAsState()
+    val offlinePackError by viewModel.offlinePackError.collectAsState()
 
     var selectedTab by remember { mutableStateOf(ParentDashboardTab.PROFILES) }
     var editingProfileId by remember { mutableStateOf<Long?>(null) }
@@ -240,8 +251,8 @@ fun ParentDashboardScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(SpacingTokens.xl),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.xl)
     ) {
         // Top Header
         item {
@@ -265,16 +276,16 @@ fun ParentDashboardScreen(
                 )
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = ShapeTokens.Medium,
                     color = Color(0xFFD4EDDA)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(imageVector = Icons.Default.Security, contentDescription = t("coppa_safe_2"), tint = Color(0xFF155724), modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(t("coppa_safe_2"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF155724))
+                        Spacer(Modifier.width(SpacingTokens.xxs))
+                        Text(t("coppa_safe_2"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color(0xFF155724))
                     }
                 }
             }
@@ -318,7 +329,7 @@ fun ParentDashboardScreen(
                 // Section Header & Privacy Assurance
                 item {
                     Card(
-                        shape = RoundedCornerShape(16.dp),
+                        shape = ShapeTokens.Large,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
                     ) {
                         Row(
@@ -326,7 +337,7 @@ fun ParentDashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("🔒", fontSize = 24.sp)
-                            Spacer(Modifier.width(12.dp))
+                            Spacer(Modifier.width(SpacingTokens.l))
                             Column {
                                 Text(
                                     t("on_device_child_profiles_privacy"),
@@ -336,7 +347,7 @@ fun ParentDashboardScreen(
                                 )
                                 Text(
                                     t("all_child_profiles_hyper_fixations_strengths_and"),
-                                    fontSize = 11.5.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
@@ -357,7 +368,7 @@ fun ParentDashboardScreen(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -376,7 +387,7 @@ fun ParentDashboardScreen(
                                             Text(pTheme.emoji, fontSize = 22.sp)
                                         }
                                     }
-                                    Spacer(Modifier.width(12.dp))
+                                    Spacer(Modifier.width(SpacingTokens.l))
                                     Column(modifier = Modifier.weight(1f, fill = false)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
@@ -389,17 +400,17 @@ fun ParentDashboardScreen(
                                                 modifier = Modifier.weight(1f, fill = false)
                                             )
                                             if (isActive) {
-                                                Spacer(Modifier.width(8.dp))
+                                                Spacer(Modifier.width(SpacingTokens.s))
                                                 Surface(
                                                     shape = RoundedCornerShape(6.dp),
                                                     color = MaterialTheme.colorScheme.primary
                                                 ) {
                                                     Text(
                                                         t("active"),
-                                                        fontSize = 9.sp,
+                                                        style = MaterialTheme.typography.labelSmall,
                                                         fontWeight = FontWeight.ExtraBold,
                                                         color = MaterialTheme.colorScheme.onPrimary,
-                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = SpacingTokens.xxxs)
                                                     )
                                                 }
                                             }
@@ -434,16 +445,16 @@ fun ParentDashboardScreen(
 
                             // Strengths & Diagnoses summary
                             if (p.strengthsCsv.isNotBlank() || p.hyperFixationsCsv.isNotBlank()) {
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(SpacingTokens.s))
                                 Text(
-                                    text = "Passions: ${p.hyperFixationsCsv.ifBlank { "Curiosity & Learning" }}",
-                                    fontSize = 11.5.sp,
+                                    text = tf("passions_summary", p.hyperFixationsCsv.ifBlank { t("curiosity_and_learning") }),
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
 
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(SpacingTokens.m))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -452,7 +463,7 @@ fun ParentDashboardScreen(
                             ) {
                                 Text(
                                     text = tf("stars_gems_d_streak", p.totalStars, p.totalGems, p.currentStreakDays),
-                                    fontSize = 11.5.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -461,7 +472,7 @@ fun ParentDashboardScreen(
                                     Button(
                                         onClick = { viewModel.selectChildProfile(p) },
                                         shape = RoundedCornerShape(10.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        contentPadding = PaddingValues(horizontal = SpacingTokens.l, vertical = SpacingTokens.xxs),
                                         modifier = Modifier.testTag("switch_to_profile_${p.id}")
                                     ) {
                                         Text(t("select_active"), fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -485,7 +496,7 @@ fun ParentDashboardScreen(
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(SpacingTokens.s))
                         Text(t("add_another_child_profile"), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
@@ -493,13 +504,13 @@ fun ParentDashboardScreen(
                 // Parent PIN Management Card
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(SpacingTokens.s))
                                 Text(
                                     t("change_parent_passcode_pin"),
                                     style = MaterialTheme.typography.titleMedium,
@@ -514,7 +525,7 @@ fun ParentDashboardScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.m)
                             ) {
                                 OutlinedTextField(
                                     value = newPinText,
@@ -540,7 +551,7 @@ fun ParentDashboardScreen(
                             if (pinMessage != null) {
                                 Text(
                                     text = pinMessage!!,
-                                    color = if (pinMessageIsError) MaterialTheme.colorScheme.error else Color(0xFF2E7D32),
+                                    color = if (pinMessageIsError) MaterialTheme.colorScheme.error else ColorTokens.Light.success,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -566,7 +577,7 @@ fun ParentDashboardScreen(
                                         }
                                     }
                                 },
-                                shape = RoundedCornerShape(12.dp),
+                                shape = ShapeTokens.Medium,
                                 modifier = Modifier.align(Alignment.End).testTag("save_parent_pin_btn")
                             ) {
                                 Text(t("update_pin"), fontWeight = FontWeight.Bold)
@@ -581,11 +592,11 @@ fun ParentDashboardScreen(
                 // Global App Language Selector
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.m)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                                 Icon(imageVector = Icons.Default.Language, contentDescription = t("language"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
                                     "🌐 ${AppLanguageDictionary.getString("app_language", selectedLanguageCode)}",
@@ -635,10 +646,10 @@ fun ParentDashboardScreen(
                 // Child Profile Configuration
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
                             Text(
                                 t("learner_profile"),
                                 style = MaterialTheme.typography.titleMedium,
@@ -694,16 +705,16 @@ fun ParentDashboardScreen(
                     val themeSecondaryColor = Color(activeThemeData.secondaryHex)
 
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                                     Icon(imageVector = Icons.Default.Palette, contentDescription = t("theme_palette"), tint = MaterialTheme.colorScheme.primary)
                                     Text(
                                         t("special_interest_neuro_theme"),
@@ -714,15 +725,15 @@ fun ParentDashboardScreen(
                                 }
 
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = ShapeTokens.Small,
                                     color = MaterialTheme.colorScheme.primaryContainer
                                 ) {
                                     Text(
                                         t("100_themes_library"),
-                                        fontSize = 11.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs)
                                     )
                                 }
                             }
@@ -735,12 +746,12 @@ fun ParentDashboardScreen(
 
                             // Active Theme Showcase Card with Color Swatches & Preview Action
                             Surface(
-                                shape = RoundedCornerShape(16.dp),
+                                shape = ShapeTokens.Large,
                                 color = Color(activeThemeData.cardHex),
                                 border = androidx.compose.foundation.BorderStroke(2.dp, themePrimaryColor),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -748,7 +759,7 @@ fun ParentDashboardScreen(
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(activeThemeData.emoji, fontSize = 28.sp)
-                                            Spacer(Modifier.width(10.dp))
+                                            Spacer(Modifier.width(SpacingTokens.m))
                                             Column {
                                                 Text(
                                                     activeThemeData.title,
@@ -758,7 +769,7 @@ fun ParentDashboardScreen(
                                                 )
                                                 Text(
                                                     tf("str_7", activeThemeData.buddyName, activeThemeData.category.title),
-                                                    fontSize = 11.sp,
+                                                    style = MaterialTheme.typography.bodySmall,
                                                     color = themePrimaryColor.copy(alpha = 0.85f),
                                                     fontWeight = FontWeight.Medium
                                                 )
@@ -766,16 +777,16 @@ fun ParentDashboardScreen(
                                         }
 
                                         // Mini Palette Swatches
-                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            Surface(shape = CircleShape, color = themePrimaryColor, modifier = Modifier.size(16.dp)) {}
-                                            Surface(shape = CircleShape, color = themeSecondaryColor, modifier = Modifier.size(16.dp)) {}
-                                            Surface(shape = CircleShape, color = Color(activeThemeData.surfaceHex), border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray), modifier = Modifier.size(16.dp)) {}
+                                        Row(horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xxs)) {
+                                            Surface(shape = CircleShape, color = themePrimaryColor, modifier = Modifier.size(SpacingTokens.xl)) {}
+                                            Surface(shape = CircleShape, color = themeSecondaryColor, modifier = Modifier.size(SpacingTokens.xl)) {}
+                                            Surface(shape = CircleShape, color = Color(activeThemeData.surfaceHex), border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray), modifier = Modifier.size(SpacingTokens.xl)) {}
                                         }
                                     }
 
                                     Text(
                                         tf("str_4", activeThemeData.greeting),
-                                        fontSize = 11.5.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                         color = Color(0xFF1E212B)
                                     )
@@ -786,14 +797,14 @@ fun ParentDashboardScreen(
                                             previewTargetThemeId = selectedThemeId
                                             showThemePreviewModal = true
                                         },
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = ShapeTokens.Medium,
                                         colors = ButtonDefaults.buttonColors(containerColor = themePrimaryColor),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .testTag("open_theme_preview_modal_btn")
                                     ) {
                                         Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(Modifier.width(8.dp))
+                                        Spacer(Modifier.width(SpacingTokens.s))
                                         Text(t("preview_palette_atmosphere_assets"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     }
                                 }
@@ -805,7 +816,7 @@ fun ParentDashboardScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 val topThemes = remember { NeuroThemeCatalog.getRecommendedThemesForProfile(profile, limit = 12) }
                                 topThemes.forEach { themeObj ->
@@ -815,35 +826,38 @@ fun ParentDashboardScreen(
                                         shape = RoundedCornerShape(14.dp),
                                         color = if (isSelected) itemColor else MaterialTheme.colorScheme.surfaceVariant,
                                         border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, itemColor) else null,
-                                        modifier = Modifier.clickable {
+                                        modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable {
                                             selectedThemeId = themeObj.id
                                             previewTargetThemeId = themeObj.id
                                         }
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                            modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.s),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(themeObj.emoji, fontSize = 16.sp)
-                                            Spacer(Modifier.width(6.dp))
+                                            Spacer(Modifier.width(SpacingTokens.xs))
                                             Text(
                                                 themeObj.title.substringBefore(":"),
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                                             )
-                                            Spacer(Modifier.width(6.dp))
+                                            Spacer(Modifier.width(SpacingTokens.xs))
                                             Surface(
                                                 shape = CircleShape,
                                                 color = if (isSelected) Color.White.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surface,
                                                 modifier = Modifier
-                                                    .size(24.dp)
+                                                    .size(SpacingTokens.giant)
                                                     .clickable {
                                                         previewTargetThemeId = themeObj.id
                                                         showThemePreviewModal = true
                                                     }
                                             ) {
-                                                Box(contentAlignment = Alignment.Center) {
+                                                Box(
+                                                    contentAlignment = Alignment.Center,
+                                                    modifier = Modifier.fillMaxSize()
+                                                ) {
                                                     Icon(
                                                         Icons.Default.Visibility,
                                                         contentDescription = t("preview_theme"),
@@ -863,10 +877,10 @@ fun ParentDashboardScreen(
                 // Neurodiversity Accommodations
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.m)) {
                             Text(
                                 t("neurodiversity_accommodation_tools"),
                                 style = MaterialTheme.typography.titleMedium,
@@ -879,12 +893,13 @@ fun ParentDashboardScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                         .clickable {
                                             val updated = neuroTypesState.toMutableSet()
                                             if (isChecked) updated.remove(type.name) else updated.add(type.name)
                                             neuroTypesState = updated
                                         }
-                                        .padding(vertical = 4.dp),
+                                        .padding(vertical = SpacingTokens.xxs),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
@@ -893,10 +908,10 @@ fun ParentDashboardScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(type.icon, fontSize = 20.sp)
-                                        Spacer(Modifier.width(10.dp))
+                                        Spacer(Modifier.width(SpacingTokens.m))
                                         Column {
                                             Text(type.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                            Text(type.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(type.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                     Switch(
@@ -916,10 +931,10 @@ fun ParentDashboardScreen(
                 // Speech & Accessibility
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
                             Text(
                                 t("speech_reading_accessibility"),
                                 style = MaterialTheme.typography.titleMedium,
@@ -934,7 +949,7 @@ fun ParentDashboardScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(t("read_questions_answers_aloud"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text(t("automatic_natural_voice_with_karaoke_word_highli"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(t("automatic_natural_voice_with_karaoke_word_highli"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Switch(checked = readAloud, onCheckedChange = { readAloud = it })
                             }
@@ -946,7 +961,7 @@ fun ParentDashboardScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(t("opendyslexic_typography"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text(t("enhanced_letter_spacing_and_weighted_base_forms"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(t("enhanced_letter_spacing_and_weighted_base_forms"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Switch(checked = dyslexiaEnabled, onCheckedChange = { dyslexiaEnabled = it })
                             }
@@ -967,13 +982,13 @@ fun ParentDashboardScreen(
                 // Analytics & Progress Metrics
                 item {
                     ElevatedCard(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl)) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 Icon(imageVector = Icons.Default.Timeline, contentDescription = t("analytics"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
@@ -988,7 +1003,7 @@ fun ParentDashboardScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 MetricBox("⏱️ Focus Time", "$totalFocusMinutes min", MaterialTheme.colorScheme.primaryContainer, Modifier.weight(1f))
                                 MetricBox("🎯 Accuracy", "$overallAccuracy%", Color(0xFFD4EDDA), Modifier.weight(1f))
@@ -998,7 +1013,7 @@ fun ParentDashboardScreen(
                             Spacer(Modifier.height(14.dp))
 
                             Text(t("subject_mastery_progress"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(SpacingTokens.s))
 
                             EducationalSubject.entries.forEach { subject ->
                                 val record = lessonRecords.find { it.subjectId == subject.id }
@@ -1007,22 +1022,22 @@ fun ParentDashboardScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
+                                        .padding(vertical = SpacingTokens.xxs),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(subject.emoji, fontSize = 16.sp)
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(SpacingTokens.s))
                                     Text(subject.title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(110.dp))
                                     LinearProgressIndicator(
                                         progress = { score / 100f },
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(8.dp)
-                                            .clip(RoundedCornerShape(4.dp)),
+                                            .height(SpacingTokens.s)
+                                            .clip(ShapeTokens.ExtraSmall),
                                         color = MaterialTheme.colorScheme.primary,
                                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                                     )
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(SpacingTokens.s))
                                     Text(tf("str_10", score), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
@@ -1035,21 +1050,23 @@ fun ParentDashboardScreen(
             // (engine mode, local model, warm-up, full AI settings) lives in its
             // own menu instead of being merged into general settings.
             ParentDashboardTab.AI -> {
+                // Localised user-facing labels: "Cloud AI" / "Local AI" /
+                // "Socratic Teacher" (the storage ids stay as-is).
                 val aiModeLabel = when (profile.aiVersionMode) {
-                    "SOCRATIC_ONLY" -> "Socratic Only"
-                    "FULL_AI" -> "Llama 3.2 (Cloud)"
-                    "LOCAL_OFFLINE", "LLAMA_LOCAL" -> "Llama 3.2 (Local)"
-                    else -> profile.aiVersionMode.ifBlank { "Socratic Only" }
+                    "SOCRATIC_ONLY" -> t(ChatModelMode.OFFLINE.labelKey)
+                    "FULL_AI" -> t(ChatModelMode.GENERAL.labelKey)
+                    "LOCAL_OFFLINE", "LLAMA_LOCAL" -> t(ChatModelMode.LLAMA_LOCAL.labelKey)
+                    else -> t(ChatModelMode.OFFLINE.labelKey)
                 }
 
                 // AI status overview
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                                 Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 Text(
                                     AppLanguageDictionary.getString("tab_ai", selectedLanguageCode),
@@ -1068,10 +1085,36 @@ fun ParentDashboardScreen(
                                 Text(aiModeLabel, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
 
+                            // Parent-only Socratic Teacher on/off switch: the
+                            // no-AI teaching tool. When a parent turns it off,
+                            // a dead AI shows an honest connection-required
+                            // state instead of Socratic teaching. Persisted
+                            // per child profile; default ON.
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(t("socratic_teacher"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(
+                                        t("socratic_teacher_switch_desc"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = profile.socraticTeacherEnabled,
+                                    onCheckedChange = { enabled -> viewModel.setSocraticTeacherEnabled(enabled) },
+                                    modifier = Modifier.testTag("socratic_teacher_switch")
+                                )
+                            }
+
                             val modelStatusText = when (val state = llamaDownloadState) {
                                 is LlamaDownloadState.Installed -> "Installed (${"%.2f".format(state.fileSizeBytes / (1024f * 1024f * 1024f))} GB)"
                                 is LlamaDownloadState.Downloading -> "Downloading ${(state.progress * 100).toInt()}%"
                                 is LlamaDownloadState.Error -> "Error"
+                                is LlamaDownloadState.MeteredBlocked -> "Paused (mobile data)"
                                 is LlamaDownloadState.NotInstalled ->
                                     if (modelInstalledOnDisk) "Installed on device" else "Not downloaded"
                             }
@@ -1109,20 +1152,21 @@ fun ParentDashboardScreen(
                 // Full AI settings (moved here from the Settings tab).
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         modifier = Modifier.testTag("ai_settings_entry_card")
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                 .clickable { viewModel.navigateTo(AppScreen.AI_SETTINGS) }
-                                .padding(16.dp),
+                                .padding(SpacingTokens.xl),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.l)
                         ) {
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = ShapeTokens.Medium,
                                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                                 modifier = Modifier.size(44.dp)
                             ) {
@@ -1159,13 +1203,30 @@ fun ParentDashboardScreen(
 
             // TAB 2: EDUCATIONAL STANDARDS & LOCALE VERIFICATION
             ParentDashboardTab.STANDARDS -> {
+                // Per-profile offline material pack: download / re-download / cancel / delete.
+                // The Standards tab is the framework's home, so the pack lives here.
+                item {
+                    OfflinePackSection(
+                        profileId = profile.id,
+                        childName = profile.name.ifBlank { t("offline_pack_unnamed_child") },
+                        currentFrameworkKey = com.fourgeailabs.neuropath.data.repository.OfflinePackManager.frameworkKeyFor(profile),
+                        currentFrameworkLabel = com.fourgeailabs.neuropath.data.repository.OfflinePackManager.frameworkLabelFor(profile),
+                        pack = offlinePack,
+                        progress = offlinePackProgress,
+                        error = offlinePackError,
+                        onDownload = { viewModel.startOfflinePackDownload() },
+                        onCancel = { viewModel.cancelOfflinePackDownload() },
+                        onDelete = { viewModel.deleteOfflinePack() },
+                        onClearError = { viewModel.clearOfflinePackError() }
+                    )
+                }
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                                 Icon(imageVector = Icons.Default.Public, contentDescription = t("locale"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
                                     "🏛️ ${AppLanguageDictionary.getString("educational_locale", selectedLanguageCode)}",
@@ -1196,52 +1257,52 @@ fun ParentDashboardScreen(
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth().testTag("rescan_google_maps_location_btn"),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = ShapeTokens.Medium,
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
                                 if (isVerifyingLocation) {
                                     CircularProgressIndicator(
                                         color = Color.White,
                                         modifier = Modifier.size(18.dp),
-                                        strokeWidth = 2.dp
+                                        strokeWidth = SpacingTokens.xxxs
                                     )
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(SpacingTokens.s))
                                     Text(t("scanning_location_with_google_maps"), fontSize = 13.sp)
                                 } else {
                                     Icon(imageVector = Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(SpacingTokens.s))
                                     Text(t("rescan_location_with_google_maps"), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
 
                             locationComplianceResult?.let { res ->
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = ShapeTokens.Medium,
                                     color = if (res.isGoogleMapsVerified) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surfaceVariant,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Column(modifier = Modifier.padding(10.dp)) {
+                                    Column(modifier = Modifier.padding(SpacingTokens.m)) {
                                         Text(
                                             if (res.isGoogleMapsVerified) "🗺️ Google Maps Verified: ${res.detectedCity}, ${res.detectedState}, ${res.detectedCountry}" else "📍 Location Detected: ${res.detectedCountry} (${res.detectedState})",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp,
                                             color = if (res.isGoogleMapsVerified) Color(0xFF1B5E20) else MaterialTheme.colorScheme.onSurface
                                         )
-                                        Text(tf("district_alignment", res.detectedDistrict, res.educationalStandard), fontSize = 11.sp, color = if (res.isGoogleMapsVerified) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(tf("source", res.verificationSource), fontSize = 10.sp, color = if (res.isGoogleMapsVerified) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(tf("district_alignment", res.detectedDistrict, res.educationalStandard), style = MaterialTheme.typography.bodySmall, color = if (res.isGoogleMapsVerified) ColorTokens.Light.success else MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(tf("source", res.verificationSource), style = MaterialTheme.typography.bodySmall, color = if (res.isGoogleMapsVerified) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
 
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(SpacingTokens.xxs))
 
                             // Postal Code / ZIP Code Fallback Option
                             Text(t("postal_code_zip_code_fallback"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            Text(t("if_location_services_are_unavailable_or_denied_e"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(t("if_location_services_are_unavailable_or_denied_e"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 OutlinedTextField(
@@ -1268,7 +1329,7 @@ fun ParentDashboardScreen(
                                             }
                                         }
                                     },
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = ShapeTokens.Medium,
                                     modifier = Modifier.testTag("apply_zip_fallback_btn")
                                 ) {
                                     Text(t("apply_zip"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -1276,22 +1337,22 @@ fun ParentDashboardScreen(
                             }
 
                             if (zipMessage != null) {
-                                Text(zipMessage!!, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(zipMessage!!, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             }
 
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            HorizontalDivider(modifier = Modifier.padding(vertical = SpacingTokens.xxs))
 
                             // Quick Presets
                             Text(t("quick_select_global_district_presets"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             LazyRow(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 items(GLOBAL_EDUCATIONAL_LOCALES) { loc ->
                                     val isSelected = schoolDistrict.contains(loc.schoolDistrict, ignoreCase = true)
                                     Surface(
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = ShapeTokens.Medium,
                                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                        modifier = Modifier.clickable {
+                                        modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable {
                                             country = loc.country
                                             stateOrProvince = loc.stateOrProvince
                                             city = loc.city
@@ -1299,14 +1360,14 @@ fun ParentDashboardScreen(
                                         }
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xs),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(loc.flagEmoji, fontSize = 14.sp)
-                                            Spacer(Modifier.width(6.dp))
+                                            Spacer(Modifier.width(SpacingTokens.xs))
                                             Text(
                                                 "${loc.city} - ${loc.schoolDistrict.take(18)}...",
-                                                fontSize = 11.sp,
+                                                style = MaterialTheme.typography.bodySmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1441,19 +1502,19 @@ fun ParentDashboardScreen(
 
                             // Active District Framework Badge
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = ShapeTokens.Medium,
                                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(12.dp),
+                                    modifier = Modifier.padding(SpacingTokens.l),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(imageVector = Icons.Default.LocationOn, contentDescription = t("active_district"), tint = MaterialTheme.colorScheme.primary)
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(SpacingTokens.s))
                                     Column {
                                         Text(
                                             t("locked_curriculum_standard"),
-                                            fontSize = 11.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
                                         )
@@ -1463,10 +1524,10 @@ fun ParentDashboardScreen(
                                             fontWeight = FontWeight.ExtraBold,
                                             color = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
-                                        Spacer(Modifier.height(2.dp))
+                                        Spacer(Modifier.height(SpacingTokens.xxxs))
                                         Text(
                                             tf("foreign_curriculum_restricted_only_educational_c", country),
-                                            fontSize = 10.5.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                     }
@@ -1479,12 +1540,12 @@ fun ParentDashboardScreen(
                 // Section: Pre-Installed OER Commons Curated Collection
                 item {
                     ElevatedCard(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         modifier = Modifier.fillMaxWidth().testTag("oer_commons_card")
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier.padding(SpacingTokens.xl),
+                            verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1493,17 +1554,9 @@ fun ParentDashboardScreen(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                                 ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text("📚", fontSize = 18.sp)
-                                        }
-                                    }
+                                    BuddyAvatar(themeId = "trains", pose = BuddyPose.IDLE, size = 36.dp)
                                     Column {
                                         Text(
                                             t("oer_commons_curated_collection"),
@@ -1512,22 +1565,22 @@ fun ParentDashboardScreen(
                                         )
                                         Text(
                                             t("pre_installed_k_12_open_educational_resources"),
-                                            fontSize = 11.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
 
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = ShapeTokens.Small,
                                     color = MaterialTheme.colorScheme.primaryContainer
                                 ) {
                                     Text(
                                         tf("units_cached", oerUnits.size),
-                                        fontSize = 11.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs)
                                     )
                                 }
                             }
@@ -1546,19 +1599,19 @@ fun ParentDashboardScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(10.dp),
+                                        modifier = Modifier.padding(SpacingTokens.m),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
                                             imageVector = if (oerSyncResult!!.isSuccess) Icons.Default.CheckCircle else Icons.Default.WarningAmber,
                                             contentDescription = t("sync_status"),
                                             tint = if (oerSyncResult!!.isSuccess) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(16.dp)
+                                            modifier = Modifier.size(SpacingTokens.xl)
                                         )
-                                        Spacer(Modifier.width(6.dp))
+                                        Spacer(Modifier.width(SpacingTokens.xs))
                                         Text(
                                             oerSyncResult!!.message,
-                                            fontSize = 11.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             fontWeight = FontWeight.Medium
                                         )
                                     }
@@ -1567,7 +1620,7 @@ fun ParentDashboardScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 Button(
                                     onClick = { viewModel.verifyOerCurriculumLibrary() },
@@ -1576,15 +1629,15 @@ fun ParentDashboardScreen(
                                 ) {
                                     if (isOerSyncing) {
                                         CircularProgressIndicator(
-                                            modifier = Modifier.size(16.dp),
+                                            modifier = Modifier.size(SpacingTokens.xl),
                                             color = MaterialTheme.colorScheme.onPrimary,
-                                            strokeWidth = 2.dp
+                                            strokeWidth = SpacingTokens.xxxs
                                         )
-                                        Spacer(Modifier.width(6.dp))
+                                        Spacer(Modifier.width(SpacingTokens.xs))
                                         Text(t("verifying"), fontSize = 12.sp)
                                     } else {
-                                        Icon(imageVector = Icons.Default.Refresh, contentDescription = t("verify"), modifier = Modifier.size(16.dp))
-                                        Spacer(Modifier.width(6.dp))
+                                        Icon(imageVector = Icons.Default.Refresh, contentDescription = t("verify"), modifier = Modifier.size(SpacingTokens.xl))
+                                        Spacer(Modifier.width(SpacingTokens.xs))
                                         Text(t("verify_library"), fontSize = 12.sp)
                                     }
                                 }
@@ -1593,8 +1646,8 @@ fun ParentDashboardScreen(
                                     onClick = { uriHandler.openUri("https://oercommons.org/curated-collections") },
                                     modifier = Modifier.testTag("open_oer_commons_url_btn")
                                 ) {
-                                    Icon(imageVector = Icons.Default.Public, contentDescription = t("website"), modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
+                                    Icon(imageVector = Icons.Default.Public, contentDescription = t("website"), modifier = Modifier.size(SpacingTokens.xl))
+                                    Spacer(Modifier.width(SpacingTokens.xxs))
                                     Text(t("oer_hub"), fontSize = 12.sp)
                                 }
                             }
@@ -1608,16 +1661,16 @@ fun ParentDashboardScreen(
                 // Section: AI Mistakes Warning
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3CD))
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.padding(SpacingTokens.xl),
+                            verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.WarningAmber,
@@ -1644,16 +1697,16 @@ fun ParentDashboardScreen(
                 // Section: Internet & Cloud AI Connection Notice
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.padding(SpacingTokens.xl),
+                            verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Wifi,
@@ -1680,16 +1733,16 @@ fun ParentDashboardScreen(
                 // Section: Location & Strict Curriculum Restriction Notice
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
                     ) {
                         Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.padding(SpacingTokens.xl),
+                            verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Security,
@@ -1716,11 +1769,11 @@ fun ParentDashboardScreen(
                 // Section: Dynamic Locale Regulatory Framework
                 item {
                     Card(
-                        shape = RoundedCornerShape(20.dp),
+                        shape = ShapeTokens.ExtraLarge,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.m)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                                 Icon(imageVector = Icons.Default.Description, contentDescription = t("legal"), tint = MaterialTheme.colorScheme.primary)
                                 Text(
                                     tf("terms_conditions_2", legalNotice.countryName),
@@ -1748,10 +1801,10 @@ fun ParentDashboardScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .testTag("view_terms_btn"),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = ShapeTokens.Medium
                             ) {
                                 Icon(imageVector = Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
+                                Spacer(Modifier.width(SpacingTokens.s))
                                 Text(tf("view_full_terms_conditions", legalNotice.countryName), fontWeight = FontWeight.Bold)
                             }
                         }
@@ -1763,11 +1816,11 @@ fun ParentDashboardScreen(
         // About FourgeAI LABS Section
         item {
             Card(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.m)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                         Icon(imageVector = Icons.Default.Info, contentDescription = t("about"), tint = MaterialTheme.colorScheme.primary)
                         Text(
                             AppLanguageDictionary.getString("about_app", selectedLanguageCode),
@@ -1782,20 +1835,20 @@ fun ParentDashboardScreen(
                     OutlinedButton(
                         onClick = { showWhatsNewDialog = true },
                         modifier = Modifier.fillMaxWidth().testTag("whats_new_btn"),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = ShapeTokens.Medium
                     ) {
                         Text(AppLanguageDictionary.getString("whats_new", selectedLanguageCode), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
 
                     Text(
                         t("ambient_soundscapes_are_synthesized_procedurally"),
-                        fontSize = 11.5.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Text(
                         t("ai_pedagogical_guidance_rule_ai_learning_buddy_a"),
-                        fontSize = 11.5.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
@@ -1807,22 +1860,24 @@ fun ParentDashboardScreen(
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
+                            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                             .clickable {
                                 uriHandler.openUri("https://github.com/fourgeailabs")
                             }
-                            .padding(vertical = 2.dp)
+                            .padding(vertical = SpacingTokens.xxxs)
                     )
 
                     Text(
                         "App Repository: https://github.com/fourgeailabs/neuropath",
-                        fontSize = 11.5.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier
+                            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                             .clickable {
                                 uriHandler.openUri("https://github.com/fourgeailabs/neuropath")
                             }
-                            .padding(vertical = 2.dp)
+                            .padding(vertical = SpacingTokens.xxxs)
                     )
                 }
             }
@@ -1853,7 +1908,7 @@ fun ParentDashboardScreen(
                     )
                     viewModel.navigateTo(AppScreen.HOME)
                 },
-                shape = RoundedCornerShape(16.dp),
+                shape = ShapeTokens.Large,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1949,7 +2004,7 @@ fun TermsAndConditionsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                 Icon(imageVector = Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(tf("terms_conditions", legalNotice.countryName), fontWeight = FontWeight.Bold, fontSize = 17.sp)
             }
@@ -1959,7 +2014,7 @@ fun TermsAndConditionsDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.m)
             ) {
                 // AI Disclaimer Banner
                 Card(
@@ -1967,10 +2022,10 @@ fun TermsAndConditionsDialog(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3CD)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
-                        Icon(imageVector = Icons.Default.WarningAmber, contentDescription = null, tint = Color(0xFF856404), modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(legalNotice.aiMistakesWarning, fontSize = 11.sp, color = Color(0xFF856404), lineHeight = 15.sp)
+                    Row(modifier = Modifier.padding(SpacingTokens.m), verticalAlignment = Alignment.Top) {
+                        Icon(imageVector = Icons.Default.WarningAmber, contentDescription = null, tint = Color(0xFF856404), modifier = Modifier.size(SpacingTokens.xxl))
+                        Spacer(Modifier.width(SpacingTokens.s))
+                        Text(legalNotice.aiMistakesWarning, style = MaterialTheme.typography.bodySmall, color = Color(0xFF856404), lineHeight = 15.sp)
                     }
                 }
 
@@ -1980,10 +2035,10 @@ fun TermsAndConditionsDialog(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
-                        Icon(imageVector = Icons.Default.Wifi, contentDescription = null, tint = Color(0xFF0D47A1), modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(legalNotice.internetAccessNotice, fontSize = 11.sp, color = Color(0xFF0D47A1), lineHeight = 15.sp)
+                    Row(modifier = Modifier.padding(SpacingTokens.m), verticalAlignment = Alignment.Top) {
+                        Icon(imageVector = Icons.Default.Wifi, contentDescription = null, tint = Color(0xFF0D47A1), modifier = Modifier.size(SpacingTokens.xxl))
+                        Spacer(Modifier.width(SpacingTokens.s))
+                        Text(legalNotice.internetAccessNotice, style = MaterialTheme.typography.bodySmall, color = Color(0xFF0D47A1), lineHeight = 15.sp)
                     }
                 }
 
@@ -1993,19 +2048,19 @@ fun TermsAndConditionsDialog(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
-                        Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = Color(0xFF1B5E20), modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(legalNotice.locationCurriculumNotice, fontSize = 11.sp, color = Color(0xFF1B5E20), lineHeight = 15.sp)
+                    Row(modifier = Modifier.padding(SpacingTokens.m), verticalAlignment = Alignment.Top) {
+                        Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = Color(0xFF1B5E20), modifier = Modifier.size(SpacingTokens.xxl))
+                        Spacer(Modifier.width(SpacingTokens.s))
+                        Text(legalNotice.locationCurriculumNotice, style = MaterialTheme.typography.bodySmall, color = Color(0xFF1B5E20), lineHeight = 15.sp)
                     }
                 }
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = SpacingTokens.xxs))
 
                 legalNotice.termsSections.forEach { sec ->
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(SpacingTokens.xxxs)) {
                         Text(sec.sectionTitle, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.primary)
-                        Text(sec.content, fontSize = 11.sp, lineHeight = 15.sp)
+                        Text(sec.content, style = MaterialTheme.typography.bodySmall, lineHeight = 15.sp)
                     }
                 }
             }
@@ -2026,11 +2081,11 @@ private fun MetricBox(title: String, value: String, bg: Color, modifier: Modifie
         modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(10.dp),
+            modifier = Modifier.padding(SpacingTokens.m),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(title, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(4.dp))
+            Text(title, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(SpacingTokens.xxs))
             Text(value, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
         }
     }
@@ -2225,7 +2280,7 @@ fun WhatsNewDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                 Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(t("what_s_new_in_neuropath"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
@@ -2235,7 +2290,7 @@ fun WhatsNewDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.m)
             ) {
                 Text(
                     t("explore_the_latest_enhancements_and_version_hist"),
@@ -2246,17 +2301,18 @@ fun WhatsNewDialog(
                 updates.forEachIndexed { index, item ->
                     val isExpanded = openedIndex == index
                     Card(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeTokens.Medium,
                         colors = CardDefaults.cardColors(
                             containerColor = if (index == 0) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
+                            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                             .clickable {
                                 openedIndex = if (isExpanded) null else index
                             }
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.l)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2269,7 +2325,7 @@ fun WhatsNewDialog(
                                         fontSize = 14.sp,
                                         color = if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )
-                                    Text(item.date, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(item.date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Icon(
                                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -2279,15 +2335,15 @@ fun WhatsNewDialog(
                             }
 
                             if (isExpanded) {
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(SpacingTokens.s))
                                 HorizontalDivider()
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(SpacingTokens.s))
                                 item.highlights.forEach { highlight ->
                                     Text(
                                         highlight,
                                         fontSize = 12.sp,
                                         lineHeight = 16.sp,
-                                        modifier = Modifier.padding(vertical = 2.dp)
+                                        modifier = Modifier.padding(vertical = SpacingTokens.xxxs)
                                     )
                                 }
                             }
@@ -2317,26 +2373,26 @@ fun UpdateCheckDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                 Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(t("app_update_status"), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
                 Text(
                     tf("current_installed_version_v", currentVersion),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = ShapeTokens.Small,
                     color = Color(0xFFD4EDDA),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(modifier = Modifier.padding(SpacingTokens.m), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF155724), modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(SpacingTokens.s))
                         Text(
                             t("you_are_running_the_latest_build_available_from"),
                             fontSize = 12.sp,
@@ -2346,7 +2402,7 @@ fun UpdateCheckDialog(
                 }
                 Text(
                     t("github_releases_actions_automatically_build_apk"),
-                    fontSize = 11.5.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -2362,7 +2418,7 @@ fun UpdateCheckDialog(
             }
         },
         dismissButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xxs)) {
                 TextButton(onClick = onRemindLater) {
                     Text(t("remind_later"))
                 }

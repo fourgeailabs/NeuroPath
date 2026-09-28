@@ -46,29 +46,31 @@ enum class AppLanguage(
 fun tr(key: String, languageCode: String): String = AppLanguageDictionary.getString(key, languageCode)
 
 object AppLanguageDictionary {
-    private val enUs = AppLanguageDictionariesPart1.enUs
-    private val enGb = AppLanguageDictionariesPart1.enGb
-    private val es = AppLanguageDictionariesPart1.es
-    private val fr = AppLanguageDictionariesPart1.fr
-    private val de = AppLanguageDictionariesPart1.de
-    private val itMap = AppLanguageDictionariesPart1.it
-    private val pt = AppLanguageDictionariesPart1.pt
-    private val nl = AppLanguageDictionariesPart1.nl
-    private val sv = AppLanguageDictionariesPart1.sv
+    // Per-child offline-pack strings are kept in OfflinePackStrings (100% per-language
+    // coverage) and merged here so tr()/t() resolve them for every language.
+    private val enUs = AppLanguageDictionariesEn.enUs + OfflinePackStrings.enUs
+    private val enGb = AppLanguageDictionariesEn.enGb + OfflinePackStrings.enGb
+    private val es = AppLanguageDictionariesEs.es + OfflinePackStrings.es
+    private val fr = AppLanguageDictionariesFr.fr + OfflinePackStrings.fr
+    private val de = AppLanguageDictionariesDe.de + OfflinePackStrings.de
+    private val itMap = AppLanguageDictionariesIt.it + OfflinePackStrings.it
+    private val pt = AppLanguageDictionariesPt.pt + OfflinePackStrings.pt
+    private val nl = AppLanguageDictionariesNl.nl + OfflinePackStrings.nl
+    private val sv = AppLanguageDictionariesSv.sv + OfflinePackStrings.sv
 
-    private val zh = AppLanguageDictionariesPart2.zh
-    private val ja = AppLanguageDictionariesPart2.ja
-    private val ko = AppLanguageDictionariesPart2.ko
-    private val vi = AppLanguageDictionariesPart2.vi
-    private val th = AppLanguageDictionariesPart2.th
-    private val id = AppLanguageDictionariesPart2.id
-    private val hi = AppLanguageDictionariesPart2.hi
-    private val ar = AppLanguageDictionariesPart2.ar
+    private val zh = AppLanguageDictionariesZh.zh + OfflinePackStrings.zh
+    private val ja = AppLanguageDictionariesJa.ja + OfflinePackStrings.ja
+    private val ko = AppLanguageDictionariesKo.ko + OfflinePackStrings.ko
+    private val vi = AppLanguageDictionariesVi.vi + OfflinePackStrings.vi
+    private val th = AppLanguageDictionariesTh.th + OfflinePackStrings.th
+    private val id = AppLanguageDictionariesId.id + OfflinePackStrings.id
+    private val hi = AppLanguageDictionariesHi.hi + OfflinePackStrings.hi
+    private val ar = AppLanguageDictionariesAr.ar + OfflinePackStrings.ar
 
-    private val ru = AppLanguageDictionariesPart3.ru
-    private val trMap = AppLanguageDictionariesPart3.tr
-    private val pl = AppLanguageDictionariesPart3.pl
-    private val el = AppLanguageDictionariesPart3.el
+    private val ru = AppLanguageDictionariesRu.ru + OfflinePackStrings.ru
+    private val trMap = AppLanguageDictionariesTr.tr + OfflinePackStrings.tr
+    private val pl = AppLanguageDictionariesPl.pl + OfflinePackStrings.pl
+    private val el = AppLanguageDictionariesEl.el + OfflinePackStrings.el
 
     private val translations: Map<String, Map<String, String>> = mapOf(
         "en-us" to enUs,

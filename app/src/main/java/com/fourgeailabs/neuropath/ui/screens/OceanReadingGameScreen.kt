@@ -75,6 +75,9 @@ import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
 
 enum class OceanGameMode(val title: String, val icon: String) {
     FILL_IN_BLANKS("Cloze Reading", "📝"),
@@ -146,7 +149,8 @@ fun OceanReadingGameScreen(
                     }
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🌊 ", fontSize = 18.sp)
+                            BuddyAvatar(themeId = "ocean", pose = BuddyPose.HAPPY, size = 32.dp)
+                            Spacer(Modifier.width(SpacingTokens.xs))
                             Text(
                                 t("ocean_reading_quest"),
                                 style = MaterialTheme.typography.titleMedium,

@@ -97,6 +97,13 @@ import com.fourgeailabs.neuropath.util.LocationComplianceHelper
 import androidx.compose.material.icons.filled.Visibility
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.theme.ColorTokens
+import com.fourgeailabs.neuropath.ui.theme.ElevationTokens
+import com.fourgeailabs.neuropath.ui.theme.ShapeTokens
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
+import androidx.compose.foundation.layout.sizeIn
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -223,9 +230,9 @@ fun ChildProfileSetupScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 40.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(horizontal = SpacingTokens.xl),
+        contentPadding = PaddingValues(top = SpacingTokens.xl, bottom = 40.dp),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.xxl)
     ) {
         // Top Navigation Bar
         item {
@@ -243,7 +250,7 @@ fun ChildProfileSetupScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t("back"))
                     }
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(SpacingTokens.s))
                 Column {
                     Text(
                         text = if (editingProfileId != null) "Edit Learner Profile" else "Create Learner Profile",
@@ -264,7 +271,7 @@ fun ChildProfileSetupScreen(
         // Privacy & Local Save Safety Card
         item {
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = ShapeTokens.Large,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
                 ),
@@ -278,9 +285,9 @@ fun ChildProfileSetupScreen(
                         imageVector = Icons.Default.Lock,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(SpacingTokens.xxxl)
                     )
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(SpacingTokens.l))
                     Text(
                         text = t("to_guarantee_absolute_safety_and_privacy_all_pro"),
                         fontSize = 12.sp,
@@ -294,21 +301,13 @@ fun ChildProfileSetupScreen(
         // Section 1: Learner Identity & Age Tier
         item {
             ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("👤", fontSize = 18.sp)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
+                        BuddyAvatar(themeId = "anime", pose = BuddyPose.IDLE, size = 36.dp)
+                        Spacer(Modifier.width(SpacingTokens.m))
                         Text(
                             t("1_learner_identity_school_level"),
                             style = MaterialTheme.typography.titleMedium,
@@ -332,11 +331,11 @@ fun ChildProfileSetupScreen(
                             .testTag("child_name_input")
                     )
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.l)
                     ) {
                         OutlinedTextField(
                             value = childAgeText,
@@ -359,12 +358,12 @@ fun ChildProfileSetupScreen(
 
                         Column(modifier = Modifier.weight(1.5f)) {
                             Text(t("current_grade"), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(SpacingTokens.xxs))
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
                             ) {
                                 GradeLevel.entries.forEach { g ->
                                     val isSelected = selectedGrade == g
@@ -385,7 +384,7 @@ fun ChildProfileSetupScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(SpacingTokens.xl))
 
                     Text(
                         t("design_language_interface_scale"),
@@ -395,29 +394,30 @@ fun ChildProfileSetupScreen(
                     )
                     Text(
                         t("choose_the_layout_tailored_to_your_child_s_age_g"),
-                        fontSize = 11.5.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(SpacingTokens.s))
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                         AgeGroupTier.entries.forEach { tier ->
                             val isSelected = selectedAgeTier == tier
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = ShapeTokens.Medium,
                                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                     .clickable { selectedAgeTier = tier }
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(12.dp),
+                                    modifier = Modifier.padding(SpacingTokens.l),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(tier.icon, fontSize = 24.sp)
-                                    Spacer(Modifier.width(12.dp))
+                                    Spacer(Modifier.width(SpacingTokens.l))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
@@ -425,16 +425,16 @@ fun ChildProfileSetupScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 14.sp
                                             )
-                                            Spacer(Modifier.width(6.dp))
+                                            Spacer(Modifier.width(SpacingTokens.xs))
                                             Text(
                                                 tf("str_5", tier.ageRange),
-                                                fontSize = 11.sp,
+                                                style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                         Text(
                                             tier.description,
-                                            fontSize = 11.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -456,21 +456,13 @@ fun ChildProfileSetupScreen(
         // Section 2: Learning Disabilities & Differences (Diagnoses)
         item {
             ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🧩", fontSize = 18.sp)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
+                        BuddyAvatar(themeId = "science", pose = BuddyPose.THINKING, size = 36.dp)
+                        Spacer(Modifier.width(SpacingTokens.m))
                         Column {
                             Text(
                                 t("2_learning_differences_diagnoses"),
@@ -479,18 +471,18 @@ fun ChildProfileSetupScreen(
                             )
                             Text(
                                 t("select_all_that_apply_to_customize_ai_scaffoldin"),
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
+                        verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         DIAGNOSIS_OPTIONS.forEach { opt ->
                             val isSelected = selectedDiagnoses.contains(opt.id)
@@ -518,21 +510,13 @@ fun ChildProfileSetupScreen(
         // Section 3: What Does The Learner Struggle With?
         item {
             ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🎯", fontSize = 18.sp)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
+                        BuddyAvatar(themeId = "knights", pose = BuddyPose.COMFORTING, size = 36.dp)
+                        Spacer(Modifier.width(SpacingTokens.m))
                         Column {
                             Text(
                                 t("3_key_learning_challenges_focus_areas"),
@@ -541,18 +525,18 @@ fun ChildProfileSetupScreen(
                             )
                             Text(
                                 t("ai_tutors_scaffold_these_exact_areas_with_target"),
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
+                        verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         STRUGGLE_OPTIONS.forEach { opt ->
                             val isSelected = selectedStruggles.contains(opt.title)
@@ -576,21 +560,13 @@ fun ChildProfileSetupScreen(
         // Section 4: Learner's Strengths & Superpowers
         item {
             ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🌟", fontSize = 18.sp)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
+                        BuddyAvatar(themeId = "superhero", pose = BuddyPose.CELEBRATING, size = 36.dp)
+                        Spacer(Modifier.width(SpacingTokens.m))
                         Column {
                             Text(
                                 t("4_learner_s_strengths_superpowers"),
@@ -599,18 +575,18 @@ fun ChildProfileSetupScreen(
                             )
                             Text(
                                 t("lessons_will_leverage_these_natural_gifts_to_tea"),
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
+                        verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         STRENGTH_OPTIONS.forEach { opt ->
                             val isSelected = selectedStrengths.contains(opt.title)
@@ -634,21 +610,13 @@ fun ChildProfileSetupScreen(
         // Section 5: Hyper-Fixations & Passion Topics
         item {
             ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🦖", fontSize = 18.sp)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
+                        BuddyAvatar(themeId = "dino", pose = BuddyPose.HAPPY, size = 36.dp)
+                        Spacer(Modifier.width(SpacingTokens.m))
                         Column {
                             Text(
                                 t("5_hyper_fixations_favorite_topics"),
@@ -657,18 +625,18 @@ fun ChildProfileSetupScreen(
                             )
                             Text(
                                 t("the_app_themes_problems_stories_directly_around"),
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
+                        verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         HYPER_FIXATION_OPTIONS.forEach { opt ->
                             val isSelected = selectedHyperFixations.contains(opt.title)
@@ -693,21 +661,13 @@ fun ChildProfileSetupScreen(
         // Section 5B: 100-Theme Selection & Periodic Rotation Schedule
         item {
             ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🎨", fontSize = 18.sp)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
+                        BuddyAvatar(themeId = "magic", pose = BuddyPose.WAVING, size = 36.dp)
+                        Spacer(Modifier.width(SpacingTokens.m))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 t("5b_theme_world_rotation_schedule"),
@@ -716,7 +676,7 @@ fun ChildProfileSetupScreen(
                             )
                             Text(
                                 t("100_immersive_themes_tailored_to_their_personali"),
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -731,7 +691,7 @@ fun ChildProfileSetupScreen(
                         border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(currentActiveThemeData.primaryHex)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.xl)) {
                             // Category Tag & Theme Mode Indicator Row
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -739,15 +699,15 @@ fun ChildProfileSetupScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = ShapeTokens.Small,
                                     color = Color(currentActiveThemeData.primaryHex)
                                 ) {
                                     Text(
                                         currentActiveThemeData.category.title,
-                                        fontSize = 10.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = 3.dp)
                                     )
                                 }
                                 Surface(
@@ -756,15 +716,15 @@ fun ChildProfileSetupScreen(
                                 ) {
                                     Text(
                                         t("active_theme"),
-                                        fontSize = 9.sp,
+                                        style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF1E212B),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.xs, vertical = SpacingTokens.xxxs)
                                     )
                                 }
                             }
 
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(SpacingTokens.m))
 
                             // Theme Header: Avatar + Title & Companion Buddy
                             Row(
@@ -774,14 +734,14 @@ fun ChildProfileSetupScreen(
                                 Surface(
                                     shape = CircleShape,
                                     color = Color.White.copy(alpha = 0.9f),
-                                    shadowElevation = 1.dp,
+                                    shadowElevation = ElevationTokens.Level1,
                                     modifier = Modifier.size(46.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Text(currentActiveThemeData.emoji, fontSize = 24.sp)
                                     }
                                 }
-                                Spacer(Modifier.width(12.dp))
+                                Spacer(Modifier.width(SpacingTokens.l))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         currentActiveThemeData.title,
@@ -790,7 +750,7 @@ fun ChildProfileSetupScreen(
                                         color = Color(0xFF1E212B),
                                         lineHeight = 20.sp
                                     )
-                                    Spacer(Modifier.height(2.dp))
+                                    Spacer(Modifier.height(SpacingTokens.xxxs))
                                     Text(
                                         tf("companion_buddy", currentActiveThemeData.buddyName, currentActiveThemeData.buddyRole),
                                         fontSize = 12.sp,
@@ -800,7 +760,7 @@ fun ChildProfileSetupScreen(
                                 }
                             }
 
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(SpacingTokens.l))
 
                             // Greeting Quote Banner
                             Surface(
@@ -809,11 +769,11 @@ fun ChildProfileSetupScreen(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = SpacingTokens.l, vertical = SpacingTokens.s),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("💬", fontSize = 14.sp)
-                                    Spacer(Modifier.width(8.dp))
+                                    BuddyAvatar(themeId = "anime", pose = BuddyPose.WAVING, size = 28.dp)
+                                    Spacer(Modifier.width(SpacingTokens.s))
                                     Text(
                                         tf("str_4", currentActiveThemeData.greeting),
                                         fontSize = 12.sp,
@@ -824,44 +784,44 @@ fun ChildProfileSetupScreen(
                                 }
                             }
 
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(SpacingTokens.l))
 
                             // Subject Integration Badges
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(ShapeTokens.Medium)
                                     .background(Color.White.copy(alpha = 0.85f))
-                                    .padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    .padding(SpacingTokens.l),
+                                verticalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
                             ) {
                                 Text(
                                     t("cross_curricular_integration"),
-                                    fontSize = 9.5.sp,
+                                    style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF4B5563)
                                 )
                                 Text(
                                     tf("math_3", currentActiveThemeData.mathIntegration),
-                                    fontSize = 11.5.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF1E212B),
                                     lineHeight = 16.sp
                                 )
                                 Text(
                                     tf("reading_2", currentActiveThemeData.readingIntegration),
-                                    fontSize = 11.5.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF1E212B),
                                     lineHeight = 16.sp
                                 )
                                 Text(
                                     tf("science_2", currentActiveThemeData.scienceIntegration),
-                                    fontSize = 11.5.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF1E212B),
                                     lineHeight = 16.sp
                                 )
                                 Text(
                                     tf("social_studies_2", currentActiveThemeData.socialStudiesIntegration),
-                                    fontSize = 11.5.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF1E212B),
                                     lineHeight = 16.sp
                                 )
@@ -880,16 +840,16 @@ fun ChildProfileSetupScreen(
                     )
                     Text(
                         t("keep_permanent_or_periodically_rotate_to_fresh_p"),
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(SpacingTokens.s))
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
+                        verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         ThemeRotationSchedule.entries.forEach { schedule ->
                             val isSelected = themeRotationSchedule == schedule
@@ -897,9 +857,9 @@ fun ChildProfileSetupScreen(
                                 selected = isSelected,
                                 onClick = { themeRotationSchedule = schedule },
                                 label = {
-                                    Column(modifier = Modifier.padding(vertical = 2.dp)) {
+                                    Column(modifier = Modifier.padding(vertical = SpacingTokens.xxxs)) {
                                         Text(schedule.title, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                                        Text(schedule.description, fontSize = 9.5.sp)
+                                        Text(schedule.description, style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
                             )
@@ -917,16 +877,16 @@ fun ChildProfileSetupScreen(
                     )
                     Text(
                         t("synthesized_based_on_diagnoses_strengths_struggl"),
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(SpacingTokens.s))
 
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
+                        verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         recommendedThemes.forEach { theme ->
                             val isSelected = activeThemeId == theme.id || (activeThemeId.isBlank() && theme.id == recommendedThemes.firstOrNull()?.id)
@@ -938,20 +898,20 @@ fun ChildProfileSetupScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     // Actions: Browse Catalog & Preview Palette
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         OutlinedButton(
                             onClick = { showAllThemesDialog = true },
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = ShapeTokens.Medium
                         ) {
-                            Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(SpacingTokens.xl))
+                            Spacer(Modifier.width(SpacingTokens.xs))
                             Text(t("100_themes"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
 
@@ -961,11 +921,11 @@ fun ChildProfileSetupScreen(
                                 showThemePreviewModal = true
                             },
                             modifier = Modifier.weight(1.3f),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = ShapeTokens.Medium,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(SpacingTokens.xl))
+                            Spacer(Modifier.width(SpacingTokens.xs))
                             Text(t("preview_palette_assets"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                     }
@@ -976,21 +936,13 @@ fun ChildProfileSetupScreen(
         // Section 6: Regional Educational Jurisdiction, Location Services & Postal Code Override
         item {
             ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("📍", fontSize = 18.sp)
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
+                        BuddyAvatar(themeId = "space", pose = BuddyPose.IDLE, size = 36.dp)
+                        Spacer(Modifier.width(SpacingTokens.m))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 t("6_standards_jurisdiction_location"),
@@ -999,59 +951,59 @@ fun ChildProfileSetupScreen(
                             )
                             Text(
                                 t("detects_state_province_school_district_curriculu"),
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     // Location Services Active Badge
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeTokens.Medium,
                         color = Color(0xFFE8F5E9),
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF81C784)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = SpacingTokens.l, vertical = SpacingTokens.m),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text("📍", fontSize = 18.sp)
-                            Spacer(Modifier.width(10.dp))
+                            Spacer(Modifier.width(SpacingTokens.m))
                             Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         t("location_services_in_use"),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.5.sp,
-                                        color = Color(0xFF2E7D32)
+                                        color = ColorTokens.Light.success
                                     )
-                                    Spacer(Modifier.width(6.dp))
+                                    Spacer(Modifier.width(SpacingTokens.xs))
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
-                                        color = Color(0xFF2E7D32)
+                                        color = ColorTokens.Light.success
                                     ) {
                                         Text(
                                             t("locale_only"),
-                                            fontSize = 9.sp,
+                                            style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = SpacingTokens.xxxs)
                                         )
                                     }
                                 }
                                 Text(
                                     t("used_only_to_identify_educational_jurisdiction_f"),
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF388E3C)
                                 )
                             }
                         }
                     }
 
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     // Active Standards Card
                     Surface(
@@ -1059,14 +1011,14 @@ fun ChildProfileSetupScreen(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.l)) {
                             Text(
                                 t("current_educational_standards_mapping"),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            Spacer(Modifier.height(4.dp))
+                            Spacer(Modifier.height(SpacingTokens.xxs))
                             Text(
                                 tf("jurisdiction", configuredDistrict, configuredState, configuredCountry),
                                 fontSize = 12.sp,
@@ -1074,7 +1026,7 @@ fun ChildProfileSetupScreen(
                             )
                             Text(
                                 tf("standard_framework", configuredStandard),
-                                fontSize = 11.5.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -1097,32 +1049,32 @@ fun ChildProfileSetupScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth().testTag("google_maps_setup_scan_btn"),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeTokens.Medium,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(imageVector = Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(SpacingTokens.s))
                         Text(t("scan_location_with_google_maps"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
                     }
 
                     // Scan result card: shows what the scan found (or why GPS
                     // gave no fix), mirroring the parent dashboard.
                     locationComplianceResult?.let { res ->
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(SpacingTokens.s))
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = ShapeTokens.Medium,
                             color = if (res.isGoogleMapsVerified) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.padding(10.dp)) {
+                            Column(modifier = Modifier.padding(SpacingTokens.m)) {
                                 Text(
                                     if (res.isGoogleMapsVerified) "🗺️ Google Maps Verified: ${res.detectedCity}, ${res.detectedState}, ${res.detectedCountry}" else "📍 Location Detected: ${res.detectedCountry} (${res.detectedState})",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.sp,
                                     color = if (res.isGoogleMapsVerified) Color(0xFF1B5E20) else MaterialTheme.colorScheme.onSurface
                                 )
-                                Text(tf("district_alignment", res.detectedDistrict, res.educationalStandard), fontSize = 11.sp, color = if (res.isGoogleMapsVerified) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(tf("source", res.verificationSource), fontSize = 10.sp, color = if (res.isGoogleMapsVerified) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(tf("district_alignment", res.detectedDistrict, res.educationalStandard), style = MaterialTheme.typography.bodySmall, color = if (res.isGoogleMapsVerified) ColorTokens.Light.success else MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(tf("source", res.verificationSource), style = MaterialTheme.typography.bodySmall, color = if (res.isGoogleMapsVerified) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -1137,14 +1089,14 @@ fun ChildProfileSetupScreen(
                     )
                     Text(
                         t("if_location_services_are_denied_or_unavailable_e"),
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(SpacingTokens.s))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
@@ -1172,17 +1124,17 @@ fun ChildProfileSetupScreen(
                                 }
                             },
                             modifier = Modifier.testTag("apply_postal_code_btn"),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = ShapeTokens.Medium
                         ) {
                             Text(t("apply"))
                         }
                     }
 
                     if (postalLookupMessage != null) {
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(SpacingTokens.xs))
                         Text(
                             text = postalLookupMessage!!,
-                            fontSize = 11.5.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -1192,27 +1144,27 @@ fun ChildProfileSetupScreen(
 
                     // Privacy & Locale Disclaimer
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeTokens.Medium,
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(SpacingTokens.l),
                             verticalAlignment = Alignment.Top
                         ) {
                             Text("🛡️", fontSize = 16.sp)
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(SpacingTokens.s))
                             Column {
                                 Text(
                                     LocationComplianceHelper.PRIVACY_DISCLAIMER_TITLE,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 11.5.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
-                                Spacer(Modifier.height(2.dp))
+                                Spacer(Modifier.height(SpacingTokens.xxxs))
                                 Text(
                                     LocationComplianceHelper.PRIVACY_DISCLAIMER_TEXT,
-                                    fontSize = 10.5.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                                     lineHeight = 14.sp
                                 )
@@ -1226,7 +1178,7 @@ fun ChildProfileSetupScreen(
         // Section 7: Sensory & Accessibility Controls
         item {
             ElevatedCard(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
@@ -1235,7 +1187,7 @@ fun ChildProfileSetupScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(SpacingTokens.l))
 
                     // Read Answers Aloud Switch
                     Row(
@@ -1243,9 +1195,9 @@ fun ChildProfileSetupScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Column(modifier = Modifier.weight(1f).padding(end = SpacingTokens.l)) {
                             Text(t("text_to_speech_read_aloud"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text(t("read_question_prompts_aloud_automatically_defaul"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(t("read_question_prompts_aloud_automatically_defaul"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(
                             checked = readAloudTts,
@@ -1254,7 +1206,7 @@ fun ChildProfileSetupScreen(
                         )
                     }
 
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(SpacingTokens.m))
 
                     // Dyslexia Font Switch
                     Row(
@@ -1262,9 +1214,9 @@ fun ChildProfileSetupScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Column(modifier = Modifier.weight(1f).padding(end = SpacingTokens.l)) {
                             Text(t("opendyslexic_font_typography"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text(t("weighted_bottom_heavy_letters_for_easier_letter"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(t("weighted_bottom_heavy_letters_for_easier_letter"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(
                             checked = dyslexiaFont,
@@ -1283,7 +1235,7 @@ fun ChildProfileSetupScreen(
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    modifier = Modifier.padding(horizontal = SpacingTokens.s)
                 )
             }
         }
@@ -1331,11 +1283,11 @@ fun ChildProfileSetupScreen(
                     .fillMaxWidth()
                     .height(56.dp)
                     .testTag("save_child_profile_btn"),
-                shape = RoundedCornerShape(16.dp),
+                shape = ShapeTokens.Large,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(SpacingTokens.s))
                 Text(
                     text = if (editingProfileId != null) "Save Profile Changes" else "Create Profile & Start Adventure",
                     fontSize = 16.sp,
@@ -1382,22 +1334,22 @@ fun ChildProfileSetupScreen(
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = ShapeTokens.Medium
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(SpacingTokens.s))
 
                     // Category Filter Chips
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
                     ) {
                         FilterChip(
                             selected = selectedCategoryFilter == null,
                             onClick = { selectedCategoryFilter = null },
-                            label = { Text(t("all_100"), fontSize = 11.sp) }
+                            label = { Text(t("all_100"), style = MaterialTheme.typography.bodySmall) }
                         )
                         NeuroThemeCategory.entries.forEach { cat ->
                             FilterChip(
@@ -1405,65 +1357,66 @@ fun ChildProfileSetupScreen(
                                 onClick = {
                                     selectedCategoryFilter = if (selectedCategoryFilter == cat) null else cat
                                 },
-                                label = { Text(tf("str_3", cat.emoji, cat.title), fontSize = 11.sp) }
+                                label = { Text(tf("str_3", cat.emoji, cat.title), style = MaterialTheme.typography.bodySmall) }
                             )
                         }
                     }
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(SpacingTokens.s))
 
                     Text(
                         tf("found_themes", filteredThemes.size),
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.SemiBold
                     )
 
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(SpacingTokens.xs))
 
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         items(filteredThemes.size) { index ->
                             val theme = filteredThemes[index]
                             val isSelected = activeThemeId == theme.id
 
                             Card(
-                                shape = RoundedCornerShape(12.dp),
+                                shape = ShapeTokens.Medium,
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (isSelected) Color(theme.primaryHex).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                 ),
                                 border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, Color(theme.primaryHex)) else null,
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                     .clickable {
                                         activeThemeId = theme.id
                                         showAllThemesDialog = false
                                     }
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(10.dp),
+                                    modifier = Modifier.padding(SpacingTokens.m),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(theme.emoji, fontSize = 28.sp)
-                                    Spacer(Modifier.width(10.dp))
+                                    Spacer(Modifier.width(SpacingTokens.m))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Surface(
-                                            shape = RoundedCornerShape(4.dp),
+                                            shape = ShapeTokens.ExtraSmall,
                                             color = Color(theme.primaryHex).copy(alpha = 0.85f)
                                         ) {
                                             Text(
                                                 theme.category.title,
-                                                fontSize = 8.5.sp,
+                                                style = MaterialTheme.typography.labelSmall,
                                                 color = Color.White,
                                                 fontWeight = FontWeight.Bold,
                                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                                             )
                                         }
-                                        Spacer(Modifier.height(2.dp))
+                                        Spacer(Modifier.height(SpacingTokens.xxxs))
                                         Text(
                                             theme.title,
                                             fontWeight = FontWeight.Bold,
@@ -1472,18 +1425,18 @@ fun ChildProfileSetupScreen(
                                         )
                                         Text(
                                             tf("buddy", theme.buddyName, theme.buddyRole),
-                                            fontSize = 11.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                         Text(
                                             tf("math_2", theme.mathIntegration),
-                                            fontSize = 10.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             maxLines = 1,
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                                         )
                                         Text(
                                             tf("science_2", theme.scienceIntegration),
-                                            fontSize = 10.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             maxLines = 1,
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                                         )
@@ -1501,7 +1454,7 @@ fun ChildProfileSetupScreen(
                                                 previewModalThemeId = theme.id
                                                 showThemePreviewModal = true
                                             },
-                                            modifier = Modifier.size(32.dp)
+                                            modifier = Modifier.size(SpacingTokens.huge)
                                         ) {
                                             Icon(
                                                 Icons.Default.Visibility,

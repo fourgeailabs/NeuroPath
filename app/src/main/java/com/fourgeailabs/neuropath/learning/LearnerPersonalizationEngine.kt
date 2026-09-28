@@ -1,6 +1,7 @@
 package com.fourgeailabs.neuropath.learning
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.fourgeailabs.neuropath.data.curriculum.CurriculumResolver
 import com.fourgeailabs.neuropath.data.local.entity.ChildProfileEntity
 import java.util.Locale
@@ -21,6 +22,14 @@ object LearnerPersonalizationEngine {
     private const val KEY_TOPIC_ATTEMPTS_PREFIX = "topic_attempts_"
     private const val KEY_TOPIC_CORRECT_PREFIX = "topic_correct_"
     private const val KEY_TOPIC_LAST_RESULT_PREFIX = "topic_last_"
+    private const val KEY_TOPIC_INDEX_PREFIX = "topic_index_"
+
+    /**
+     * Retention cap: at most this many distinct topics keep per-topic evidence
+     * (attempts/correct/last-result triples) per child. Older topics are evicted
+     * least-recently-used first in [recordAnswer]; nothing here grows without bound.
+     */
+    const val MAX_TOPICS_PER_PROFILE = 60
 
     fun buildPrompt(
         context: Context,
@@ -139,6 +148,7 @@ object LearnerPersonalizationEngine {
             editor.putInt(topicAttemptsKey, prefs.getInt(topicAttemptsKey, 0) + 1)
                 .putInt(topicCorrectKey, prefs.getInt(topicCorrectKey, 0) + if (correct) 1 else 0)
                 .putBoolean(topicLastResultKey, correct)
+            evictOldTopics(editor, prefs, profileId, topicKey)
         }
 
         editor.putString(missedKey, missed).apply()
@@ -148,6 +158,54 @@ object LearnerPersonalizationEngine {
         if (style.isBlank()) return
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putString(KEY_PREFERRED_STYLE_PREFIX + profileId, style.lowercase(Locale.US)).apply()
+    }
+
+    /**
+     * Retention: per-topic evidence keys would otherwise accumulate forever — one
+     * attempts/correct/last-result triple per distinct topic ever attempted. Keeps a
+     * most-recently-used index of at most [MAX_TOPICS_PER_PROFILE] topics per child
+     * and deletes the stored keys for anything that falls off the index.
+     */
+    private fun evictOldTopics(
+        editor: SharedPreferences.Editor,
+        prefs: SharedPreferences,
+        profileId: Long,
+        topicKey: String
+    ) {
+        val indexKey = KEY_TOPIC_INDEX_PREFIX + profileId
+        val index = (prefs.getString(indexKey, "") ?: "")
+            .split("|").filter { it.isNotBlank() }.toMutableList()
+        index.remove(topicKey)
+        index.add(topicKey)
+        val evicted = if (index.size > MAX_TOPICS_PER_PROFILE) {
+            index.subList(0, index.size - MAX_TOPICS_PER_PROFILE).toList()
+        } else {
+            emptyList()
+        }
+        editor.putString(indexKey, index.takeLast(MAX_TOPICS_PER_PROFILE).joinToString("|"))
+        for (old in evicted) {
+            editor.remove(KEY_TOPIC_ATTEMPTS_PREFIX + profileId + "_" + old)
+                .remove(KEY_TOPIC_CORRECT_PREFIX + profileId + "_" + old)
+                .remove(KEY_TOPIC_LAST_RESULT_PREFIX + profileId + "_" + old)
+        }
+    }
+
+    /**
+     * Privacy: removes every personalization key belonging to [profileId] — attempt
+     * counters, missed topics, preferred style, per-subject and per-topic evidence,
+     * and the topic index — so no learning fingerprint survives a profile deletion.
+     * Other profiles' keys are untouched (key patterns are anchored to the exact id).
+     */
+    fun clearProfileData(context: Context, profileId: Long) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val id = profileId.toString()
+        val exactKeys = Regex("^(attempts|correct|missed|style|topic_index)_$id$")
+        val suffixedKeys = Regex("^(subject_attempts|subject_correct|topic_attempts|topic_correct|topic_last)_${id}_.+")
+        val editor = prefs.edit()
+        for (key in prefs.all.keys) {
+            if (exactKeys.matches(key) || suffixedKeys.matches(key)) editor.remove(key)
+        }
+        editor.apply()
     }
 
     /** Returns compact topic evidence suitable for a tutoring prompt. */

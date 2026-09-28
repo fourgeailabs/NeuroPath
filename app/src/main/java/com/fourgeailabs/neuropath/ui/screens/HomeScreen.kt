@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -73,8 +74,19 @@ import com.fourgeailabs.neuropath.data.model.GradeLevel
 import com.fourgeailabs.neuropath.data.model.WorldTheme
 import com.fourgeailabs.neuropath.ui.AppScreen
 import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
+import com.fourgeailabs.neuropath.ui.components.avatarShopIdToThemeId
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.theme.isAppInDarkTheme
+import com.fourgeailabs.neuropath.ui.theme.ElevationTokens
+import com.fourgeailabs.neuropath.ui.theme.ShapeTokens
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.fourgeailabs.neuropath.ui.components.rememberBuddyArtResId
 
 @Composable
 fun HomeScreen(
@@ -94,12 +106,22 @@ fun HomeScreen(
     val gradeObj = GradeLevel.entries.find { it.name == profile.gradeLevel } ?: GradeLevel.KINDERGARTEN
     val isDownloadingCurriculum by viewModel.isDownloadingCurriculum.collectAsState()
     val dailyQuote by viewModel.dailyQuote.collectAsState()
+    // Parent offer for the per-profile offline material pack (after location selection).
+    val pendingPackOffer by viewModel.pendingPackOffer.collectAsState()
 
     Box(modifier = modifier.fillMaxSize()) {
+        // Shown over the home screen; parents can download or skip.
+        pendingPackOffer?.let { offer ->
+            OfflinePackOfferDialog(
+                viewModel = viewModel,
+                offer = offer,
+                onDismiss = { viewModel.dismissPackOffer() }
+            )
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 90.dp, top = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(bottom = 90.dp, top = SpacingTokens.s),
+            verticalArrangement = Arrangement.spacedBy(SpacingTokens.xl)
         ) {
             // 0. Offline Sync Banner
             item {
@@ -107,17 +129,17 @@ fun HomeScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
+                            .padding(horizontal = SpacingTokens.xl, vertical = SpacingTokens.xxs),
+                        shape = ShapeTokens.Medium,
                         color = Color(0xFFFFF3CD),
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFE8A1))
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(SpacingTokens.l),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("☁️", fontSize = 20.sp)
-                            Spacer(Modifier.width(12.dp))
+                            BuddyAvatar(themeId = "robotics", pose = BuddyPose.IDLE, size = 28.dp)
+                            Spacer(Modifier.width(SpacingTokens.l))
                             Column {
                                 Text(
                                     t("downloading_curriculum_for_offline_use"),
@@ -127,7 +149,7 @@ fun HomeScreen(
                                 )
                                 Text(
                                     t("saving_interactive_lessons_videos_you_can_learn"),
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF856404)
                                 )
                             }
@@ -141,14 +163,14 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = SpacingTokens.xl),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
-                        modifier = Modifier.weight(1f).padding(end = 8.dp),
+                        modifier = Modifier.weight(1f).padding(end = SpacingTokens.s),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                     ) {
                         Surface(
                             shape = CircleShape,
@@ -156,7 +178,12 @@ fun HomeScreen(
                             modifier = Modifier.size(42.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(theme.emoji, fontSize = 22.sp)
+                                BuddyAvatar(
+                                    themeId = theme.id,
+                                    pose = BuddyPose.IDLE,
+                                    size = 38.dp,
+                                    contentDescription = theme.buddyName
+                                )
                             }
                         }
                         Column {
@@ -174,24 +201,25 @@ fun HomeScreen(
                         }
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)) {
                         // Switch Profile Button
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = ShapeTokens.Medium,
                             color = MaterialTheme.colorScheme.primaryContainer,
                             modifier = Modifier
+                                .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                 .clickable { viewModel.navigateTo(AppScreen.PROFILE_SELECTION) }
                                 .testTag("switch_profile_header_btn")
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xs),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(Icons.Default.Group, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
-                                Spacer(Modifier.width(4.dp))
+                                Spacer(Modifier.width(SpacingTokens.xxs))
                                 Text(
                                     t("profiles"),
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
@@ -200,21 +228,22 @@ fun HomeScreen(
 
                         // Avatar Shop Shortcut
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = ShapeTokens.Medium,
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             modifier = Modifier
+                                .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                 .clickable { viewModel.navigateTo(AppScreen.AVATAR_SHOP) }
                                 .testTag("avatar_shop_header_btn")
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xs),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("🛍️", fontSize = 13.sp)
+                                BuddyAvatar(themeId = "games", pose = BuddyPose.HAPPY, size = 18.dp)
                                 Spacer(Modifier.width(3.dp))
                                 Text(
                                     t("shop"),
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
@@ -223,14 +252,15 @@ fun HomeScreen(
 
                         // Parent PIN Gate Shortcut
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = ShapeTokens.Medium,
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier
+                                .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                 .clickable { viewModel.navigateTo(AppScreen.PARENT_PIN_GATE) }
                                 .testTag("parent_gate_button")
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xs),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
@@ -242,7 +272,7 @@ fun HomeScreen(
                                 Spacer(Modifier.width(3.dp))
                                 Text(
                                     t("parents"),
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -294,12 +324,12 @@ fun HomeScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .padding(horizontal = SpacingTokens.xl, vertical = SpacingTokens.xs),
+                    shape = ShapeTokens.Large,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = ElevationTokens.Card)
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
@@ -309,7 +339,7 @@ fun HomeScreen(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(SpacingTokens.giant)
                                 .clickable { viewModel.readDailyQuote() }
                                 .testTag("read_quote_btn")
                         ) {
@@ -329,10 +359,10 @@ fun HomeScreen(
                             Text(
                                 t("daily_spark_of_inspiration"),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 11.5.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.tertiary
                             )
-                            Spacer(Modifier.height(2.dp))
+                            Spacer(Modifier.height(SpacingTokens.xxxs))
                             Text(
                                 dailyQuote,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -341,17 +371,17 @@ fun HomeScreen(
                             )
                         }
 
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(SpacingTokens.s))
 
                         IconButton(
                             onClick = { viewModel.refreshDailyQuote() },
-                            modifier = Modifier.testTag("refresh_quote_btn").size(48.dp)
+                            modifier = Modifier.testTag("refresh_quote_btn").size(SpacingTokens.giant)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Autorenew,
                                 contentDescription = t("refresh_quote"),
                                 tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(SpacingTokens.xxl)
                             )
                         }
                     }
@@ -367,15 +397,20 @@ fun HomeScreen(
             shape = CircleShape,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp)
+                .padding(SpacingTokens.xxl)
                 .testTag("floating_neurobuddy_btn")
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(theme.emoji, fontSize = 20.sp)
-                Spacer(Modifier.width(8.dp))
+                BuddyAvatar(
+                    themeId = theme.id,
+                    pose = BuddyPose.IDLE,
+                    size = 30.dp,
+                    contentDescription = theme.buddyName
+                )
+                Spacer(Modifier.width(SpacingTokens.s))
                 Text(
                     if (tier == AgeGroupTier.HIGH_SCHOOL) "AI Socratic Tutor" else theme.buddyName,
                     fontWeight = FontWeight.Bold,
@@ -405,7 +440,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
         ElevatedCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = SpacingTokens.xl),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.elevatedCardColors(
                 containerColor = Color(theme.surfaceHex)
@@ -439,19 +474,29 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                             .clickable { viewModel.navigateTo(AppScreen.AVATAR_SHOP) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(avatarItem?.emoji ?: "🤖", fontSize = 36.sp)
+                        val avatarThemeId = avatarItem?.let { avatarShopIdToThemeId(it.id) }
+                        if (avatarThemeId != null) {
+                            BuddyAvatar(
+                                themeId = avatarThemeId,
+                                pose = BuddyPose.IDLE,
+                                size = 64.dp,
+                                contentDescription = avatarItem?.name
+                            )
+                        } else {
+                            Text(avatarItem?.emoji ?: "🤖", fontSize = 36.sp)
+                        }
                         if (hatItem != null) {
                             Text(
                                 hatItem.emoji,
                                 fontSize = 20.sp,
-                                modifier = Modifier.align(Alignment.TopCenter).padding(top = 2.dp)
+                                modifier = Modifier.align(Alignment.TopCenter).padding(top = SpacingTokens.xxxs)
                             )
                         }
                         if (petItem != null) {
                             Text(
                                 petItem.emoji,
                                 fontSize = 18.sp,
-                                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 4.dp, bottom = 4.dp)
+                                modifier = Modifier.align(Alignment.BottomEnd).padding(end = SpacingTokens.xxs, bottom = SpacingTokens.xxs)
                             )
                         }
                         // Change-avatar affordance
@@ -460,7 +505,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .size(24.dp)
+                                .size(SpacingTokens.xxxl)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text("✏️", fontSize = 12.sp)
@@ -473,11 +518,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                 ) {
-                    RewardBadge(icon = "⭐", label = "${profile.totalStars} Stars", bg = Color(0xFFFFF3CD), textColor = Color(0xFF856404))
-                    RewardBadge(icon = "💎", label = "${profile.totalGems} Gems", bg = Color(0xFFD1ECF1), textColor = Color(0xFF0C5460))
-                    RewardBadge(icon = "🔥", label = "${profile.currentStreakDays}d Streak", bg = Color(0xFFFFE5D0), textColor = Color(0xFFD84315))
+                    RewardBadge(icon = "⭐", label = tf("reward_stars_count", profile.totalStars), bg = Color(0xFFFFF3CD), textColor = Color(0xFF856404))
+                    RewardBadge(icon = "💎", label = tf("reward_gems_count", profile.totalGems), bg = Color(0xFFD1ECF1), textColor = Color(0xFF0C5460))
+                    RewardBadge(icon = "🔥", label = tf("reward_streak_days", profile.currentStreakDays), bg = Color(0xFFFFE5D0), textColor = Color(0xFFD84315))
                 }
             }
         }
@@ -485,34 +530,49 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
 
     // Games & Creative Expression
     item {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        // Game cards keep their ocean/purple branding in both modes: dark
+        // variants swap in when the app is dark so text stays readable.
+        val inDarkGameCards = isAppInDarkTheme()
+        val oceanCardBg = if (inDarkGameCards) Color(0xFF123B4A) else Color(0xFFE0F7FA)
+        val oceanTitle = if (inDarkGameCards) Color(0xFFB3E5FC) else Color(0xFF004977)
+        val oceanSubtitle = if (inDarkGameCards) Color(0xFF81D4FA) else Color(0xFF00629D)
+        val artCardBg = if (inDarkGameCards) Color(0xFF3B2350) else Color(0xFFF3E5F5)
+        val artTitle = if (inDarkGameCards) Color(0xFFE1BEE7) else Color(0xFF4A148C)
+        val artSubtitle = if (inDarkGameCards) Color(0xFFCE93D8) else Color(0xFF6A1B9A)
+
+        Column(modifier = Modifier.padding(horizontal = SpacingTokens.xl)) {
             Text(
                 t("learning_games_studio"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(SpacingTokens.m))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.l)
             ) {
                 ElevatedCard(
                     modifier = Modifier
                         .weight(1f)
                         .clickable { viewModel.navigateTo(AppScreen.OCEAN_GAME) }
                         .testTag("ocean_game_card"),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFFE0F7FA))
+                    shape = ShapeTokens.ExtraLarge,
+                    colors = CardDefaults.elevatedCardColors(containerColor = oceanCardBg)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
-                        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF0077B6), modifier = Modifier.size(42.dp)) {
-                            Box(contentAlignment = Alignment.Center) { Text("🌊", fontSize = 22.sp) }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(t("ocean_reading"), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF004977))
-                        Text(t("word_safari"), fontSize = 11.sp, color = Color(0xFF00629D))
+                        Image(
+                            painter = painterResource(id = rememberBuddyArtResId("ocean", BuddyPose.HAPPY)),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(ShapeTokens.Medium)
+                        )
+                        Spacer(Modifier.height(SpacingTokens.s))
+                        Text(t("ocean_reading"), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = oceanTitle)
+                        Text(t("word_safari"), style = MaterialTheme.typography.bodySmall, color = oceanSubtitle)
                     }
                 }
 
@@ -521,16 +581,21 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                         .weight(1f)
                         .clickable { viewModel.navigateTo(AppScreen.CREATIVE_STUDIO) }
                         .testTag("creative_studio_card"),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFFF3E5F5))
+                    shape = ShapeTokens.ExtraLarge,
+                    colors = CardDefaults.elevatedCardColors(containerColor = artCardBg)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
-                        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFF7B1FA2), modifier = Modifier.size(42.dp)) {
-                            Box(contentAlignment = Alignment.Center) { Text("🎨", fontSize = 22.sp) }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(t("art_studio"), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = Color(0xFF4A148C))
-                        Text(t("draw_create"), fontSize = 11.sp, color = Color(0xFF6A1B9A))
+                        Image(
+                            painter = painterResource(id = rememberBuddyArtResId("magic", BuddyPose.HAPPY)),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(ShapeTokens.Medium)
+                        )
+                        Spacer(Modifier.height(SpacingTokens.s))
+                        Text(t("art_studio"), fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = artTitle)
+                        Text(t("draw_create"), style = MaterialTheme.typography.bodySmall, color = artSubtitle)
                     }
                 }
             }
@@ -539,26 +604,26 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
 
     // 20-Step Visual Safari Map
     item {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = SpacingTokens.xl)) {
             Text(
                 t("20_step_quest_map"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(SpacingTokens.s))
 
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = ShapeTokens.Large,
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp)
+                        .padding(SpacingTokens.l)
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     for (i in 1..20) {
@@ -590,7 +655,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = SpacingTokens.xl)
         )
     }
 
@@ -607,14 +672,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
 
         Card(
             modifier = Modifier
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = SpacingTokens.xl)
                 .clickable {
                     if (activeLesson != null) {
                         viewModel.startLesson(activeLesson)
                     }
                 }
                 .testTag("subject_card_${subject.id}"),
-            shape = RoundedCornerShape(16.dp),
+            shape = ShapeTokens.Large,
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
@@ -623,7 +688,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = ShapeTokens.Medium,
                     color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.size(46.dp)
                 ) {
@@ -632,7 +697,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                     }
                 }
 
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(SpacingTokens.l))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -645,12 +710,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                         activeLesson?.title ?: subject.description,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.5.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         maxLines = 1
                     )
                     Text(
                         t("interactive_exploration_20_adaptive_steps"),
-                        fontSize = 10.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
                     )
@@ -666,7 +731,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderElementaryLayou
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = t("start_lesson"),
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(SpacingTokens.xxl)
                         )
                     }
                 }
@@ -692,21 +757,21 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(20.dp),
+                .padding(horizontal = SpacingTokens.xl),
+            shape = ShapeTokens.ExtraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
             )
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(SpacingTokens.xl)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("⚡", fontSize = 24.sp)
-                        Spacer(Modifier.width(8.dp))
+                        BuddyAvatar(themeId = "knights", pose = BuddyPose.CELEBRATING, size = 32.dp)
+                        Spacer(Modifier.width(SpacingTokens.s))
                         Column {
                             Text(
                                 t("quest_command_center"),
@@ -730,12 +795,12 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs)
                         )
                     }
                 }
 
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(SpacingTokens.m))
 
                 // XP Progress Bar to next level
                 val progressToNextLevel = (profile.totalStars % 10) / 10f
@@ -743,8 +808,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                     progress = { progressToNextLevel },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
+                        .height(SpacingTokens.s)
+                        .clip(ShapeTokens.ExtraSmall),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.surface
                 )
@@ -754,29 +819,30 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
 
     // Daily Mission Cards
     item {
-        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = SpacingTokens.xl)) {
             Text(
                 t("daily_focus_missions"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(SpacingTokens.s))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.m)
             ) {
                 // Focus Sprint Card
                 Card(
                     modifier = Modifier
                         .weight(1f)
+                        .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                         .clickable { viewModel.navigateTo(AppScreen.BREATHING_GUIDE) },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(SpacingTokens.l)) {
                         Text(t("reset_calm"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text(t("4_7_8_breathing_2"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(t("4_7_8_breathing_2"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
@@ -784,13 +850,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                 Card(
                     modifier = Modifier
                         .weight(1f)
+                        .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                         .clickable { viewModel.navigateTo(AppScreen.FIDGET_POPIT) },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(SpacingTokens.l)) {
                         Text(t("sensory_fidget"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text(t("tactile_focus_loop"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(t("tactile_focus_loop"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -803,7 +870,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
             t("academic_quest_modules"),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = SpacingTokens.xl)
         )
     }
 
@@ -820,7 +887,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
 
         ElevatedCard(
             modifier = Modifier
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = SpacingTokens.xl)
                 .clickable {
                     if (activeLesson != null) {
                         viewModel.startLesson(activeLesson)
@@ -841,7 +908,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                         Text(subject.emoji, fontSize = 22.sp)
                     }
                 }
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(SpacingTokens.l))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(subject.title, fontWeight = FontWeight.Bold, fontSize = 14.5.sp)
                     Text(activeLesson?.title ?: subject.description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -851,7 +918,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderMiddleSchoolLay
                         if (activeLesson != null) viewModel.startLesson(activeLesson)
                     },
                     shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    contentPadding = PaddingValues(horizontal = SpacingTokens.l, vertical = SpacingTokens.xxs)
                 ) {
                     Text(t("launch"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
@@ -876,14 +943,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = SpacingTokens.xl),
             shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ),
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(SpacingTokens.xl)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -903,15 +970,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
                         )
                     }
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = ShapeTokens.Small,
                         color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
                             tf("masteries", profile.totalStars),
-                            fontSize = 11.5.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs)
                         )
                     }
                 }
@@ -924,21 +991,22 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(horizontal = SpacingTokens.xl),
+            horizontalArrangement = Arrangement.spacedBy(SpacingTokens.m)
         ) {
             // Socratic Chat Tool
             Surface(
                 modifier = Modifier
                     .weight(1f)
+                    .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                     .clickable { viewModel.navigateTo(AppScreen.NEURO_BUDDY_CHAT) },
                 shape = RoundedCornerShape(14.dp),
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(SpacingTokens.l)) {
                     Text(t("socratic_ai"), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.primary)
-                    Text(t("step_by_step_guidance"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("step_by_step_guidance"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -946,14 +1014,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
             Surface(
                 modifier = Modifier
                     .weight(1f)
+                    .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                     .clickable { viewModel.navigateTo(AppScreen.BREATHING_GUIDE) },
                 shape = RoundedCornerShape(14.dp),
                 color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(SpacingTokens.l)) {
                     Text(t("focus_pacing"), fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.secondary)
-                    Text(t("decompress_align"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("decompress_align"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -965,7 +1034,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
             t("academic_disciplines"),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = SpacingTokens.xl)
         )
     }
 
@@ -983,7 +1052,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = SpacingTokens.xl)
                 .clickable {
                     if (activeLesson != null) {
                         viewModel.startLesson(activeLesson)
@@ -1023,7 +1092,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
                         if (activeLesson != null) viewModel.startLesson(activeLesson)
                     },
                     shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = SpacingTokens.xs)
                 ) {
                     Text(t("study"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
@@ -1035,15 +1104,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.renderHighSchoolLayou
 @Composable
 fun RewardBadge(icon: String, label: String, bg: Color, textColor: Color) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = ShapeTokens.Medium,
         color = bg
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xs),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(icon, fontSize = 14.sp)
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(SpacingTokens.xxs))
             Text(
                 label,
                 fontSize = 12.sp,

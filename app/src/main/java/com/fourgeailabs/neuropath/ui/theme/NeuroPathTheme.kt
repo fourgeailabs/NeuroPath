@@ -6,12 +6,26 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import com.fourgeailabs.neuropath.R
 import com.fourgeailabs.neuropath.data.model.WorldTheme
+
+// Fredoka — rounded, kid-friendly app font (SIL Open Font License 1.1).
+// Static weights bundled in res/font; used as the default family for all
+// theme typography. The special_elite typewriter font is intentionally kept
+// separate (used only for the loading-screen typewriter effect).
+val FredokaFontFamily = FontFamily(
+    Font(R.font.fredoka_regular, FontWeight.Normal),
+    Font(R.font.fredoka_medium, FontWeight.Medium),
+    Font(R.font.fredoka_semibold, FontWeight.SemiBold),
+    Font(R.font.fredoka_bold, FontWeight.Bold)
+)
 
 // Soft soothing sensory-friendly base colors
 val PastelLavender = Color(0xFFE8E5F8)
@@ -25,6 +39,50 @@ val TwilightBg = Color(0xFF1E212B)
 val TwilightSurface = Color(0xFF2B2F3E)
 val TwilightCard = Color(0xFF383D50)
 
+/**
+ * Dark scheme used when the device is in dark mode and the parent has NOT
+ * picked the manual TWILIGHT_DARK override. It keeps the active theme's own
+ * brand colors as accents on twilight surfaces so the app stays recognizable
+ * instead of snapping to a single fixed dark palette.
+ */
+private fun autoDarkColorScheme(primary: Color, secondary: Color, tertiary: Color): ColorScheme =
+    darkColorScheme(
+        primary = primary,
+        onPrimary = Color.White,
+        primaryContainer = TwilightCard,
+        onPrimaryContainer = Color(0xFFE8EAED),
+        secondary = secondary,
+        onSecondary = Color.White,
+        secondaryContainer = TwilightCard,
+        onSecondaryContainer = Color(0xFFE8EAED),
+        tertiary = tertiary,
+        onTertiary = Color.White,
+        tertiaryContainer = TwilightCard,
+        onTertiaryContainer = Color(0xFFE8EAED),
+        background = TwilightBg,
+        onBackground = Color(0xFFE8EAED),
+        surface = TwilightSurface,
+        onSurface = Color(0xFFF1F3F4),
+        surfaceVariant = TwilightCard,
+        onSurfaceVariant = Color(0xFFB9BEC9),
+        surfaceTint = primary,
+        inverseSurface = Color(0xFFE8EAED),
+        inverseOnSurface = TwilightBg,
+        outline = secondary,
+        outlineVariant = TwilightSurface,
+        scrim = Color.Black
+    )
+
+/**
+ * True when the currently applied MaterialTheme color scheme is dark.
+ * Components use this (instead of isSystemInDarkTheme()) so hardcoded light
+ * surfaces adapt whether dark mode came from the system setting or the
+ * parent's manual TWILIGHT_DARK override.
+ */
+@Composable
+fun isAppInDarkTheme(): Boolean =
+    MaterialTheme.colorScheme.background.luminance() < 0.5f
+
 fun getThemeColorScheme(
     neuroTheme: com.fourgeailabs.neuropath.data.model.NeuroThemeData,
     contrastMode: String,
@@ -34,8 +92,9 @@ fun getThemeColorScheme(
     val secondary = Color(neuroTheme.secondaryHex)
     val tertiary = Color(0xFFF4A261)
 
-    return when (contrastMode) {
-        "TWILIGHT_DARK" -> darkColorScheme(
+    // Manual dark override always wins and keeps its exact legacy look.
+    if (contrastMode == "TWILIGHT_DARK") {
+        return darkColorScheme(
             primary = secondary,
             secondary = Color(0xFF81C784),
             tertiary = Color(0xFFFFB74D),
@@ -47,6 +106,13 @@ fun getThemeColorScheme(
             onBackground = Color(0xFFE8EAED),
             onSurface = Color(0xFFF1F3F4)
         )
+    }
+    // Auto dark mode: follow the system setting, keeping the theme's brand colors.
+    if (darkTheme) {
+        return autoDarkColorScheme(primary, secondary, tertiary)
+    }
+
+    return when (contrastMode) {
         "BUTTERCREAM" -> lightColorScheme(
             primary = primary,
             secondary = secondary,
@@ -117,8 +183,9 @@ fun getThemeColorScheme(
     val secondary = Color(worldTheme.secondaryHex)
     val tertiary = Color(0xFFF4A261)
 
-    return when (contrastMode) {
-        "TWILIGHT_DARK" -> darkColorScheme(
+    // Manual dark override always wins and keeps its exact legacy look.
+    if (contrastMode == "TWILIGHT_DARK") {
+        return darkColorScheme(
             primary = secondary,
             secondary = Color(0xFF81C784),
             tertiary = Color(0xFFFFB74D),
@@ -130,6 +197,13 @@ fun getThemeColorScheme(
             onBackground = Color(0xFFE8EAED),
             onSurface = Color(0xFFF1F3F4)
         )
+    }
+    // Auto dark mode: follow the system setting, keeping the theme's brand colors.
+    if (darkTheme) {
+        return autoDarkColorScheme(primary, secondary, tertiary)
+    }
+
+    return when (contrastMode) {
         "BUTTERCREAM" -> lightColorScheme(
             primary = primary,
             secondary = secondary,
@@ -198,42 +272,42 @@ fun getDyslexiaTypography(isDyslexiaEnabled: Boolean): androidx.compose.material
 
     return androidx.compose.material3.Typography(
         displayLarge = TextStyle(
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = FredokaFontFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 32.sp,
             lineHeight = 40.sp * lineHeightMultiplier,
             letterSpacing = letterSpacing
         ),
         titleLarge = TextStyle(
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = FredokaFontFamily,
             fontWeight = FontWeight.SemiBold,
             fontSize = 22.sp,
             lineHeight = 28.sp * lineHeightMultiplier,
             letterSpacing = letterSpacing
         ),
         titleMedium = TextStyle(
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = FredokaFontFamily,
             fontWeight = FontWeight.Medium,
             fontSize = 18.sp,
             lineHeight = 24.sp * lineHeightMultiplier,
             letterSpacing = letterSpacing
         ),
         bodyLarge = TextStyle(
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = FredokaFontFamily,
             fontWeight = if (isDyslexiaEnabled) FontWeight.Medium else FontWeight.Normal,
             fontSize = if (isDyslexiaEnabled) 18.sp else 16.sp,
             lineHeight = 26.sp * lineHeightMultiplier,
             letterSpacing = letterSpacing
         ),
         bodyMedium = TextStyle(
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = FredokaFontFamily,
             fontWeight = if (isDyslexiaEnabled) FontWeight.Medium else FontWeight.Normal,
             fontSize = if (isDyslexiaEnabled) 15.sp else 14.sp,
             lineHeight = 22.sp * lineHeightMultiplier,
             letterSpacing = letterSpacing
         ),
         labelLarge = TextStyle(
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = FredokaFontFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp,
             lineHeight = 20.sp,

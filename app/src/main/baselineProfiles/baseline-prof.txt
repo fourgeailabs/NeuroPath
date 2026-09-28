@@ -1,0 +1,50 @@
+# NeuroPath baseline profile (hand-authored, 2026-09-27).
+# Covers the critical startup path: app start -> onboarding/profile selection -> home.
+# Format: <flags><class-or-method>. Flags: H = hot, S = startup, P = post-startup.
+# AGP consumes app/src/main/baselineProfiles/baseline-prof.txt automatically for
+# release builds; no baselineprofile Gradle plugin is applied (generation would
+# require a Macrobenchmark run on a device, not feasible in this environment).
+# Keep rules for the classes below must stay in sync with proguard-rules.pro.
+
+# ── App entry point ─────────────────────────────────────────────
+HSLcom/fourgeailabs/neuropath/MainActivity;
+HSLcom/fourgeailabs/neuropath/MainActivity;->onCreate(Landroid/os/Bundle;)V
+
+# ── Startup navigation state ────────────────────────────────────
+HSLcom/fourgeailabs/neuropath/ui/NeuroPathViewModel;
+HSLcom/fourgeailabs/neuropath/ui/AppScreen;
+HSLcom/fourgeailabs/neuropath/ui/AppStrings;
+
+# ── Startup path screens (onboarding -> profile selection) ──────
+HSLcom/fourgeailabs/neuropath/ui/screens/LanguageSelectionScreenKt;
+HSLcom/fourgeailabs/neuropath/ui/screens/TermsAndConditionsScreenKt;
+HSLcom/fourgeailabs/neuropath/ui/screens/ParentPinSetupScreenKt;
+HSLcom/fourgeailabs/neuropath/ui/screens/ChildProfileSetupScreenKt;
+HSLcom/fourgeailabs/neuropath/ui/screens/ProfileSelectionScreenKt;
+
+# ── Home screen (reached right after profile selection) ─────────
+HPLcom/fourgeailabs/neuropath/ui/screens/HomeScreenKt;
+HPLcom/fourgeailabs/neuropath/ui/components/TopSensoryBarKt;
+
+# ── Theme (evaluated on every frame of startup) ─────────────────
+HSLcom/fourgeailabs/neuropath/ui/theme/NeuroPathThemeKt;
+
+# ── Data layer hot at startup (profile load, language, settings) ─
+HSLcom/fourgeailabs/neuropath/data/repository/NeuroPathRepository;
+HPLcom/fourgeailabs/neuropath/data/repository/OfflinePackManager;
+HSLcom/fourgeailabs/neuropath/data/local/AppDatabase;
+HSLcom/fourgeailabs/neuropath/data/local/AppDatabase_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/ChildProfileDao_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/CurriculumDao_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/LessonRecordDao_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/ProgressLogDao_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/SensorySessionDao_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/OerCurriculumDao_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/ChatMessageDao_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/OfflineMaterialPackDao_Impl;
+HSLcom/fourgeailabs/neuropath/data/local/ChatSessionSummary;
+HSLcom/fourgeailabs/neuropath/data/local/entity/ChildProfileEntity;
+HSLcom/fourgeailabs/neuropath/data/local/entity/OerCurriculumEntity;
+
+# ── Secure storage (parent PIN, tokens; touched during startup) ─
+HSLcom/fourgeailabs/neuropath/security/SecureStorage;

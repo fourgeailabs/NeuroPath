@@ -138,6 +138,13 @@ import java.util.Date
 import java.util.Locale
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.theme.ColorTokens
+import com.fourgeailabs.neuropath.ui.theme.ElevationTokens
+import com.fourgeailabs.neuropath.ui.theme.ShapeTokens
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
+import androidx.compose.foundation.layout.sizeIn
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
 
 /**
  * Rebuilt Educational Chat Interface component.
@@ -162,6 +169,7 @@ fun EducationalChatInterface(
 
     val chatMessages by viewModel.chatMessages.collectAsState()
     val isGenerating by viewModel.isChatGenerating.collectAsState()
+    val chatSendError by viewModel.chatSendError.collectAsState()
     val activeChatMode by viewModel.chatModelMode.collectAsState()
     val chatEngineLabel by viewModel.chatEngineLabel.collectAsState()
 
@@ -203,10 +211,10 @@ fun EducationalChatInterface(
         // ==========================================
         Surface(
             color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 2.dp,
+            shadowElevation = ElevationTokens.Card,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+            Column(modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xs)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -230,7 +238,7 @@ fun EducationalChatInterface(
                             )
                         }
 
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(SpacingTokens.xxs))
 
                         Surface(
                             shape = CircleShape,
@@ -238,11 +246,16 @@ fun EducationalChatInterface(
                             modifier = Modifier.size(36.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text(theme.emoji, fontSize = 18.sp)
+                                BuddyAvatar(
+                                    themeId = theme.id,
+                                    pose = BuddyPose.IDLE,
+                                    size = SpacingTokens.huge,
+                                    contentDescription = theme.buddyName
+                                )
                             }
                         }
 
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(SpacingTokens.s))
 
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -253,18 +266,18 @@ fun EducationalChatInterface(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Spacer(Modifier.width(4.dp))
+                                Spacer(Modifier.width(SpacingTokens.xxs))
                                 // Free Model Badge Indicator
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = if (activeChatMode.isFreeTier) Color(0xFF2E7D32).copy(alpha = 0.15f) else MaterialTheme.colorScheme.secondaryContainer
+                                    color = if (activeChatMode.isFreeTier) ColorTokens.Light.success.copy(alpha = 0.15f) else MaterialTheme.colorScheme.secondaryContainer
                                 ) {
                                     Text(
                                         text = if (activeChatMode.isFreeTier) "FREE" else "PRO",
-                                        fontSize = 8.5.sp,
+                                        style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (activeChatMode.isFreeTier) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSecondaryContainer,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                        color = if (activeChatMode.isFreeTier) ColorTokens.Light.success else MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.xxs, vertical = 1.dp),
                                         maxLines = 1,
                                         softWrap = false
                                     )
@@ -280,7 +293,7 @@ fun EducationalChatInterface(
                         }
                     }
 
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(SpacingTokens.xs))
 
                     // Action Controls: Model Selector, New Topic, and Message History
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -294,18 +307,19 @@ fun EducationalChatInterface(
                                 shape = RoundedCornerShape(14.dp),
                                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
                                 modifier = Modifier
+                                    .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                     .clickable { showModelMenu = true }
                                     .testTag("chat_model_selector_btn")
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                    modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = 5.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(activeChatMode.icon, fontSize = 12.sp)
                                     Spacer(Modifier.width(3.dp))
                                     Text(
                                         modelLabel,
-                                        fontSize = 11.5.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
@@ -318,28 +332,37 @@ fun EducationalChatInterface(
                             ) {
                                 Text(
                                     t("select_llama_model"),
-                                    fontSize = 10.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    modifier = Modifier.padding(horizontal = SpacingTokens.l, vertical = SpacingTokens.xs)
                                 )
-                                ChatModelMode.entries.forEach { mode ->
+                                // Exactly three AI options are offered: Cloud AI, Local AI,
+                                // and the Socratic Teacher. The Socratic Teacher is the
+                                // honest no-AI tool and is never listed as a Llama model.
+                                // It is hidden when the parent has turned it off.
+                                val chatModeOptions = buildList {
+                                    add(ChatModelMode.GENERAL)
+                                    add(ChatModelMode.LLAMA_LOCAL)
+                                    if (profile.socraticTeacherEnabled) add(ChatModelMode.OFFLINE)
+                                }
+                                chatModeOptions.forEach { mode ->
                                     DropdownMenuItem(
                                         text = {
                                             Column {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text(tf("str_3", mode.icon, mode.displayName), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                    Text(tf("str_3", mode.icon, t(mode.labelKey)), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                                     if (mode.isFreeTier) {
-                                                        Spacer(Modifier.width(6.dp))
+                                                        Spacer(Modifier.width(SpacingTokens.xs))
                                                         Surface(
-                                                            shape = RoundedCornerShape(4.dp),
-                                                            color = Color(0xFF2E7D32).copy(alpha = 0.15f)
+                                                            shape = ShapeTokens.ExtraSmall,
+                                                            color = ColorTokens.Light.success.copy(alpha = 0.15f)
                                                         ) {
-                                                            Text(t("free_model"), fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                                            Text(t("free_model"), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ColorTokens.Light.success, modifier = Modifier.padding(horizontal = SpacingTokens.xxs, vertical = 1.dp))
                                                         }
                                                     }
                                                 }
-                                                Text(mode.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                Text(t(mode.descriptionKey), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                         },
                                         onClick = {
@@ -356,7 +379,7 @@ fun EducationalChatInterface(
                             }
                         }
 
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(SpacingTokens.xxs))
 
                         // New Session Button
                         IconButton(
@@ -365,7 +388,7 @@ fun EducationalChatInterface(
                                 showNewSessionDialog = true
                             },
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(SpacingTokens.giant)
                                 .testTag("chat_new_topic_btn")
                         ) {
                             Icon(
@@ -387,13 +410,13 @@ fun EducationalChatInterface(
                                 imageVector = Icons.Default.History,
                                 contentDescription = t("message_history"),
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(SpacingTokens.xxl)
                             )
                         }
                     }
                 }
 
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(SpacingTokens.xs))
 
                 // ==========================================
                 // 2. EXPLANATION MODE & SUBJECT SELECTOR BAR
@@ -403,26 +426,27 @@ fun EducationalChatInterface(
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
                 ) {
                     // Active Explanation Mode Pill
                     Box {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = ShapeTokens.Medium,
                             color = MaterialTheme.colorScheme.tertiaryContainer,
                             modifier = Modifier
+                                .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                 .clickable { showExplanationMenu = true }
                                 .testTag("chat_explanation_mode_btn")
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(activeExplanationMode.icon, fontSize = 12.sp)
-                                Spacer(Modifier.width(4.dp))
+                                Spacer(Modifier.width(SpacingTokens.xxs))
                                 Text(
                                     tf("mode", activeExplanationMode.title),
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onTertiaryContainer
                                 )
@@ -435,10 +459,10 @@ fun EducationalChatInterface(
                         ) {
                             Text(
                                 t("personalized_explanation_style"),
-                                fontSize = 10.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = SpacingTokens.l, vertical = SpacingTokens.xs)
                             )
                             EducationalExplanationMode.entries.forEach { mode ->
                                 DropdownMenuItem(
@@ -446,15 +470,15 @@ fun EducationalChatInterface(
                                         Column {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Text(tf("str_3", mode.icon, mode.title), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                                Spacer(Modifier.width(6.dp))
+                                                Spacer(Modifier.width(SpacingTokens.xs))
                                                 Surface(
-                                                    shape = RoundedCornerShape(4.dp),
+                                                    shape = ShapeTokens.ExtraSmall,
                                                     color = MaterialTheme.colorScheme.secondaryContainer
                                                 ) {
-                                                    Text(mode.shortBadge, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                                    Text(mode.shortBadge, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.padding(horizontal = SpacingTokens.xxs, vertical = 1.dp))
                                                 }
                                             }
-                                            Text(mode.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(mode.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     },
                                     onClick = {
@@ -475,21 +499,22 @@ fun EducationalChatInterface(
                     EducationalSubjectTag.entries.forEach { subject ->
                         val isSelected = activeSubjectTag == subject
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = ShapeTokens.Medium,
                             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier
+                                .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                 .clickable { viewModel.setSelectedSubjectTag(subject) }
                                 .testTag("subject_chip_${subject.id}")
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(subject.icon, fontSize = 11.sp)
+                                Text(subject.icon, style = MaterialTheme.typography.bodySmall)
                                 Spacer(Modifier.width(3.dp))
                                 Text(
                                     subject.title,
-                                    fontSize = 11.sp,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -511,68 +536,68 @@ fun EducationalChatInterface(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .padding(horizontal = SpacingTokens.l, vertical = SpacingTokens.xs)
             ) {
                 // Free Model Banner
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = ShapeTokens.Medium,
                     color = if (activeChatMode.isFreeTier) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surfaceVariant,
                     border = if (activeChatMode.isFreeTier) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF81C784)) else null,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xs),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(if (activeChatMode.isFreeTier) "✨" else "🧠", fontSize = 14.sp)
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(SpacingTokens.xs))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = if (activeChatMode.isFreeTier) "Llama 3.2 3B Active (${activeChatMode.modelName})" else "Pro Model Active (${activeChatMode.modelName})",
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
-                                color = if (activeChatMode.isFreeTier) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (activeChatMode.isFreeTier) ColorTokens.Light.success else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = tf("personalized_explanations_tailored_to", profile.gradeLevel, profile.schoolDistrict),
-                                fontSize = 10.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = if (activeChatMode.isFreeTier) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
 
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(SpacingTokens.xs))
 
                 // Subject Starter Prompts
                 Text(
                     t("suggested_educational_topics"),
-                    fontSize = 10.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 4.dp)
+                    modifier = Modifier.padding(start = SpacingTokens.xxxs, bottom = SpacingTokens.xxs)
                 )
 
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp)
+                    horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs),
+                    contentPadding = PaddingValues(horizontal = SpacingTokens.xxxs)
                 ) {
                     items(activeSubjectTag.samplePrompts) { prompt ->
                         Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = MaterialTheme.colorScheme.surface,
-                            shadowElevation = 1.dp,
+                            shadowElevation = ElevationTokens.Level1,
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-                            modifier = Modifier.clickable(enabled = !isGenerating) {
+                            modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable(enabled = !isGenerating) {
                                 viewModel.sendChatMessage(prompt)
                             }
                         ) {
                             Text(
                                 text = prompt,
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xs)
                             )
                         }
                     }
@@ -592,14 +617,14 @@ fun EducationalChatInterface(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 12.dp)
+                    .padding(horizontal = SpacingTokens.l),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.m),
+                contentPadding = PaddingValues(top = SpacingTokens.s, bottom = SpacingTokens.l)
             ) {
                 items(chatMessages, key = { it.id }) { message ->
                     EducationalMessageBubble(
                         message = message,
-                        buddyEmoji = theme.emoji,
+                        buddyThemeId = theme.id,
                         buddyName = theme.buddyName,
                         dyslexiaFont = profile.dyslexiaFontEnabled,
                         onSpeak = { text -> viewModel.speechManager.speak(text) },
@@ -628,40 +653,82 @@ fun EducationalChatInterface(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = SpacingTokens.s),
                             horizontalArrangement = Arrangement.Start,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(SpacingTokens.huge)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(18.dp),
-                                        strokeWidth = 2.dp,
+                                        strokeWidth = SpacingTokens.xxxs,
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
-                            Spacer(Modifier.width(10.dp))
+                            Spacer(Modifier.width(SpacingTokens.m))
                             Surface(
-                                shape = RoundedCornerShape(16.dp),
+                                shape = ShapeTokens.Large,
                                 color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(horizontal = SpacingTokens.l, vertical = SpacingTokens.s),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        tf("is_thinking_gently_with", theme.buddyName, activeChatMode.displayName),
+                                        tf("is_thinking_gently_with", theme.buddyName, t(activeChatMode.labelKey)),
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // 4b. SEND-ERROR BANNER (honest failure, never a fake buddy message)
+        // ==========================================
+        chatSendError?.let { errorText ->
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                shape = ShapeTokens.Medium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xxs)
+                    .testTag("chat_send_error_card")
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = SpacingTokens.l, vertical = SpacingTokens.s),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = errorText,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        onClick = { viewModel.retryFailedChatMessage() },
+                        modifier = Modifier.testTag("chat_send_error_retry_btn")
+                    ) {
+                        Text(
+                            text = t("retry"),
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                    TextButton(onClick = { viewModel.dismissChatSendError() }) {
+                        Text(
+                            text = t("dismiss"),
+                            color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                        )
                     }
                 }
             }
@@ -675,7 +742,7 @@ fun EducationalChatInterface(
             shadowElevation = 4.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+            Column(modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = SpacingTokens.xs)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -717,7 +784,7 @@ fun EducationalChatInterface(
                         )
                     )
 
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(SpacingTokens.xs))
 
                     // Microphone Transcribe Button
                     Surface(
@@ -728,7 +795,7 @@ fun EducationalChatInterface(
                             else -> MaterialTheme.colorScheme.secondaryContainer
                         },
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(SpacingTokens.giant)
                             .clickable {
                                 if (isRecordingAudio) {
                                     viewModel.stopAudioRecordingAndTranscribe { transcribedText ->
@@ -740,11 +807,14 @@ fun EducationalChatInterface(
                             }
                             .testTag("chat_transcribe_mic_btn")
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
                             if (isTranscribing) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
+                                    strokeWidth = SpacingTokens.xxxs,
                                     color = Color.White
                                 )
                             } else {
@@ -752,27 +822,30 @@ fun EducationalChatInterface(
                                     imageVector = if (isRecordingAudio) Icons.Default.Stop else Icons.Default.Mic,
                                     contentDescription = t("transcribe_audio"),
                                     tint = if (isRecordingAudio) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(SpacingTokens.xxl)
                                 )
                             }
                         }
                     }
 
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(SpacingTokens.xs))
 
                     // Send Button
                     Surface(
                         shape = CircleShape,
                         color = if (inputText.isNotBlank() && !isGenerating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(SpacingTokens.giant)
                             .clickable(enabled = inputText.isNotBlank() && !isGenerating) {
                                 viewModel.sendChatMessage(inputText)
                                 inputText = ""
                             }
                             .testTag("chat_send_btn")
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = t("send"),
@@ -827,7 +900,7 @@ fun EducationalChatInterface(
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(SpacingTokens.m))
                     OutlinedTextField(
                         value = newSessionTitleInput,
                         onValueChange = { newSessionTitleInput = it },
@@ -946,7 +1019,7 @@ fun buildMarkdownAnnotatedString(
 @Composable
 private fun EducationalMessageBubble(
     message: ChatMessage,
-    buddyEmoji: String,
+    buddyThemeId: String,
     buddyName: String,
     dyslexiaFont: Boolean,
     onSpeak: (String) -> Unit,
@@ -984,28 +1057,33 @@ private fun EducationalMessageBubble(
                     color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier
                         .size(34.dp)
-                        .padding(top = 2.dp)
+                        .padding(top = SpacingTokens.xxxs)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(buddyEmoji, fontSize = 16.sp)
+                        BuddyAvatar(
+                            themeId = buddyThemeId,
+                            pose = BuddyPose.IDLE,
+                            size = 30.dp,
+                            contentDescription = buddyName
+                        )
                     }
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(SpacingTokens.s))
             }
 
             Surface(
                 shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (isUser) 16.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 16.dp
+                    topStart = SpacingTokens.xl,
+                    topEnd = SpacingTokens.xl,
+                    bottomStart = if (isUser) SpacingTokens.xl else SpacingTokens.xxs,
+                    bottomEnd = if (isUser) SpacingTokens.xxs else SpacingTokens.xl
                 ),
                 color = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 shadowElevation = 0.5.dp,
                 border = if (!isUser) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)) else null,
                 modifier = Modifier.widthIn(max = 340.dp)
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(SpacingTokens.l)) {
                     // AI message header tags
                     if (!isUser) {
                         Row(
@@ -1015,7 +1093,7 @@ private fun EducationalMessageBubble(
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
                             ) {
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
@@ -1023,10 +1101,10 @@ private fun EducationalMessageBubble(
                                 ) {
                                     Text(
                                         text = if (message.isFreeModel) "⚡ Free Model" else "🧠 Pro Model",
-                                        fontSize = 10.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (message.isFreeModel) Color(0xFF2E7D32) else MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        color = if (message.isFreeModel) ColorTokens.Light.success else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.xs, vertical = SpacingTokens.xxxs)
                                     )
                                 }
 
@@ -1036,28 +1114,45 @@ private fun EducationalMessageBubble(
                                 ) {
                                     Text(
                                         text = message.explanationMode.shortBadge,
-                                        fontSize = 10.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.xs, vertical = SpacingTokens.xxxs)
                                     )
+                                }
+
+                                // Honest provenance: Socratic Teacher answers are
+                                // the offline engine, never the Llama model.
+                                if (message.modelMode == ChatModelMode.OFFLINE) {
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = Color(0xFFFFF3E0)
+                                    ) {
+                                        Text(
+                                            text = tf("str_3", "🧑‍🏫", t("ai_option_socratic")),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFE65100),
+                                            modifier = Modifier.padding(horizontal = SpacingTokens.xs, vertical = SpacingTokens.xxxs)
+                                        )
+                                    }
                                 }
                             }
 
                             // Bookmark icon
                             IconButton(
                                 onClick = { onToggleBookmark(message) },
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(SpacingTokens.xxxl)
                             ) {
                                 Icon(
                                     imageVector = if (message.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                     contentDescription = t("save_explanation"),
                                     tint = if (message.isBookmarked) Color(0xFFFBC02D) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(SpacingTokens.xl)
                                 )
                             }
                         }
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(SpacingTokens.s))
                     }
 
                     // Main Text Content
@@ -1073,9 +1168,9 @@ private fun EducationalMessageBubble(
 
                     // AI Message Action Bar (TTS, Copy, Simplify, Step-by-Step)
                     if (!isUser) {
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(SpacingTokens.m))
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(SpacingTokens.xs))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1085,33 +1180,33 @@ private fun EducationalMessageBubble(
                             // Transformation Quick Actions
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
                             ) {
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = ShapeTokens.Medium,
                                     color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-                                    modifier = Modifier.clickable { onExplainSimpler(message.text) }
+                                    modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable { onExplainSimpler(message.text) }
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(t("simpler"), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                                        Text(t("simpler"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onTertiaryContainer)
                                     }
                                 }
 
                                 Surface(
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = ShapeTokens.Medium,
                                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
-                                    modifier = Modifier.clickable { onStepByStep(message.text) }
+                                    modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable { onStepByStep(message.text) }
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(t("steps"), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                                        Text(t("steps"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                                     }
                                 }
                             }
@@ -1138,7 +1233,7 @@ private fun EducationalMessageBubble(
                                         imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                         contentDescription = t("read_aloud_3"),
                                         tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(SpacingTokens.xl)
                                     )
                                 }
                             }
@@ -1150,27 +1245,27 @@ private fun EducationalMessageBubble(
 
         // Suggested Follow-up Question Chips
         if (!isUser && message.suggestedFollowUps.isNotEmpty()) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(SpacingTokens.xs))
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 42.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xxs),
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.xxs)
             ) {
                 message.suggestedFollowUps.forEach { followUp ->
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeTokens.Medium,
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
-                        modifier = Modifier.clickable { onSelectFollowUp(followUp) }
+                        modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable { onSelectFollowUp(followUp) }
                     ) {
                         Text(
                             text = tf("str_13", followUp),
-                            fontSize = 10.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs)
                         )
                     }
                 }
@@ -1208,7 +1303,7 @@ private fun EducationalChatHistorySheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.85f)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = SpacingTokens.xl)
         ) {
             // Header
             Row(
@@ -1222,7 +1317,7 @@ private fun EducationalChatHistorySheet(
                         contentDescription = t("history"),
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(SpacingTokens.s))
                     Text(
                         t("educational_chat_history"),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
@@ -1238,7 +1333,7 @@ private fun EducationalChatHistorySheet(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(SpacingTokens.s))
 
             // Tab Navigation (Topics, Bookmarks, Search)
             TabRow(
@@ -1262,7 +1357,7 @@ private fun EducationalChatHistorySheet(
                 )
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(SpacingTokens.m))
 
             // Tab Content
             when (selectedTab) {
@@ -1280,7 +1375,7 @@ private fun EducationalChatHistorySheet(
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp,
-                                modifier = Modifier.padding(24.dp)
+                                modifier = Modifier.padding(SpacingTokens.xxxl)
                             )
                         }
                     } else {
@@ -1288,20 +1383,21 @@ private fun EducationalChatHistorySheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                         ) {
                             items(sessionSummaries) { session ->
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = ShapeTokens.Medium,
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                         .clickable { onSelectSession(session.sessionId, session.sessionTitle) }
                                 ) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(12.dp),
+                                            .padding(SpacingTokens.l),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
@@ -1312,23 +1408,23 @@ private fun EducationalChatHistorySheet(
                                                 fontSize = 14.sp,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
-                                            Spacer(Modifier.height(4.dp))
+                                            Spacer(Modifier.height(SpacingTokens.xxs))
                                             Text(
                                                 "${session.messageCount} messages • ${formatTimestamp(session.lastTimestamp)}",
-                                                fontSize = 11.sp,
+                                                style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
 
                                         IconButton(
                                             onClick = { viewModel.deleteChatSession(session.sessionId) },
-                                            modifier = Modifier.size(48.dp)
+                                            modifier = Modifier.size(SpacingTokens.giant)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = t("delete_session"),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(16.dp)
+                                                modifier = Modifier.size(SpacingTokens.xl)
                                             )
                                         }
                                     }
@@ -1352,7 +1448,7 @@ private fun EducationalChatHistorySheet(
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp,
-                                modifier = Modifier.padding(24.dp)
+                                modifier = Modifier.padding(SpacingTokens.xxxl)
                             )
                         }
                     } else {
@@ -1360,15 +1456,15 @@ private fun EducationalChatHistorySheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                         ) {
                             items(bookmarkedMessages) { msg ->
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = ShapeTokens.Medium,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Column(modifier = Modifier.padding(12.dp)) {
+                                    Column(modifier = Modifier.padding(SpacingTokens.l)) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1376,17 +1472,17 @@ private fun EducationalChatHistorySheet(
                                         ) {
                                             Text(
                                                 tf("str_2", msg.sessionTitle),
-                                                fontSize = 11.sp,
+                                                style = MaterialTheme.typography.bodySmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
                                             Text(
                                                 formatTimestamp(msg.timestamp),
-                                                fontSize = 10.sp,
+                                                style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
-                                        Spacer(Modifier.height(6.dp))
+                                        Spacer(Modifier.height(SpacingTokens.xs))
                                         Text(
                                             msg.text,
                                             fontSize = 13.sp,
@@ -1420,10 +1516,10 @@ private fun EducationalChatHistorySheet(
                                 Icon(Icons.Default.Search, contentDescription = t("search"), tint = MaterialTheme.colorScheme.primary)
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = ShapeTokens.Large
                         )
 
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(SpacingTokens.m))
 
                         if (searchResults.isEmpty()) {
                             Box(
@@ -1444,34 +1540,35 @@ private fun EducationalChatHistorySheet(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)
                             ) {
                                 items(searchResults) { result ->
                                     Card(
                                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = ShapeTokens.Medium,
                                         modifier = Modifier
                                             .fillMaxWidth()
+                                            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                             .clickable { onSelectSession(result.sessionId, result.sessionTitle) }
                                     ) {
-                                        Column(modifier = Modifier.padding(12.dp)) {
+                                        Column(modifier = Modifier.padding(SpacingTokens.l)) {
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.SpaceBetween
                                             ) {
                                                 Text(
                                                     tf("in", result.sender, result.sessionTitle),
-                                                    fontSize = 11.sp,
+                                                    style = MaterialTheme.typography.bodySmall,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.primary
                                                 )
                                                 Text(
                                                     formatTimestamp(result.timestamp),
-                                                    fontSize = 10.sp,
+                                                    style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
-                                            Spacer(Modifier.height(4.dp))
+                                            Spacer(Modifier.height(SpacingTokens.xxs))
                                             Text(
                                                 result.text,
                                                 fontSize = 12.sp,
@@ -1560,7 +1657,7 @@ private fun OerCuratedCollectionsBrowserSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.88f)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = SpacingTokens.xl)
         ) {
             // Header with OER link
             Row(
@@ -1570,8 +1667,8 @@ private fun OerCuratedCollectionsBrowserSheet(
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🌐", fontSize = 18.sp)
-                        Spacer(Modifier.width(6.dp))
+                        BuddyAvatar(themeId = "space", pose = BuddyPose.IDLE, size = 28.dp)
+                        Spacer(Modifier.width(SpacingTokens.xs))
                         Text(
                             t("oer_commons_curated_collections"),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
@@ -1579,9 +1676,9 @@ private fun OerCuratedCollectionsBrowserSheet(
                     }
                     Text(
                         "https://oercommons.org/curated-collections",
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable {
+                        modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable {
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://oercommons.org/curated-collections"))
                                 context.startActivity(intent)
@@ -1593,9 +1690,9 @@ private fun OerCuratedCollectionsBrowserSheet(
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = ShapeTokens.Small,
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable {
                         try {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://oercommons.org/curated-collections"))
                             context.startActivity(intent)
@@ -1606,15 +1703,15 @@ private fun OerCuratedCollectionsBrowserSheet(
                 ) {
                     Text(
                         t("visit_site"),
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = SpacingTokens.s, vertical = SpacingTokens.xxs)
                     )
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(SpacingTokens.m))
 
             // Search Bar
             OutlinedTextField(
@@ -1625,7 +1722,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Close, contentDescription = t("clear"), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Close, contentDescription = t("clear"), modifier = Modifier.size(SpacingTokens.xl))
                         }
                     }
                 },
@@ -1633,29 +1730,29 @@ private fun OerCuratedCollectionsBrowserSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("oer_search_input"),
-                shape = RoundedCornerShape(12.dp)
+                shape = ShapeTokens.Medium
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(SpacingTokens.s))
 
             // Subject Filter Chips
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
             ) {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = if (selectedSubjectFilter == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.clickable { selectedSubjectFilter = null }
+                    modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable { selectedSubjectFilter = null }
                 ) {
                     Text(
                         tf("all_subjects", allUnits.size),
-                        fontSize = 11.sp,
+                        style = MaterialTheme.typography.bodySmall,
                         fontWeight = if (selectedSubjectFilter == null) FontWeight.Bold else FontWeight.Normal,
                         color = if (selectedSubjectFilter == null) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = 5.dp)
                     )
                 }
 
@@ -1664,25 +1761,25 @@ private fun OerCuratedCollectionsBrowserSheet(
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.clickable { selectedSubjectFilter = subject }
+                        modifier = Modifier.sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant).clickable { selectedSubjectFilter = subject }
                     ) {
                         Text(
                             subject.title,
-                            fontSize = 11.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            modifier = Modifier.padding(horizontal = SpacingTokens.m, vertical = 5.dp)
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(SpacingTokens.m))
 
             // Curated Units List
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(SpacingTokens.m)
             ) {
                 items(filteredUnits) { unit ->
                     Card(
@@ -1691,7 +1788,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.l)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1705,7 +1802,7 @@ private fun OerCuratedCollectionsBrowserSheet(
                                     )
                                     Text(
                                         unit.collectionTitle,
-                                        fontSize = 11.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -1715,120 +1812,124 @@ private fun OerCuratedCollectionsBrowserSheet(
                                 ) {
                                     Text(
                                         unit.gradeBand.title,
-                                        fontSize = 9.sp,
+                                        style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        modifier = Modifier.padding(horizontal = SpacingTokens.xs, vertical = SpacingTokens.xxxs)
                                     )
                                 }
                             }
 
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(Modifier.height(SpacingTokens.xs))
 
                             Text(
                                 unit.summary,
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            Spacer(Modifier.height(6.dp))
+                            Spacer(Modifier.height(SpacingTokens.xs))
 
                             // Standard code & concepts
                             Text(
                                 tf("standard_2", unit.standardCode),
-                                fontSize = 10.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.secondary
                             )
                             Text(
                                 "Concepts: ${unit.keyConcepts.joinToString(", ")}",
-                                fontSize = 10.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
 
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(SpacingTokens.s))
 
                             // Action buttons: Video, Audio, Ask Llama & Try Practice Problem
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
                             ) {
                                 val videoItem = unit.mediaResources.find { it.mediaType == com.fourgeailabs.neuropath.data.curriculum.oer.OerMediaType.VIDEO_LESSON }
                                 val audioItem = unit.mediaResources.find { it.mediaType == com.fourgeailabs.neuropath.data.curriculum.oer.OerMediaType.AUDIO_LECTURE }
 
                                 if (videoItem != null) {
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = ShapeTokens.Small,
                                         color = Color(0xFFEFF6FF),
                                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF93C5FD)),
                                         modifier = Modifier
                                             .weight(1f)
+                                            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                             .clickable { activeMediaResource = videoItem }
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(vertical = 6.dp),
+                                            modifier = Modifier.padding(vertical = SpacingTokens.xs),
                                             horizontalArrangement = Arrangement.Center,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(t("video"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1D4ED8))
+                                            Text(t("video"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color(0xFF1D4ED8))
                                         }
                                     }
                                 }
 
                                 if (audioItem != null) {
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = ShapeTokens.Small,
                                         color = Color(0xFFFDF2F8),
                                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF472B6)),
                                         modifier = Modifier
                                             .weight(1f)
+                                            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                             .clickable { activeMediaResource = audioItem }
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(vertical = 6.dp),
+                                            modifier = Modifier.padding(vertical = SpacingTokens.xs),
                                             horizontalArrangement = Arrangement.Center,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(t("audio"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFFBE185D))
+                                            Text(t("audio"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color(0xFFBE185D))
                                         }
                                     }
                                 }
 
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = ShapeTokens.Small,
                                     color = MaterialTheme.colorScheme.primaryContainer,
                                     modifier = Modifier
                                         .weight(1.2f)
+                                        .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                         .clickable {
                                             onSelectUnit("Explain the OER Commons curriculum unit '${unit.unitTitle}' (${unit.standardCode}) with step-by-step concepts and real-world examples.")
                                         }
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(vertical = 6.dp),
+                                        modifier = Modifier.padding(vertical = SpacingTokens.xs),
                                         horizontalArrangement = Arrangement.Center,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(t("ask_llama"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        Text(t("ask_llama"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                     }
                                 }
 
                                 if (unit.practiceProblems.isNotEmpty()) {
                                     val prob = unit.practiceProblems.first()
                                     Surface(
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = ShapeTokens.Small,
                                         color = MaterialTheme.colorScheme.surfaceVariant,
                                         modifier = Modifier
                                             .weight(1.2f)
+                                            .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                             .clickable {
                                                 onSelectUnit("Let's solve this OER Commons practice problem from '${unit.unitTitle}': \"${prob.questionPrompt}\". Guide me step-by-step!")
                                             }
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(vertical = 6.dp),
+                                            modifier = Modifier.padding(vertical = SpacingTokens.xs),
                                             horizontalArrangement = Arrangement.Center,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(t("practice"), fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(t("practice"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                 }

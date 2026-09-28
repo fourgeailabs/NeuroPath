@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fourgeailabs.neuropath.network.ChatModelMode
 import com.fourgeailabs.neuropath.network.LlamaClient
 import com.fourgeailabs.neuropath.network.LlamaDownloadState
 import com.fourgeailabs.neuropath.network.LlamaLocalManager
@@ -59,6 +60,9 @@ import com.fourgeailabs.neuropath.ui.NeuroPathViewModel
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
 import kotlinx.coroutines.launch
+import com.fourgeailabs.neuropath.ui.theme.ShapeTokens
+import com.fourgeailabs.neuropath.ui.theme.SpacingTokens
+import androidx.compose.foundation.layout.sizeIn
 
 /**
  * Dedicated AI settings area, separated from general app settings.
@@ -80,14 +84,14 @@ fun AiSettingsScreen(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(SpacingTokens.xl),
+        verticalArrangement = Arrangement.spacedBy(SpacingTokens.xl)
     ) {
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
             ) {
                 IconButton(
                     onClick = { viewModel.navigateTo(AppScreen.PARENT_DASHBOARD) },
@@ -115,11 +119,11 @@ fun AiSettingsScreen(
         // Buddy Voice
         item {
             Card(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                         Icon(imageVector = Icons.Default.RecordVoiceOver, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Text(
                             t("buddy_voice_title"),
@@ -195,11 +199,11 @@ fun AiSettingsScreen(
         // parent dashboard so AI controls live in their own section.
         item {
             Card(
-                shape = RoundedCornerShape(20.dp),
+                shape = ShapeTokens.ExtraLarge,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.padding(SpacingTokens.xl), verticalArrangement = Arrangement.spacedBy(SpacingTokens.l)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                         Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = t("ai_settings"), tint = MaterialTheme.colorScheme.primary)
                         Text(
                             t("ai_engine_service_llama_3_2_3b"),
@@ -210,12 +214,12 @@ fun AiSettingsScreen(
                     }
 
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeTokens.Medium,
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(SpacingTokens.l),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -224,7 +228,7 @@ fun AiSettingsScreen(
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(SpacingTokens.s))
                             Text(
                                 text = t("hugging_face_llama_3_2_3b_integration_active"),
                                 fontSize = 12.sp,
@@ -240,7 +244,7 @@ fun AiSettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = SpacingTokens.xxs))
 
                     // Disable Learning Buddy toggle
                     Row(
@@ -250,46 +254,55 @@ fun AiSettingsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(t("disable_learning_buddy_collectively"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text(t("completely_hides_learning_buddy_from_the_child_s"), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(t("completely_hides_learning_buddy_from_the_child_s"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Switch(
                             checked = profile.learningBuddyDisabled,
                             onCheckedChange = { disabled ->
-                                viewModel.updateParentAiConfig(disabled, profile.aiVersionMode, profile.localLlamaInstalled)
+                                viewModel.updateParentAiConfig(disabled, profile.aiVersionMode, profile.localLlamaInstalled, profile.allowMeteredModelDownload, profile.socraticTeacherEnabled)
                             },
                             modifier = Modifier.testTag("disable_learning_buddy_switch")
                         )
                     }
 
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(SpacingTokens.xxs))
 
                     Text(t("child_ai_version_mode"), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.xs)
                     ) {
+                        // The three user-facing AI options, each driven by a
+                        // localised label: "Cloud AI", "Local AI", "Socratic
+                        // Teacher". The version-mode ids stay the persisted
+                        // storage keys.
                         listOf(
-                            "SOCRATIC_ONLY" to "Socratic Only",
-                            "FULL_AI" to "Llama 3.2 (Cloud)",
-                            "LOCAL_OFFLINE" to "Llama 3.2 (Local)"
-                        ).forEach { (mode, label) ->
+                            "SOCRATIC_ONLY" to ChatModelMode.OFFLINE,
+                            "FULL_AI" to ChatModelMode.GENERAL,
+                            "LOCAL_OFFLINE" to ChatModelMode.LLAMA_LOCAL
+                        ).forEach { (mode, chatMode) ->
                             val isSelected = profile.aiVersionMode == mode
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier
                                     .weight(1f)
+                                    .sizeIn(minWidth = SpacingTokens.giant, minHeight = SpacingTokens.giant)
                                     .clickable {
-                                        viewModel.updateParentAiConfig(profile.learningBuddyDisabled, mode, profile.localLlamaInstalled)
+                                        // Picking Socratic Teacher as the mode implies
+                                        // the parent wants it available: re-enable the
+                                        // switch so the engine can actually answer.
+                                        val socraticOn = profile.socraticTeacherEnabled || mode == "SOCRATIC_ONLY"
+                                        viewModel.updateParentAiConfig(profile.learningBuddyDisabled, mode, profile.localLlamaInstalled, profile.allowMeteredModelDownload, socraticOn)
                                     }
                             ) {
                                 Box(
-                                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+                                    modifier = Modifier.padding(vertical = SpacingTokens.s, horizontal = SpacingTokens.xxs),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        label,
-                                        fontSize = 11.sp,
+                                        t(chatMode.labelKey),
+                                        style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -298,77 +311,66 @@ fun AiSettingsScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(4.dp))
-
-                    // Local Offline Llama 3.2 3B Hardware & GPU Acceleration
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(t("llama_3_2_3b_hardware_gpu_acceleration"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.secondary)
-                            }
-                            Text(
-                                if (profile.localLlamaInstalled) "Status: Llama 3.2 3B loaded on-device with LiteRT-LM Vulkan/OpenCL hardware acceleration active." else "Status: Enable LiteRT-LM Llama 3.2 3B on-device hardware acceleration without cloud dependency.",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Button(
-                                onClick = {
-                                    viewModel.updateParentAiConfig(profile.learningBuddyDisabled, "LOCAL_OFFLINE", !profile.localLlamaInstalled)
-                                },
-                                modifier = Modifier.fillMaxWidth().testTag("install_local_llama_btn"),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                            ) {
-                                Text(if (profile.localLlamaInstalled) "Disable Local Llama 3.2 Accelerator" else "Enable Llama 3.2 Hardware Accelerator", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(6.dp))
-
                     // Llama 3.2 3B Local GGUF Engine from Hugging Face
                     val llamaState by LlamaLocalManager.downloadState.collectAsState()
                     val llamaComp = remember(context) { LlamaLocalManager.checkDeviceCompatibility(context) }
 
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeTokens.Medium,
                         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(modifier = Modifier.padding(SpacingTokens.l), verticalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(t("llama_3_2_3b_local_engine_hugging_face_meta_llam"), fontWeight = FontWeight.Bold, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.tertiary)
                             }
 
                             Text(
                                 tf("source", LlamaLocalManager.HUGGINGFACE_REPO_URL),
-                                fontSize = 10.5.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.tertiary
                             )
 
                             Text(
                                 llamaComp.compatibilitySummary,
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+
+                            // Wi-Fi-only default for the ~2GB download, with a parent override.
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(t("allow_metered_download_title"), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        t("allow_metered_download_description"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Switch(
+                                    checked = profile.allowMeteredModelDownload,
+                                    onCheckedChange = { viewModel.setAllowMeteredModelDownload(it) },
+                                    modifier = Modifier.testTag("allow_metered_download_switch")
+                                )
+                            }
 
                             when (val state = llamaState) {
                                 is LlamaDownloadState.NotInstalled, is LlamaDownloadState.Error -> {
                                     if (state is LlamaDownloadState.Error) {
                                         Text(
                                             tf("str_11", state.message),
-                                            fontSize = 11.5.sp,
+                                            style = MaterialTheme.typography.bodySmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.error
                                         )
                                     }
 
-                                    Text(t("official_repository_meta_llama_llama_3_2_3b_inst"), fontSize = 10.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(t("official_repository_meta_llama_llama_3_2_3b_inst"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                                     OutlinedTextField(
                                         value = hfTokenInput,
@@ -385,7 +387,11 @@ fun AiSettingsScreen(
                                                 viewModel.updateAiSetup(profile.customAiPlatform, hfTokenInput.trim())
                                             }
                                             coroutineScope.launch {
-                                                LlamaLocalManager.startLlamaDownload(context, hfTokenInput)
+                                                LlamaLocalManager.startLlamaDownload(
+                                                    context,
+                                                    hfTokenInput,
+                                                    profile.allowMeteredModelDownload
+                                                )
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth().testTag("download_llama_3b_btn"),
@@ -395,15 +401,52 @@ fun AiSettingsScreen(
                                         Text(t("download_llama_3_2_3b_weights_from_hugging_face"), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                     }
                                 }
+                                is LlamaDownloadState.MeteredBlocked -> {
+                                    Text(
+                                        state.message,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)
+                                    ) {
+                                        OutlinedButton(
+                                            onClick = { LlamaLocalManager.resetDownloadState() },
+                                            modifier = Modifier.weight(1f),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Text(t("metered_blocked_wait_wifi"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        Button(
+                                            onClick = {
+                                                viewModel.setAllowMeteredModelDownload(true)
+                                                coroutineScope.launch {
+                                                    LlamaLocalManager.startLlamaDownload(
+                                                        context,
+                                                        hfTokenInput,
+                                                        allowMetered = true
+                                                    )
+                                                }
+                                            },
+                                            modifier = Modifier.weight(1f).testTag("download_anyway_metered_btn"),
+                                            shape = RoundedCornerShape(10.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+                                        ) {
+                                            Text(t("metered_blocked_download_anyway"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
+                                        }
+                                    }
+                                }
                                 is LlamaDownloadState.Downloading -> {
-                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(SpacingTokens.xxs)) {
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text(t("downloading_llama_3_2_3b_from_hugging_face"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                            Text("${(state.progress * 100).toInt()}% (${state.downloadSpeedKbps} KB/s)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                                            Text(t("downloading_llama_3_2_3b_from_hugging_face"), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                            Text(tf("model_download_progress", (state.progress * 100).toInt(), state.downloadSpeedKbps), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
                                         }
                                         LinearProgressIndicator(
                                             progress = { state.progress },
-                                            modifier = Modifier.fillMaxWidth().height(8.dp),
+                                            modifier = Modifier.fillMaxWidth().height(SpacingTokens.s),
                                             color = MaterialTheme.colorScheme.tertiary
                                         )
                                     }
@@ -411,20 +454,20 @@ fun AiSettingsScreen(
                                 is LlamaDownloadState.Installed -> {
                                     Text(
                                         "Status: Hugging Face Llama 3.2 3B model package (${"%.2f".format(state.fileSizeBytes / (1024f * 1024f * 1024f))} GB) installed locally on device storage at ${state.localPath}. Active for on-device local inference!",
-                                        fontSize = 11.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = Color(0xFF1B5E20),
                                         fontWeight = FontWeight.SemiBold
                                     )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(SpacingTokens.s)) {
                                         Button(
                                             onClick = {
-                                                viewModel.updateParentAiConfig(profile.learningBuddyDisabled, "LLAMA_LOCAL", true)
+                                                viewModel.updateParentAiConfig(profile.learningBuddyDisabled, "LLAMA_LOCAL", true, profile.allowMeteredModelDownload, profile.socraticTeacherEnabled)
                                             },
                                             modifier = Modifier.weight(1f).testTag("activate_llama_local_btn"),
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                                         ) {
-                                            Text(t("set_active_engine"), fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                                            Text(t("set_active_engine"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         }
                                         OutlinedButton(
                                             onClick = {
@@ -433,7 +476,7 @@ fun AiSettingsScreen(
                                             modifier = Modifier.weight(1f).testTag("delete_llama_model_btn"),
                                             shape = RoundedCornerShape(10.dp)
                                         ) {
-                                            Text(t("delete_model"), fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                                            Text(t("delete_model"), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodySmall)
                                         }
                                     }
                                 }

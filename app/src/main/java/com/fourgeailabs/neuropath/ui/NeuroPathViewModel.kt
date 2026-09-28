@@ -38,8 +38,15 @@ import com.fourgeailabs.neuropath.data.model.NeuroThemeCatalog
 import com.fourgeailabs.neuropath.data.model.NeuroThemeData
 import com.fourgeailabs.neuropath.data.model.ThemeRotationSchedule
 import com.fourgeailabs.neuropath.data.model.WorldTheme
+import com.fourgeailabs.neuropath.data.model.tr
 import com.fourgeailabs.neuropath.data.repository.NeuroPathRepository
+import com.fourgeailabs.neuropath.data.repository.OfflinePackManager
 import com.fourgeailabs.neuropath.network.ChatModelMode
+import com.fourgeailabs.neuropath.network.ChatReply
+import com.fourgeailabs.neuropath.network.ChatReplySource
+import com.fourgeailabs.neuropath.network.LessonContext
+import com.fourgeailabs.neuropath.network.isUsableModelAnswer
+import com.fourgeailabs.neuropath.network.recordedModel
 import com.fourgeailabs.neuropath.network.LlamaClient
 import com.fourgeailabs.neuropath.security.SecureStorage
 import com.fourgeailabs.neuropath.network.LlamaLocalManager
@@ -160,6 +167,33 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private val _activeLesson = MutableStateFlow<FullLesson?>(null)
     val activeLesson: StateFlow<FullLesson?> = _activeLesson.asStateFlow()
 
+    // ---- Offline material pack (per child profile) ----
+    /** Offer shown to the parent right after a location/framework is selected. */
+    data class PackOffer(
+        val profileId: Long,
+        val childName: String,
+        val frameworkLabel: String
+    )
+
+    private val _pendingPackOffer = MutableStateFlow<PackOffer?>(null)
+    val pendingPackOffer: StateFlow<PackOffer?> = _pendingPackOffer.asStateFlow()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val offlinePack: StateFlow<com.fourgeailabs.neuropath.data.local.entity.OfflineMaterialPackEntity?> =
+        _currentProfile.flatMapLatest { profile ->
+            if (profile.id == 0L) flowOf(null)
+            else repository.getOfflinePackFlow(profile.id)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    /** 0..1 while a pack download is running, null when idle. */
+    private val _offlinePackProgress = MutableStateFlow<Float?>(null)
+    val offlinePackProgress: StateFlow<Float?> = _offlinePackProgress.asStateFlow()
+
+    private val _offlinePackError = MutableStateFlow<String?>(null)
+    val offlinePackError: StateFlow<String?> = _offlinePackError.asStateFlow()
+
+    private var packDownloadJob: Job? = null
+
     private val _currentTeachStep = MutableStateFlow(0)
     val currentTeachStep: StateFlow<Int> = _currentTeachStep.asStateFlow()
 
@@ -220,34 +254,71 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isChatGenerating = MutableStateFlow(false)
     val isChatGenerating: StateFlow<Boolean> = _isChatGenerating.asStateFlow()
 
+    /**
+     * Visible send-failure state for the chat. When a reply request fails, no
+     * canned template text is ever saved as a buddy message — instead this
+     * carries the user-facing error and the chat UI shows it with Retry/Dismiss
+     * actions wired to [retryFailedChatMessage]/[dismissChatSendError].
+     */
+    private val _chatSendError = MutableStateFlow<String?>(null)
+    val chatSendError: StateFlow<String?> = _chatSendError.asStateFlow()
+
+    /**
+     * Everything [produceBuddyReply] needs to (re)run a reply request without
+     * re-appending the user's message — so Retry never duplicates it.
+     */
+    private data class PendingChatRequest(
+        val userText: String,
+        val mode: EducationalExplanationMode,
+        val model: ChatModelMode,
+        val subject: EducationalSubjectTag,
+        val profile: ChildProfileEntity,
+        val personalizationProfile: String,
+        val sessionId: String,
+        val sessionTitle: String
+    )
+
+    private var lastFailedRequest: PendingChatRequest? = null
+
+    /** Retry the last failed reply request (same user text, no duplicate message). */
+    fun retryFailedChatMessage() {
+        val request = lastFailedRequest ?: return
+        if (_isChatGenerating.value) return
+        lastFailedRequest = null
+        _chatSendError.value = null
+        _isChatGenerating.value = true
+        viewModelScope.launch { produceBuddyReply(request) }
+    }
+
+    /** Dismiss the send-error banner without retrying. */
+    fun dismissChatSendError() {
+        _chatSendError.value = null
+        lastFailedRequest = null
+    }
+
     private val _chatModelMode = MutableStateFlow(ChatModelMode.GENERAL)
     val chatModelMode: StateFlow<ChatModelMode> = _chatModelMode.asStateFlow()
 
     /**
      * Honest header label for the chat model picker: names the engine that will
-     * actually answer (cloud Llama, on-device Llama, or the offline Socratic
-     * fallback) instead of always claiming "Llama 3.2 3B".
+     * actually answer (Cloud AI, Local AI, or Socratic Teacher) instead of
+     * always claiming a model name. When nothing can answer, it says so.
      */
-    private val _chatEngineLabel = MutableStateFlow("Llama 3.2 3B")
+    private val _chatEngineLabel = MutableStateFlow("Cloud AI")
     val chatEngineLabel: StateFlow<String> = _chatEngineLabel.asStateFlow()
 
     fun refreshChatEngineLabel() {
         val mode = _chatModelMode.value
+        val profile = _currentProfile.value
         _chatEngineLabel.value = when (mode) {
-            ChatModelMode.OFFLINE -> "Offline"
-            ChatModelMode.LLAMA_LOCAL -> "Llama Local"
-            else -> {
-                val cloudLabel = when (mode) {
-                    ChatModelMode.FAST -> "Llama 3.2 Fast"
-                    ChatModelMode.COMPLEX -> "Llama Reasoning"
-                    else -> "Llama 3.2 3B"
-                }
-                when {
-                    hasValidApiKey -> cloudLabel
-                    LlamaLocalManager.isLlamaInstalled(getApplication<Application>().applicationContext) ->
-                        "$cloudLabel (On-device)"
-                    else -> "Socratic Offline"
-                }
+            ChatModelMode.OFFLINE -> t(ChatModelMode.OFFLINE.labelKey)
+            ChatModelMode.LLAMA_LOCAL -> t(ChatModelMode.LLAMA_LOCAL.labelKey)
+            else -> when {
+                hasValidApiKey -> t(ChatModelMode.GENERAL.labelKey)
+                LlamaLocalManager.isLlamaInstalled(getApplication<Application>().applicationContext) ->
+                    t(ChatModelMode.LLAMA_LOCAL.labelKey)
+                profile.socraticTeacherEnabled -> t(ChatModelMode.OFFLINE.labelKey)
+                else -> t("ai_engine_unavailable")
             }
         }
     }
@@ -445,13 +516,15 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         return updated
     }
 
-    fun updateParentAiConfig(disabled: Boolean, versionMode: String, localInstalled: Boolean) {
+    fun updateParentAiConfig(disabled: Boolean, versionMode: String, localInstalled: Boolean, allowMeteredDownload: Boolean, socraticEnabled: Boolean) {
         viewModelScope.launch {
             val prof = _currentProfile.value
             val updated = prof.copy(
                 learningBuddyDisabled = disabled,
                 aiVersionMode = versionMode,
-                localLlamaInstalled = localInstalled
+                localLlamaInstalled = localInstalled,
+                allowMeteredModelDownload = allowMeteredDownload,
+                socraticTeacherEnabled = socraticEnabled
             )
             repository.updateProfile(updated)
             _currentProfile.value = updated
@@ -461,6 +534,39 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             syncChatModelModeFromProfile(updated)
             speechManager.speak(t("ai_and_learning_buddy_configuration_updated"))
         }
+    }
+
+    /**
+     * Parent override for the ~2GB model download: allow it on metered (mobile
+     * data) networks instead of the Wi-Fi-only default. Persisted on the child
+     * profile like the other parent AI flags.
+     */
+    fun setAllowMeteredModelDownload(allowed: Boolean) {
+        val prof = _currentProfile.value
+        updateParentAiConfig(
+            prof.learningBuddyDisabled,
+            prof.aiVersionMode,
+            prof.localLlamaInstalled,
+            allowed,
+            prof.socraticTeacherEnabled
+        )
+    }
+
+    /**
+     * Parent control for "Socratic Teacher": the no-AI teaching tool. When a
+     * parent turns it off, a dead AI surfaces an honest connection-required
+     * error instead of Socratic teaching. Persisted on the child profile like
+     * the other parent AI flags. Default true = Socratic Teacher available.
+     */
+    fun setSocraticTeacherEnabled(enabled: Boolean) {
+        val prof = _currentProfile.value
+        updateParentAiConfig(
+            prof.learningBuddyDisabled,
+            prof.aiVersionMode,
+            prof.localLlamaInstalled,
+            prof.allowMeteredModelDownload,
+            enabled
+        )
     }
 
     /**
@@ -520,6 +626,12 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     fun deleteChildProfile(profileId: Long) {
         viewModelScope.launch {
             repository.deleteProfile(profileId)
+            // Privacy: the database cascade removes the child's rows; the learning
+            // fingerprint in SharedPreferences is not covered by Room, so purge it too.
+            com.fourgeailabs.neuropath.learning.LearnerPersonalizationEngine.clearProfileData(
+                getApplication<Application>().applicationContext,
+                profileId
+            )
             val remaining = repository.getAllProfilesDirect()
             if (remaining.isNotEmpty()) {
                 selectChildProfile(remaining.first())
@@ -587,7 +699,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     fun saveAndActivateChildProfile(profile: ChildProfileEntity, onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             val finalProfile = profile.copy(isInitialSetupComplete = true)
-            val id = if (finalProfile.id == 0L) {
+            val wasNewProfile = finalProfile.id == 0L
+            val id = if (wasNewProfile) {
                 repository.insertProfile(finalProfile)
             } else {
                 repository.updateProfile(finalProfile)
@@ -604,6 +717,15 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             fetchDailyQuote()
 
             navigateTo(AppScreen.HOME)
+            // After the location/framework is selected for a brand-new profile,
+            // offer the parent the full offline material pack for that framework.
+            if (wasNewProfile) {
+                _pendingPackOffer.value = PackOffer(
+                    profileId = activated.id,
+                    childName = activated.name,
+                    frameworkLabel = OfflinePackManager.frameworkLabelFor(activated)
+                )
+            }
             onComplete()
         }
     }
@@ -780,14 +902,18 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     systemPrompt = getSystemPromptForProfile(prof, roleContext = "quote") + "\n" + personalizationProfile,
                     languageCode = prof.appLanguageCode,
                     schoolDistrict = prof.schoolDistrict,
-                    modelMode = ChatModelMode.FAST,
-                    appContext = getApplication()
+                    modelMode = ChatModelMode.GENERAL,
+                    appContext = getApplication(),
+                    allowSocraticFallback = prof.socraticTeacherEnabled
                 )
-                if (quote.isNotBlank()) {
-                    _dailyQuote.value = quote
+                // Honest sourcing: only a real model answer may become the daily
+                // quote. A Socratic template echo of the prompt (or an error) must
+                // never be shown to the kid — use a curated fallback line instead.
+                _dailyQuote.value = if (quote.isUsableModelAnswer()) {
+                    quote.text
                 } else {
                     // Safe curated fallback: original lines, no fabricated attribution.
-                    _dailyQuote.value = DAILY_SPARK_FALLBACKS.random()
+                    DAILY_SPARK_FALLBACKS.random()
                 }
             } catch (e: Throwable) {
                 Log.e("NeuroPathViewModel", "Failed to fetch daily quote", e)
@@ -913,24 +1039,94 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun startLesson(lesson: FullLesson) {
-        _activeLesson.value = lesson
-        _currentTeachStep.value = 0
-        _journeyQuestionIndex.value = 0
-        _lessonCorrectCount.value = 0
-        _lessonStartTime.value = System.currentTimeMillis()
-        _sensoryBreaksInLesson.value = 0
-        _selectedOption.value = null
-        _isAnswerSubmitted.value = false
-        _showErrorCoach.value = false
-        navigateTo(AppScreen.TEACH_LESSON)
+        // Resolve through the profile's offline pack when one is READY: the
+        // pack's framework-bound copy is the source of truth for teaching.
+        // Falls back to the passed lesson (bundled catalog) when no usable
+        // pack exists — lessons always work offline either way.
+        viewModelScope.launch {
+            val resolved = runCatching {
+                repository.getTeachingLesson(_currentProfile.value, lesson.id)
+            }.getOrNull() ?: lesson
+            _activeLesson.value = resolved
+            _currentTeachStep.value = 0
+            _journeyQuestionIndex.value = 0
+            _lessonCorrectCount.value = 0
+            _lessonStartTime.value = System.currentTimeMillis()
+            _sensoryBreaksInLesson.value = 0
+            _selectedOption.value = null
+            _isAnswerSubmitted.value = false
+            _showErrorCoach.value = false
+            navigateTo(AppScreen.TEACH_LESSON)
 
-        if (_currentProfile.value.readAnswersAloud) {
-            val step = lesson.teachSteps.getOrNull(0)
-            if (step != null) {
-                speechManager.speak(tf("str_6", step.title, step.text))
+            if (_currentProfile.value.readAnswersAloud) {
+                val step = resolved.teachSteps.getOrNull(0)
+                if (step != null) {
+                    speechManager.speak(tf("str_6", step.title, step.text))
+                }
             }
         }
     }
+
+    // ---- Offline material pack actions (callers are parent-gated: profile setup, parent dashboard) ----
+
+    /** Real byte estimate of the full pack for the current profile. */
+    suspend fun estimateOfflinePackSizeBytes(): Long =
+        repository.offlinePackManager.estimatePackSizeBytes(_currentProfile.value)
+
+    fun startOfflinePackDownload() {
+        val profile = _currentProfile.value
+        if (profile.id == 0L) return
+        packDownloadJob?.cancel()
+        _offlinePackError.value = null
+        packDownloadJob = viewModelScope.launch {
+            _offlinePackProgress.value = 0f
+            try {
+                val result = repository.offlinePackManager.downloadPack(profile) { done, total ->
+                    _offlinePackProgress.value = if (total == 0) 0f else done.toFloat() / total
+                }
+                result.onFailure { e ->
+                    _offlinePackError.value = e.message ?: "Offline pack could not be prepared."
+                }
+                _pendingPackOffer.value = null
+            } finally {
+                _offlinePackProgress.value = null
+            }
+        }
+    }
+
+    fun cancelOfflinePackDownload() {
+        // The manager restores any previously READY pack on cancellation.
+        packDownloadJob?.cancel()
+        packDownloadJob = null
+        _offlinePackProgress.value = null
+    }
+
+    /** Fully removes the profile's pack and every lesson row — nothing left behind. */
+    fun deleteOfflinePack() {
+        val profileId = _currentProfile.value.id
+        if (profileId == 0L) return
+        packDownloadJob?.cancel()
+        packDownloadJob = null
+        _offlinePackProgress.value = null
+        viewModelScope.launch {
+            repository.offlinePackManager.deletePack(profileId)
+        }
+    }
+
+    fun dismissPackOffer() {
+        _pendingPackOffer.value = null
+    }
+
+    fun clearOfflinePackError() {
+        _offlinePackError.value = null
+    }
+
+    /**
+     * Pack-first lesson list for subject pickers: the profile's offline pack
+     * when READY and framework-bound, otherwise the bundled catalog.
+     */
+    suspend fun getTeachingLessons(subject: EducationalSubject, gradeLevel: GradeLevel): List<FullLesson> =
+        repository.getTeachingLessons(_currentProfile.value, subject, gradeLevel)
 
     fun nextTeachStep() {
         speechManager.stop()
@@ -980,9 +1176,16 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 languageCode = prof.appLanguageCode,
                 schoolDistrict = prof.schoolDistrict,
                 modelMode = ChatModelMode.GENERAL,
-                appContext = getApplication()
+                appContext = getApplication(),
+                allowSocraticFallback = prof.socraticTeacherEnabled
             )
-            speechManager.speak(explanation)
+            // Honest failure: never speak an error notice as if it were the
+            // tutor's explanation.
+            if (explanation.isUsableModelAnswer()) {
+                speechManager.speak(explanation.text)
+            } else {
+                speechManager.speak("Hmm, I couldn't reach the tutor just now. Please try again.")
+            }
         }
     }
 
@@ -999,9 +1202,16 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 languageCode = prof.appLanguageCode,
                 schoolDistrict = prof.schoolDistrict,
                 modelMode = ChatModelMode.GENERAL,
-                appContext = getApplication()
+                appContext = getApplication(),
+                allowSocraticFallback = prof.socraticTeacherEnabled
             )
-            speechManager.speak(explanation)
+            // Honest failure: never speak an error notice as if it were the
+            // tutor's hint.
+            if (explanation.isUsableModelAnswer()) {
+                speechManager.speak(explanation.text)
+            } else {
+                speechManager.speak("Hmm, I couldn't reach the tutor just now. Please try again.")
+            }
         }
     }
 
@@ -1514,12 +1724,23 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 country = profile.country,
                 standardTitle = profile.stateStandard,
                 languageCode = profile.appLanguageCode,
-                customApiKey = activeApiKey
+                customApiKey = activeApiKey,
+                lessonContext = currentLessonContext(),
+                allowSocraticFallback = profile.socraticTeacherEnabled
             )
 
             _isLiveVoiceActive.value = false
             _liveVoiceTranscript.value = result.transcriptText
             _liveVoiceStatus.value = t("tap_microphone_to_speak_again")
+
+            // Honest failure: a dead AI must never look alive. An ERROR turn is
+            // surfaced as a status notice — never appended as a buddy message
+            // and never spoken as tutor content.
+            if (result.source == ChatReplySource.ERROR) {
+                _liveVoiceTranscript.value = null
+                _liveVoiceStatus.value = tr("ai_connection_required", profile.appLanguageCode)
+                return@launch
+            }
 
             // Add to chat history for continuity
             if (!userText.isNullOrBlank()) {
@@ -1529,10 +1750,15 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     text = userText
                 )
             }
+            // Label the turn with the engine that truly answered: a Socratic
+            // fallback rides as the Socratic Teacher so the chat badge says so.
+            val liveModel = result.source.recordedModel(ChatModelMode.GENERAL)
             _chatMessages.value = _chatMessages.value + ChatMessage(
                 id = UUID.randomUUID().toString(),
                 sender = "BUDDY",
-                text = result.transcriptText
+                text = result.transcriptText,
+                modelMode = liveModel,
+                isFreeModel = liveModel.isFreeTier
             )
 
             // Speak the buddy's reply aloud (live voice is text + on-device TTS).
@@ -1584,23 +1810,24 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         // Cancel any previous collector: without this, every session switch leaks a Flow
         // collector that keeps overwriting _chatMessages with a stale session's data.
         chatSessionCollectJob?.cancel()
+        // Clear-then-fill: never show the previous session's messages while the new
+        // session loads, and never leave stale messages behind for an empty session.
+        _chatMessages.value = emptyList()
         chatSessionCollectJob = viewModelScope.launch {
             repository.getChatMessagesForSessionFlow(_currentProfile.value.id, sessionId).collect { entities ->
-                if (entities.isNotEmpty()) {
-                    _chatMessages.value = entities.map { entity ->
-                        ChatMessage(
-                            id = entity.id.toString(),
-                            dbId = entity.id,
-                            sender = entity.sender,
-                            text = entity.text,
-                            explanationMode = EducationalExplanationMode.fromId(entity.explanationMode),
-                            modelMode = ChatModelMode.entries.find { it.modelName == entity.modelUsed } ?: ChatModelMode.GENERAL,
-                            isFreeModel = entity.isFreeModel,
-                            subjectTag = EducationalSubjectTag.fromId(entity.subjectTag),
-                            isBookmarked = entity.isBookmarked,
-                            timestamp = entity.timestamp
-                        )
-                    }
+                _chatMessages.value = entities.map { entity ->
+                    ChatMessage(
+                        id = entity.id.toString(),
+                        dbId = entity.id,
+                        sender = entity.sender,
+                        text = entity.text,
+                        explanationMode = EducationalExplanationMode.fromId(entity.explanationMode),
+                        modelMode = ChatModelMode.entries.find { it.modelName == entity.modelUsed } ?: ChatModelMode.GENERAL,
+                        isFreeModel = entity.isFreeModel,
+                        subjectTag = EducationalSubjectTag.fromId(entity.subjectTag),
+                        isBookmarked = entity.isBookmarked,
+                        timestamp = entity.timestamp
+                    )
                 }
             }
         }
@@ -1690,6 +1917,17 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         _chatMessages.value = _chatMessages.value + userMsg
         _isChatGenerating.value = true
 
+        val request = PendingChatRequest(
+            userText = userText,
+            mode = currentMode,
+            model = currentModel,
+            subject = currentSubject,
+            profile = profile,
+            personalizationProfile = personalizationProfile,
+            sessionId = activeSession,
+            sessionTitle = sessionTitle
+        )
+
         viewModelScope.launch {
             // Save user message to Room DB
             try {
@@ -1711,7 +1949,55 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 Log.w("NeuroPathViewModel", "Error saving user message to DB: ${e.message}")
             }
 
-            try {
+            produceBuddyReply(request)
+        }
+    }
+
+    /**
+     * Runs one buddy-reply request: generates the answer, labels it with the
+     * engine that truly produced it, and persists it. On any failure NO buddy
+     * message is saved — the failure surfaces as a visible error with a Retry
+     * action instead, so a dead AI can never look alive in the chat history.
+     */
+    /**
+     * Builds the [LessonContext] for the currently open lesson so the offline
+     * Socratic engine can genuinely teach from the on-screen material. Key
+     * points are short verbatim facts from the lesson's own steps — title,
+     * key sentences, fun facts — never invented. Empty when no lesson is open.
+     */
+    private fun currentLessonContext(): LessonContext {
+        val lesson = _activeLesson.value ?: return LessonContext()
+        val points = mutableListOf<String>()
+        if (lesson.summary.isNotBlank()) points += lesson.summary.take(220).replace("\n", " ")
+        for (step in lesson.teachSteps.take(4)) {
+            val fact = buildString {
+                if (step.title.isNotBlank()) append(step.title).append(": ")
+                append(step.text.take(180).replace("\n", " "))
+            }.trim().trimEnd(':').trim()
+            if (fact.isNotBlank()) points += fact
+            if (step.tipOrFunFact.isNotBlank()) {
+                points += "\uD83D\uDCA1 ${step.tipOrFunFact.take(180).replace("\n", " ")}"
+            }
+        }
+        return LessonContext(
+            lessonTitle = lesson.title,
+            subject = lesson.subject.title,
+            keyPoints = points.take(6)
+        )
+    }
+
+    private suspend fun produceBuddyReply(req: PendingChatRequest) {
+        try {
+            // Local aliases so the generation body below reads as before; Retry
+            // reuses the same captured request without duplicating the message.
+            val userText = req.userText
+            val currentMode = req.mode
+            val currentModel = req.model
+            val currentSubject = req.subject
+            val profile = req.profile
+            val personalizationProfile = req.personalizationProfile
+            val activeSession = req.sessionId
+            val sessionTitle = req.sessionTitle
                 val theme = getActiveTheme()
                 val studentGrade = GradeLevel.entries.find { it.code == profile.gradeLevel } ?: GradeLevel.GRADE_1
                 val oerTutorContext = repository.retrieveOerTutorContext(
@@ -1731,7 +2017,7 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                     (if (it.sender == "USER") "user" else "model") to it.text
                 }.takeLast(10)
 
-                val replyText = if (currentModel == ChatModelMode.LLAMA_LOCAL) {
+                val reply: ChatReply = if (currentModel == ChatModelMode.LLAMA_LOCAL) {
                     val basePrompt = getSystemPromptForProfile(profile, roleContext = "tutor")
                     val systemPrompt = """
                         $basePrompt
@@ -1754,19 +2040,21 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         Active Subject Focus: ${currentSubject.title} (${currentSubject.id}).
                         District context: ${profile.schoolDistrict} in ${profile.city}, ${profile.stateOrProvince}, ${profile.country}.
                     """.trimIndent()
-                    LlamaLocalManager.generateLlamaResponse(
-                        context = getApplication(),
-                        prompt = userText,
-                        systemPrompt = systemPrompt,
-                        schoolDistrict = profile.schoolDistrict,
-                        stateOrProvince = profile.stateOrProvince,
-                        country = profile.country,
-                        standardTitle = profile.stateStandard,
-                        languageCode = profile.appLanguageCode,
-                        conversationHistory = history,
-                        curriculumContext = currSummary,
-                        hasValidApiKey = hasValidApiKey,
-                        activeApiKey = activeApiKey
+                    LlamaClient.localEngineChatReply(
+                        LlamaLocalManager.generateLlamaResponse(
+                            context = getApplication(),
+                            prompt = userText,
+                            systemPrompt = systemPrompt,
+                            schoolDistrict = profile.schoolDistrict,
+                            stateOrProvince = profile.stateOrProvince,
+                            country = profile.country,
+                            standardTitle = profile.stateStandard,
+                            languageCode = profile.appLanguageCode,
+                            conversationHistory = history,
+                            curriculumContext = currSummary,
+                            hasValidApiKey = hasValidApiKey,
+                            activeApiKey = activeApiKey
+                        )
                     )
                 } else if (currentModel != ChatModelMode.OFFLINE) {
 
@@ -1800,11 +2088,12 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         curriculumContext = currSummary,
                         modelMode = currentModel,
                         customApiKey = activeApiKey,
-                        appContext = getApplication()
+                        appContext = getApplication(),
+                        allowSocraticFallback = profile.socraticTeacherEnabled
                     )
                 } else {
                     delay(500)
-                    LlamaClient.generateLocalSocraticReply(
+                    LlamaClient.socraticChatReply(
                         lastUserMessage = userText,
                         schoolDistrict = profile.schoolDistrict,
                         stateOrProvince = profile.stateOrProvince,
@@ -1812,20 +2101,38 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         standardTitle = profile.stateStandard,
                         languageCode = profile.appLanguageCode,
                         conversationHistory = _chatMessages.value.map { it.sender to it.text },
-                        curriculumContext = currSummary
+                        curriculumContext = currSummary,
+                        lessonContext = currentLessonContext(),
+                        allowSocraticFallback = profile.socraticTeacherEnabled
                     )
+                }
+
+                if (reply.source == ChatReplySource.ERROR) {
+                    // Honest failure: surface a visible error with a Retry action.
+                    // Nothing is saved as a buddy message — a dead AI must never
+                    // look alive in the chat history.
+                    lastFailedRequest = req
+                    _chatSendError.value = reply.text.ifBlank {
+                        "Hmm, I couldn't reach the tutor just now. Please check your connection and tap Retry."
+                    }
+                    return
                 }
 
                 // Generate smart follow-up question chips based on topic
                 val followUps = generateSuggestedFollowUps(userText, currentSubject)
 
+                // Label the message with the engine that truly answered: a Socratic
+                // fallback is saved as the offline engine ("Socratic Teacher") and is
+                // never stored carrying a Llama modelUsed label.
+                val effectiveModel = reply.source.recordedModel(currentModel)
+
                 val replyMsg = ChatMessage(
                     id = UUID.randomUUID().toString(),
                     sender = "BUDDY",
-                    text = replyText,
+                    text = reply.text,
                     explanationMode = currentMode,
-                    modelMode = currentModel,
-                    isFreeModel = currentModel.isFreeTier,
+                    modelMode = effectiveModel,
+                    isFreeModel = effectiveModel.isFreeTier,
                     subjectTag = currentSubject,
                     suggestedFollowUps = followUps
                 )
@@ -1838,10 +2145,10 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                         sessionId = activeSession,
                         sessionTitle = sessionTitle,
                         sender = "BUDDY",
-                        text = replyText,
+                        text = reply.text,
                         explanationMode = currentMode.id,
-                        modelUsed = currentModel.modelName,
-                        isFreeModel = currentModel.isFreeTier,
+                        modelUsed = effectiveModel.modelName,
+                        isFreeModel = effectiveModel.isFreeTier,
                         subjectTag = currentSubject.id,
                         timestamp = System.currentTimeMillis()
                     )
@@ -1851,34 +2158,18 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
                 }
 
                 if (_currentProfile.value.readAnswersAloud) {
-                    speechManager.speak(replyText)
+                    speechManager.speak(reply.text)
                 }
             } catch (e: Exception) {
-                Log.e("NeuroPathViewModel", "Error in sendChatMessage", e)
-                val fallbackReply = LlamaClient.generateLocalSocraticReply(
-                    lastUserMessage = userText,
-                    schoolDistrict = _currentProfile.value.schoolDistrict,
-                    stateOrProvince = _currentProfile.value.stateOrProvince,
-                    country = _currentProfile.value.country,
-                    standardTitle = _currentProfile.value.stateStandard,
-                    languageCode = _currentProfile.value.appLanguageCode,
-                    conversationHistory = _chatMessages.value.map { it.sender to it.text }
-                )
-                val replyMsg = ChatMessage(
-                    id = UUID.randomUUID().toString(),
-                    sender = "BUDDY",
-                    text = fallbackReply,
-                    explanationMode = currentMode,
-                    modelMode = currentModel,
-                    isFreeModel = currentModel.isFreeTier,
-                    subjectTag = currentSubject,
-                    suggestedFollowUps = listOf(t("can_you_show_another_example"), t("why_does_this_work"), t("quiz_me"))
-                )
-                _chatMessages.value = _chatMessages.value + replyMsg
+                Log.e("NeuroPathViewModel", "Error in produceBuddyReply", e)
+                // Never save canned template text as a buddy message on failure:
+                // surface a visible error with a Retry action instead.
+                lastFailedRequest = req
+                _chatSendError.value =
+                    "Hmm, I couldn't reach the tutor just now. Please check your connection and tap Retry."
             } finally {
                 _isChatGenerating.value = false
             }
-        }
     }
 
     private fun generateSuggestedFollowUps(query: String, subject: EducationalSubjectTag): List<String> {
@@ -2065,6 +2356,8 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         customApiKey: String? = null // null = leave the stored token untouched
     ) {
         viewModelScope.launch {
+            val beforeUpdate = _currentProfile.value
+            val previousFrameworkKey = OfflinePackManager.frameworkKeyFor(beforeUpdate)
             // The API key is a secret: it lives in encrypted storage, never in the Room profile.
             // Only overwrite it when the caller explicitly passed a value (so saving other
             // settings with an untouched token field cannot wipe it).
@@ -2099,6 +2392,15 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             speechManager.setSpeechParameters(ttsSpeed, updated.ttsVoicePitch)
             speechManager.speak(t("settings_saved_successfully"))
             fetchDailyQuote()
+            // The parent just (re)selected the location/framework: if it changed,
+            // offer the full offline material pack for the new framework.
+            if (OfflinePackManager.frameworkKeyFor(updated) != previousFrameworkKey) {
+                _pendingPackOffer.value = PackOffer(
+                    profileId = updated.id,
+                    childName = updated.name,
+                    frameworkLabel = OfflinePackManager.frameworkLabelFor(updated)
+                )
+            }
         }
     }
 
@@ -2120,14 +2422,22 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
         val prof = _currentProfile.value
         val prompt = "Give a 2-sentence creative story starter idea about $themeTitle and $promptTopic."
         val personalizationProfile = com.fourgeailabs.neuropath.learning.LearnerPersonalizationEngine.buildPrompt(getApplication(), prof, "CREATIVE", false)
-        return LlamaClient.generateChatReply(
+        val reply = LlamaClient.generateChatReply(
             conversationHistory = listOf("user" to prompt),
             systemPrompt = getSystemPromptForProfile(prof, roleContext = "story") + "\n" + personalizationProfile,
             languageCode = prof.appLanguageCode,
             schoolDistrict = prof.schoolDistrict,
-            modelMode = ChatModelMode.FAST,
-            appContext = getApplication()
+            modelMode = ChatModelMode.GENERAL,
+            appContext = getApplication(),
+            allowSocraticFallback = prof.socraticTeacherEnabled
         )
+        // Honest sourcing: a template echo of the prompt (or an error) must never
+        // be served as the story idea — use a curated fallback instead.
+        return if (reply.isUsableModelAnswer()) {
+            reply.text
+        } else {
+            STORY_IDEA_FALLBACKS.random()
+        }
     }
 
     fun triggerHapticPop() {
@@ -2173,6 +2483,16 @@ class NeuroPathViewModel(application: Application) : AndroidViewModel(applicatio
             "Your brain loves a good challenge — give it one!",
             "Asking questions is a superpower. Use it often.",
             "Today is a brand-new page. Write something brilliant on it."
+        )
+
+        /** Curated 2-sentence story starters used when no model answer is available. */
+        val STORY_IDEA_FALLBACKS = listOf(
+            "A mysterious door appeared in the school hallway this morning, humming a tune only you can hear. What happens when you turn the handle?",
+            "Your pet just started talking — and it has an urgent secret about the backyard. What does it tell you first?",
+            "A shooting star lands softly in your garden and turns out to be a tiny lost explorer. How do you help it find its way home?",
+            "Every book in the library suddenly has one blank page, and yours is glowing. What story do you write on it?",
+            "You wake up with the ability to understand what the trees are whispering about. What surprising news do they share?",
+            "A friendly robot knocks on your door asking for help with its homework from robot school. What subject is it stuck on?"
         )
     }
 }

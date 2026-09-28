@@ -83,6 +83,29 @@ class LearnerPersonalizationEngineTest {
     }
     
     @Test
+    fun recordAnswer_evictsOldestTopicsBeyondCap() = runBlocking {
+        val prefs = context.getSharedPreferences("learner_personalization", Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
+
+        val cap = LearnerPersonalizationEngine.MAX_TOPICS_PER_PROFILE
+        for (i in 0 until cap + 5) {
+            LearnerPersonalizationEngine.recordAnswer(context, testProfileId, "MATH", true, "topic_$i")
+        }
+
+        // Oldest topics' evidence keys are evicted…
+        assertEquals(0, prefs.getInt("topic_attempts_${testProfileId}_topic_0", 0))
+        assertFalse(prefs.contains("topic_last_${testProfileId}_topic_1"))
+        // …newest topics' keys are retained…
+        assertEquals(1, prefs.getInt("topic_attempts_${testProfileId}_topic_${cap + 4}", 0))
+        // …and the topic index itself is capped at most-recently-used entries.
+        val index = (prefs.getString("topic_index_$testProfileId", "") ?: "")
+            .split("|").filter { it.isNotBlank() }
+        assertEquals(cap, index.size)
+        assertFalse(index.contains("topic_0"))
+        assertTrue(index.contains("topic_${cap + 4}"))
+    }
+
+    @Test
     fun topicMasterySummary_tracksPerTopic() = runBlocking {
         val prefs = context.getSharedPreferences("learner_personalization", Context.MODE_PRIVATE)
         prefs.edit().clear().apply()

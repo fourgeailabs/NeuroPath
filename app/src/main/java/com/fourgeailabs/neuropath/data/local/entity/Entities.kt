@@ -2,6 +2,8 @@ package com.fourgeailabs.neuropath.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "child_profiles")
@@ -38,6 +40,14 @@ data class ChildProfileEntity(
     val learningBuddyDisabled: Boolean = false,
     val aiVersionMode: String = "SOCRATIC_AND_FULL", // SOCRATIC_ONLY, FULL_AI, LOCAL_OFFLINE
     val localLlamaInstalled: Boolean = false,
+    // Parent override: allow the ~2GB Llama model download on metered (mobile
+    // data) networks. Default false = Wi-Fi-only.
+    val allowMeteredModelDownload: Boolean = false,
+    // Parent control for "Socratic Teacher": when false, the lesson-grounded
+    // Socratic engine is fully off for this child, so a dead AI surfaces an
+    // honest connection-required state instead of Socratic teaching.
+    // Default true = Socratic Teacher available as the no-AI tool.
+    val socraticTeacherEnabled: Boolean = true,
     val currentAvatarId: String = "av_robot",
     val equippedHatId: String? = null,
     val equippedPetId: String? = null,
@@ -91,7 +101,18 @@ data class LessonRecordEntity(
     val customThemeId: String? = null
 )
 
-@Entity(tableName = "progress_logs")
+@Entity(
+    tableName = "progress_logs",
+    foreignKeys = [
+        ForeignKey(
+            entity = ChildProfileEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["profileId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["profileId"])]
+)
 data class ProgressLogEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
@@ -107,7 +128,18 @@ data class ProgressLogEntity(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-@Entity(tableName = "sensory_sessions")
+@Entity(
+    tableName = "sensory_sessions",
+    foreignKeys = [
+        ForeignKey(
+            entity = ChildProfileEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["profileId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["profileId"])]
+)
 data class SensorySessionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
@@ -118,7 +150,18 @@ data class SensorySessionEntity(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-@Entity(tableName = "chat_messages")
+@Entity(
+    tableName = "chat_messages",
+    foreignKeys = [
+        ForeignKey(
+            entity = ChildProfileEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["profileId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["profileId"])]
+)
 data class ChatMessageEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

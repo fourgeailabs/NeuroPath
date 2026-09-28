@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fourgeailabs.neuropath.speech.SpeechManager
 import com.fourgeailabs.neuropath.ui.t
+import com.fourgeailabs.neuropath.ui.tf
 
 @Composable
 fun HighlightedSpeechText(
@@ -126,8 +127,8 @@ fun HighlightedSpeechText(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "Speed: ${String.format(java.util.Locale.US, "%.2f", currentRate)}x",
-                            fontSize = 11.sp,
+                            text = tf("tts_speed_readout", String.format(java.util.Locale.US, "%.2f", currentRate)),
+                            style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )

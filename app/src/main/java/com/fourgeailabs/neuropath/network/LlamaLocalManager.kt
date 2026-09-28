@@ -2,6 +2,8 @@ package com.fourgeailabs.neuropath.network
 
 import android.app.ActivityManager
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
 import com.fourgeailabs.neuropath.BuildConfig
@@ -9,11 +11,16 @@ import dev.ffmpegkit.llama.Llama
 import dev.ffmpegkit.llama.LlamaConfig
 import dev.ffmpegkit.llama.LlamaModel
 import dev.ffmpegkit.llama.LlamaResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +34,9 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.io.RandomAccessFile
+import java.security.MessageDigest
+import java.util.Properties
 import java.util.concurrent.TimeUnit
 
 sealed class LlamaDownloadState {
@@ -34,6 +44,12 @@ sealed class LlamaDownloadState {
     data class Downloading(val progress: Float, val bytesDownloaded: Long, val totalBytes: Long, val downloadSpeedKbps: Long = 0) : LlamaDownloadState()
     data class Installed(val fileSizeBytes: Long, val localPath: String) : LlamaDownloadState()
     data class Error(val message: String) : LlamaDownloadState()
+    /**
+     * The ~2GB download was refused because the active network is metered
+     * (mobile data) and the parent has not allowed metered downloads.
+     * The UI surfaces [message] with a parent-facing "download anyway" option.
+     */
+    data class MeteredBlocked(val message: String) : LlamaDownloadState()
 }
 
 data class LlamaDeviceCompatibility(
@@ -81,10 +97,18 @@ object LlamaLocalManager {
     internal var MODEL_LOAD_TIMEOUT_MS = 5 * 60 * 1000L
     internal var WARMUP_TIMEOUT_MS = 3 * 60 * 1000L
     internal var GENERATION_TIMEOUT_MS = 5 * 60 * 1000L
-    internal var ACCELERATOR_TIMEOUT_MS = 8 * 60 * 1000L
     private const val MAX_HISTORY_TURNS = 6
     private const val MAX_HISTORY_CHARS_PER_TURN = 900
     private const val PUBLIC_HUGGINGFACE_GGUF_URL = "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf?download=true"
+    private const val DOWNLOAD_BUFFER_BYTES = 256 * 1024
+    /**
+     * On resume, the partial file is truncated back this far and those bytes
+     * are re-fetched: a process killed mid-write can leave a torn tail, and
+     * re-downloading one buffer is cheap insurance against a corrupt seam.
+     */
+    private const val RESUME_REWIND_BYTES = 256 * 1024L
+    /** Headroom kept free on the volume beyond the model's own bytes. */
+    private const val DOWNLOAD_FREE_SPACE_HEADROOM_BYTES = 256L * 1024L * 1024L
 
     private val _downloadState = MutableStateFlow<LlamaDownloadState>(LlamaDownloadState.NotInstalled)
     val downloadState: StateFlow<LlamaDownloadState> = _downloadState.asStateFlow()
@@ -113,6 +137,52 @@ object LlamaLocalManager {
     private var cachedModelPath: String? = null
     private var cachedModelLastUsedAt: Long = 0L
     private const val MODEL_IDLE_RELEASE_MS = 10 * 60 * 1000L
+
+    /**
+     * Explicit load-state machine: IDLE → LOADING → READY → FAILED.
+     * READY is only ever reached after the warm-up token generates (the
+     * honesty contract); any load or warm-up failure lands on FAILED.
+     */
+    enum class ModelLoadState { IDLE, LOADING, READY, FAILED }
+
+    private val _modelLoadState = MutableStateFlow(ModelLoadState.IDLE)
+    val modelLoadState: StateFlow<ModelLoadState> = _modelLoadState.asStateFlow()
+
+    /**
+     * Serializes model loads: a second caller waits for the in-flight load
+     * instead of mapping the ~2GB file twice. Also guards release-while-load
+     * (a release request waits for the in-flight load, then frees it).
+     */
+    private val loadMutex = Mutex()
+
+    /**
+     * Delay after the app goes to background before the warm model is
+     * released and its native memory freed. Var (not const) so unit tests
+     * can shrink it; never touched by app code.
+     */
+    internal var BACKGROUND_RELEASE_DELAY_MS = 2 * 60 * 1000L
+    private var backgroundReleaseJob: Job? = null
+
+    /**
+     * Call when the app moves to background: the warm model is released after
+     * [BACKGROUND_RELEASE_DELAY_MS], freeing its native memory while the app
+     * is away. [onAppForegrounded] cancels a pending release. The host app
+     * wires these to its lifecycle callbacks (this object has no Activity).
+     */
+    fun onAppBackgrounded() {
+        backgroundReleaseJob?.cancel()
+        backgroundReleaseJob = managerScope.launch {
+            delay(BACKGROUND_RELEASE_DELAY_MS)
+            releaseCachedModel()
+            if (BuildConfig.DEBUG) Log.d(TAG, "Released warm local model after app-background idle timeout")
+        }
+    }
+
+    /** Call when the app returns to foreground: cancels a pending background release. */
+    fun onAppForegrounded() {
+        backgroundReleaseJob?.cancel()
+        backgroundReleaseJob = null
+    }
 
     // Loading-screen progress: the GGUF mmap itself doesn't report byte-level
     // progress, so we report honest stages instead of fake percentages.
@@ -148,17 +218,28 @@ object LlamaLocalManager {
      * and the failure is thrown so the loading screen keeps showing the error
      * with Retry instead of claiming the brain is ready.
      */
-    private suspend fun getOrLoadModel(context: Context, modelFile: File): LlamaModel {
+    private suspend fun getOrLoadModel(context: Context, modelFile: File): LlamaModel = loadMutex.withLock {
         val path = modelFile.absolutePath
         val now = System.currentTimeMillis()
         val warm = cachedModel
         if (warm != null && cachedModelPath == path && now - cachedModelLastUsedAt < MODEL_IDLE_RELEASE_MS) {
             cachedModelLastUsedAt = now
-            Log.d(TAG, "Reusing warm local model (skipping ~2GB reload)")
-            return warm
+            if (BuildConfig.DEBUG) Log.d(TAG, "Reusing warm local model (skipping ~2GB reload)")
+            return@withLock warm
         }
         releaseCachedModelLocked()
-        Log.i(TAG, "Loading local model from storage: $path")
+        // Cheap integrity gate before mapping ~2GB into memory: when the file
+        // changed since its hash was recorded, re-verify instead of loading
+        // bytes that may be corrupt.
+        if (withContext(Dispatchers.IO) { verifyModelIntegrity(context) } == ModelIntegrity.CORRUPT) {
+            _modelLoadState.value = ModelLoadState.FAILED
+            failLoad(
+                "The downloaded AI brain failed its integrity check — the file may be corrupted",
+                IllegalStateException("model integrity check failed")
+            )
+        }
+        _modelLoadState.value = ModelLoadState.LOADING
+        if (BuildConfig.DEBUG) Log.d(TAG, "Loading local model from storage: $path")
         _loadError.value = null
         _loadProgress.value = 0f
         _loadStage.value = "Opening model file…"
@@ -168,6 +249,7 @@ object LlamaLocalManager {
                 runNativeGuarded { llamaRuntime.loadModel(modelPath = path, config = defaultLlamaConfig()) }
             }
         } catch (e: Exception) {
+            _modelLoadState.value = ModelLoadState.FAILED
             failLoad("Couldn't load the AI brain into memory", e)
         }
         // The weights are mapped — now PROVE the model actually runs before
@@ -197,15 +279,17 @@ object LlamaLocalManager {
             cachedModel = null
             cachedModelPath = null
             cachedModelLastUsedAt = 0L
+            _modelLoadState.value = ModelLoadState.FAILED
             failLoad("The AI brain loaded but couldn't think", e)
         }
         cachedModel = model
         cachedModelPath = path
         cachedModelLastUsedAt = System.currentTimeMillis()
+        _modelLoadState.value = ModelLoadState.READY
         _loadProgress.value = 1f
         _loadStage.value = "Ready!"
         Log.i(TAG, "Local model verified: warmup token generated, brain is ready")
-        return model
+        return@withLock model
     }
 
     /**
@@ -238,15 +322,23 @@ object LlamaLocalManager {
         cachedModel = null
         cachedModelPath = null
         cachedModelLastUsedAt = 0L
+        _modelLoadState.value = ModelLoadState.IDLE
         if (model != null) {
+            // Explicit native free: the ~2GB mapping must be released now, not
+            // whenever the GC gets around to the Java wrapper.
             runCatching { llamaRuntime.releaseModel(model) }
                 .onFailure { Log.w(TAG, "Cached model release failed", it) }
         }
     }
 
-    /** Releases the warm model (e.g. when the app goes to background or the model is deleted). */
+    /**
+     * Releases the warm model (e.g. when the app goes to background or the
+     * model is deleted). Serialized against in-flight loads: a release that
+     * arrives mid-load waits for the load, then frees the model instead of
+     * yanking the handle out from under the warm-up.
+     */
     suspend fun releaseCachedModel() = withContext(inferenceDispatcher) {
-        releaseCachedModelLocked()
+        loadMutex.withLock { releaseCachedModelLocked() }
     }
 
     /** Pre-warms the model so the first chat message doesn't pay the load cost. */
@@ -270,7 +362,7 @@ object LlamaLocalManager {
 
     fun getLlamaModelFile(context: Context): File {
         val modelsDir = File(context.filesDir, "models")
-        if (!modelsDir.exists() && !modelsDir.mkdirs()) Log.w(TAG, "Could not create ${modelsDir.absolutePath}")
+        if (!modelsDir.exists() && !modelsDir.mkdirs()) Log.w(TAG, "Could not create the local models directory")
         return File(modelsDir, MODEL_FILENAME)
     }
 
@@ -279,15 +371,8 @@ object LlamaLocalManager {
         return file.exists() && file.length() >= MIN_VALID_MODEL_SIZE_BYTES && isValidGguf(file)
     }
 
-    private fun isValidGguf(file: File): Boolean = runCatching {
-        if (!file.exists() || file.length() < 8L) return false
-        file.inputStream().use { input ->
-            val header = ByteArray(4)
-            if (input.read(header) != 4) return false
-            val magic = (header[0].toInt() and 0xff) or ((header[1].toInt() and 0xff) shl 8) or ((header[2].toInt() and 0xff) shl 16) or ((header[3].toInt() and 0xff) shl 24)
-            magic == GGUF_MAGIC
-        }
-    }.getOrDefault(false)
+    private fun isValidGguf(file: File): Boolean =
+        file.length() >= 8L && startsWithGgufMagic(file)
 
     fun checkDeviceCompatibility(context: Context): LlamaDeviceCompatibility {
         val apiVersion = Build.VERSION.SDK_INT
@@ -300,65 +385,312 @@ object LlamaLocalManager {
         val summary = when {
             !isSupported2020 -> "❌ Android $apiVersion is below the recommended Android 10 baseline for local Llama 3.2 3B inference."
             !enoughRam -> "⚠️ Android $apiVersion with ${"%.1f".format(totalRamGb)}GB RAM may run Llama 3.2 3B, but memory pressure can terminate inference."
-            else -> "✅ Compatible: Android $apiVersion with ${"%.1f".format(totalRamGb)}GB RAM. Local Llama 3.2 3B is available; any GPU/NPU label is shown only after hardware acceleration initializes and completes inference."
+            else -> "✅ Compatible: Android $apiVersion with ${"%.1f".format(totalRamGb)}GB RAM. Local Llama 3.2 3B runs on-device (llama.cpp, CPU)."
         }
         return LlamaDeviceCompatibility(isSupported2020, apiVersion, totalRamGb, summary)
     }
 
-    suspend fun startLlamaDownload(context: Context, hfToken: String = "") = withContext(Dispatchers.IO) {
+    /**
+     * True when the active network is unmetered (typically Wi-Fi). The ~2GB
+     * model download is gated on this unless the parent explicitly allows
+     * metered downloads. Safe to call on any thread; [startLlamaDownload]
+     * already runs on Dispatchers.IO.
+     */
+    fun isActiveNetworkUnmetered(context: Context): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+        val network = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(network) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+    }
+
+    /** Returns the download UI to its idle state (used after a metered block is acknowledged). */
+    fun resetDownloadState() {
+        _downloadState.value = LlamaDownloadState.NotInstalled
+    }
+
+    // ---- Model download hardening: resume, free-space gate, integrity ----
+
+    internal fun downloadTempFile(context: Context): File =
+        File(getLlamaModelFile(context).parentFile, "$MODEL_FILENAME.tmp")
+
+    internal fun downloadStateFile(context: Context): File =
+        File(getLlamaModelFile(context).parentFile, "$MODEL_FILENAME.download-state")
+
+    internal fun modelSha256File(context: Context): File =
+        File(getLlamaModelFile(context).parentFile, "$MODEL_FILENAME.sha256")
+
+    /** Persisted resume cursor for an interrupted download: which URL it belongs to and its total. */
+    internal data class DownloadResumeState(val url: String, val expectedTotalBytes: Long)
+
+    internal fun writeDownloadState(context: Context, url: String, expectedTotalBytes: Long) {
+        val props = Properties()
+        props["url"] = url
+        props["expectedTotal"] = expectedTotalBytes.toString()
+        runCatching {
+            downloadStateFile(context).outputStream().use { props.store(it, null) }
+        }
+    }
+
+    internal fun readDownloadState(context: Context): DownloadResumeState? {
+        val file = downloadStateFile(context)
+        if (!file.exists()) return null
+        return runCatching {
+            val props = Properties()
+            file.inputStream().use { props.load(it) }
+            val url = props.getProperty("url") ?: return null
+            val total = props.getProperty("expectedTotal")?.toLongOrNull() ?: return null
+            DownloadResumeState(url, total)
+        }.getOrNull()
+    }
+
+    internal fun clearDownloadState(context: Context) {
+        downloadStateFile(context).delete()
+    }
+
+    internal fun computeSha256Hex(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(1024 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    /** Records the installed model's SHA-256 plus size/mtime for cheap later checks. */
+    internal fun writeModelSha256Sidecar(context: Context, modelFile: File) {
+        val props = Properties()
+        props["sha256"] = computeSha256Hex(modelFile)
+        props["size"] = modelFile.length().toString()
+        props["mtime"] = modelFile.lastModified().toString()
+        runCatching {
+            modelSha256File(context).outputStream().use { props.store(it, null) }
+        }
+    }
+
+    /**
+     * What the installed-model integrity check concluded. UNVERIFIED_NO_RECORD
+     * covers models installed before the hash was recorded: usable, but never
+     * silently treated as verified.
+     */
+    enum class ModelIntegrity { VERIFIED, UNVERIFIED_NO_RECORD, CORRUPT }
+
+    /**
+     * Verifies the installed GGUF against the SHA-256 recorded at download
+     * time. Cheap path: size and mtime unchanged since the hash was recorded.
+     * Expensive path: the file changed — the full 2GB hash is recomputed and
+     * compared, so bit-rot or a half-overwritten file is caught before the
+     * model is mapped into memory.
+     */
+    fun verifyModelIntegrity(context: Context): ModelIntegrity {
+        val modelFile = getLlamaModelFile(context)
+        val sidecar = modelSha256File(context)
+        if (!modelFile.exists() || !sidecar.exists()) return ModelIntegrity.UNVERIFIED_NO_RECORD
+        val props = Properties()
+        runCatching { sidecar.inputStream().use { props.load(it) } }
+            .getOrElse { return ModelIntegrity.UNVERIFIED_NO_RECORD }
+        val recordedSha = props.getProperty("sha256") ?: return ModelIntegrity.UNVERIFIED_NO_RECORD
+        val recordedSize = props.getProperty("size")?.toLongOrNull()
+        val recordedMtime = props.getProperty("mtime")?.toLongOrNull()
+        if (recordedSize != null && recordedMtime != null &&
+            modelFile.length() == recordedSize && modelFile.lastModified() == recordedMtime
+        ) {
+            return ModelIntegrity.VERIFIED
+        }
+        return if (runCatching { computeSha256Hex(modelFile) }.getOrNull() == recordedSha) {
+            // Same bytes, new mtime (e.g. the file was touched): refresh the
+            // sidecar so the next check takes the cheap path.
+            runCatching { writeModelSha256Sidecar(context, modelFile) }
+            ModelIntegrity.VERIFIED
+        } else {
+            ModelIntegrity.CORRUPT
+        }
+    }
+
+    /** Total byte count from a `Content-Range: bytes <start>-<end>/<total>` header. */
+    internal fun parseContentRangeTotal(header: String): Long? =
+        header.substringAfterLast("/").trim().toLongOrNull()?.takeIf { it > 0 }
+
+    private fun startsWithGgufMagic(file: File): Boolean = runCatching {
+        if (!file.exists() || file.length() < 4L) return false
+        file.inputStream().use { input ->
+            val header = ByteArray(4)
+            if (input.read(header) != 4) return false
+            val magic = (header[0].toInt() and 0xff) or ((header[1].toInt() and 0xff) shl 8) or
+                ((header[2].toInt() and 0xff) shl 16) or ((header[3].toInt() and 0xff) shl 24)
+            magic == GGUF_MAGIC
+        }
+    }.getOrDefault(false)
+
+    private fun formatBytes(bytes: Long): String = when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        else -> "%.1f MB".format(bytes / (1024.0 * 1024.0))
+    }
+
+    /**
+     * Downloads the ~2GB GGUF with resume, a free-space gate, and SHA-256
+     * integrity recording.
+     *
+     * Resume: an interrupted download leaves its partial `.tmp` file plus a
+     * small resume-state sidecar on disk (both survive process death). The
+     * next start continues via HTTP `Range` from the partial's length
+     * (rewound by one buffer to discard a possibly-torn tail). A server that
+     * ignores Range, or a partial that doesn't belong to this URL, restarts
+     * cleanly from byte zero instead of producing a corrupt file.
+     *
+     * Cancellation keeps the partial and its resume state — the next start
+     * continues where this one stopped.
+     */
+    suspend fun startLlamaDownload(context: Context, hfToken: String = "", allowMetered: Boolean = false) = withContext(Dispatchers.IO) {
         val destinationFile = getLlamaModelFile(context)
         if (isLlamaInstalled(context)) {
             _downloadState.value = LlamaDownloadState.Installed(destinationFile.length(), destinationFile.absolutePath)
-            if (hfToken.isNotBlank() && !LlamaAccelerator.isInstalled(context)) {
-                LlamaAccelerator.download(context, hfToken).onFailure { Log.w(TAG, "Optional accelerated Llama model was not installed: ${it.message}") }
-            }
             return@withContext
         }
-        val tempFile = File(destinationFile.parentFile, "$MODEL_FILENAME.tmp")
-        try {
-            tempFile.delete()
-            _downloadState.value = LlamaDownloadState.Downloading(0f, 0L, MODEL_ESTIMATED_SIZE_BYTES)
-            val requestBuilder = Request.Builder()
-                .url(PUBLIC_HUGGINGFACE_GGUF_URL)
-                .header("User-Agent", "NeuroPath-Android/${BuildConfig.VERSION_NAME}")
-            if (hfToken.isNotBlank()) {
-                requestBuilder.header("Authorization", "Bearer ${hfToken.trim()}")
+        // Wi-Fi-only default: the model is ~2GB, so refuse metered networks
+        // unless the parent has explicitly allowed them. This runs on
+        // Dispatchers.IO, never the main thread.
+        if (!allowMetered && !isActiveNetworkUnmetered(context)) {
+            _downloadState.value = LlamaDownloadState.MeteredBlocked(
+                "You're on mobile data, so the download is paused: the Llama 3.2 model is about " +
+                    "2 GB and could use a large part of your mobile data plan. " +
+                    "Connect to Wi-Fi to continue, or allow mobile-data download below."
+            )
+            Log.i(TAG, "Model download blocked: metered network and no parent override")
+            return@withContext
+        }
+        val modelsDir = destinationFile.parentFile
+            ?: return@withContext Unit.also {
+                _downloadState.value = LlamaDownloadState.Error("Could not access the app's model storage directory.")
             }
-            val request = requestBuilder.build()
-            okHttpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    _downloadState.value = LlamaDownloadState.Error("Llama 3.2 3B model download failed: HTTP ${response.code} ${response.message}")
-                    return@withContext
+        val tempFile = downloadTempFile(context)
+
+        // Resolve the resume offset from the previous attempt's partial file.
+        val savedState = readDownloadState(context)
+        var resumeFrom = 0L
+        val partialLength = if (tempFile.exists()) tempFile.length() else 0L
+        if (partialLength > 0 && savedState?.url == PUBLIC_HUGGINGFACE_GGUF_URL && startsWithGgufMagic(tempFile)) {
+            resumeFrom = (partialLength - RESUME_REWIND_BYTES).coerceAtLeast(0L)
+            if (resumeFrom < partialLength) {
+                runCatching { RandomAccessFile(tempFile, "rw").use { it.setLength(resumeFrom) } }
+            }
+            if (BuildConfig.DEBUG) Log.d(TAG, "Resuming model download from byte $resumeFrom")
+        } else {
+            if (partialLength > 0 && BuildConfig.DEBUG) {
+                Log.d(TAG, "Discarding stale partial download (foreign URL or bad header)")
+            }
+            tempFile.delete()
+            clearDownloadState(context)
+        }
+
+        try {
+            val estimatedTotal = savedState?.expectedTotalBytes?.takeIf { it > 0 } ?: MODEL_ESTIMATED_SIZE_BYTES
+            _downloadState.value = LlamaDownloadState.Downloading(0f, resumeFrom, estimatedTotal)
+            // A resumed 206 whose remote total changed mid-flight (or a 416)
+            // can never become a valid file: the in-flight body starts at the
+            // stale offset. Close that response and re-issue from byte zero.
+            while (true) {
+                val requestBuilder = Request.Builder()
+                    .url(PUBLIC_HUGGINGFACE_GGUF_URL)
+                    .header("User-Agent", "NeuroPath-Android/${BuildConfig.VERSION_NAME}")
+                if (resumeFrom > 0) {
+                    requestBuilder.header("Range", "bytes=$resumeFrom-")
                 }
-                val body = response.body ?: run {
-                    _downloadState.value = LlamaDownloadState.Error("Llama 3.2 3B model download returned an empty response.")
-                    return@withContext
+                if (hfToken.isNotBlank()) {
+                    requestBuilder.header("Authorization", "Bearer ${hfToken.trim()}")
                 }
-                val contentLength = body.contentLength().takeIf { it > 0 } ?: MODEL_ESTIMATED_SIZE_BYTES
-                val startTime = System.currentTimeMillis()
-                var downloaded = 0L
-                var lastUpdate = startTime
-                body.byteStream().use { input: InputStream ->
-                    FileOutputStream(tempFile).use { output ->
-                        val buffer = ByteArray(256 * 1024)
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            output.write(buffer, 0, read)
-                            downloaded += read
-                            val now = System.currentTimeMillis()
-                            if (now - lastUpdate >= 250) {
-                                lastUpdate = now
-                                val seconds = ((now - startTime) / 1000L).coerceAtLeast(1L)
-                                _downloadState.value = LlamaDownloadState.Downloading((downloaded.toFloat() / contentLength.toFloat()).coerceIn(0f, 0.99f), downloaded, contentLength, downloaded / 1024L / seconds)
-                            }
+                var restartFromZero = false
+                okHttpClient.newCall(requestBuilder.build()).execute().use { response ->
+                    if (resumeFrom > 0 && (response.code == 200 || response.code == 416)) {
+                        // The server ignored the Range header (200: it sent the
+                        // full body) or our range is unsatisfiable (416: the
+                        // remote file shrank below our partial).
+                        if (BuildConfig.DEBUG) Log.d(TAG, "Server ignored Range (HTTP ${response.code}); restarting download from byte 0")
+                        tempFile.delete()
+                        clearDownloadState(context)
+                        resumeFrom = 0L
+                        // A 200 already carries the full body, so keep
+                        // consuming it; a 416 has no body, so re-request.
+                        if (response.code == 416) {
+                            restartFromZero = true
+                            return@use
                         }
-                        output.fd.sync()
+                    } else if (!response.isSuccessful) {
+                        _downloadState.value = LlamaDownloadState.Error("Llama 3.2 3B model download failed: HTTP ${response.code} ${response.message}")
+                        return@withContext
+                    }
+                    val body = response.body ?: run {
+                        _downloadState.value = LlamaDownloadState.Error("Llama 3.2 3B model download returned an empty response.")
+                        return@withContext
+                    }
+                    // Total for progress: prefer the 206 Content-Range total, then
+                    // the body length adjusted for the resume offset, then the
+                    // previous attempt's total, then the estimate.
+                    val totalBytes = response.header("Content-Range")?.let { parseContentRangeTotal(it) }
+                        ?: body.contentLength().takeIf { it > 0 }?.let { if (resumeFrom > 0) it + resumeFrom else it }
+                        ?: estimatedTotal
+                    if (resumeFrom > 0 && savedState != null && savedState.expectedTotalBytes > 0 &&
+                        totalBytes != savedState.expectedTotalBytes
+                    ) {
+                        // The remote file changed since the partial was written.
+                        if (BuildConfig.DEBUG) Log.d(TAG, "Remote file size changed; restarting download from byte 0")
+                        tempFile.delete()
+                        clearDownloadState(context)
+                        resumeFrom = 0L
+                        restartFromZero = true
+                        return@use
+                    }
+                    // Free-space pre-check against the real remaining byte count.
+                    val remaining = (totalBytes - resumeFrom).coerceAtLeast(0L)
+                    val usable = modelsDir.usableSpace
+                    if (usable < remaining + DOWNLOAD_FREE_SPACE_HEADROOM_BYTES) {
+                        _downloadState.value = LlamaDownloadState.Error(
+                            "Not enough storage space for the AI brain download: it needs about " +
+                                "${formatBytes(remaining)} more, but only ${formatBytes(usable.coerceAtLeast(0))} " +
+                                "is free. Free up space and try again — the download will resume where it stopped."
+                        )
+                        return@withContext
+                    }
+                    writeDownloadState(context, PUBLIC_HUGGINGFACE_GGUF_URL, totalBytes)
+                    val startTime = System.currentTimeMillis()
+                    var downloaded = resumeFrom
+                    var lastUpdate = startTime
+                    body.byteStream().use { input: InputStream ->
+                        FileOutputStream(tempFile, resumeFrom > 0).use { output ->
+                            val buffer = ByteArray(DOWNLOAD_BUFFER_BYTES)
+                            while (true) {
+                                currentCoroutineContext().ensureActive()
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                output.write(buffer, 0, read)
+                                downloaded += read
+                                val now = System.currentTimeMillis()
+                                if (now - lastUpdate >= 250) {
+                                    lastUpdate = now
+                                    val seconds = ((now - startTime) / 1000L).coerceAtLeast(1L)
+                                    _downloadState.value = LlamaDownloadState.Downloading(
+                                        (downloaded.toFloat() / totalBytes.toFloat()).coerceIn(0f, 0.99f),
+                                        downloaded, totalBytes, downloaded / 1024L / seconds
+                                    )
+                                }
+                            }
+                            output.fd.sync()
+                        }
                     }
                 }
+                if (!restartFromZero) break
+                // The loop re-issues the request without a Range header and
+                // resumeFrom is now 0, so the restart conditions above cannot
+                // trigger again: the loop always terminates.
             }
             if (tempFile.length() < MIN_VALID_MODEL_SIZE_BYTES || !isValidGguf(tempFile)) {
                 tempFile.delete()
+                clearDownloadState(context)
                 _downloadState.value = LlamaDownloadState.Error("Downloaded file is not a valid Llama 3.2 GGUF model. The server may have returned an error page instead of model data.")
                 return@withContext
             }
@@ -367,15 +699,28 @@ object LlamaLocalManager {
                 tempFile.copyTo(destinationFile, overwrite = true)
                 tempFile.delete()
             }
+            // Record the SHA-256 so later loads can prove the file on disk is
+            // exactly what was downloaded.
+            withContext(Dispatchers.IO) { writeModelSha256Sidecar(context, destinationFile) }
+            clearDownloadState(context)
             _downloadState.value = LlamaDownloadState.Installed(destinationFile.length(), destinationFile.absolutePath)
-            Log.i(TAG, "Installed Llama 3.2 3B GGUF ${destinationFile.absolutePath} (${destinationFile.length()} bytes)")
-            if (hfToken.isNotBlank()) {
-                LlamaAccelerator.download(context, hfToken).onFailure { Log.w(TAG, "Optional accelerated Llama model was not installed: ${it.message}") }
-            }
+            Log.i(TAG, "Installed Llama 3.2 3B GGUF (${destinationFile.length()} bytes)")
+        } catch (ce: CancellationException) {
+            // Keep the partial file and its resume state: the next download
+            // attempt continues via Range instead of starting over.
+            _downloadState.value = LlamaDownloadState.Error(
+                "Download interrupted — your progress is saved and the download will resume where it stopped."
+            )
+            throw ce
         } catch (e: Exception) {
-            tempFile.delete()
+            // The partial file and resume state are deliberately kept so a
+            // network failure can be resumed; only a corrupt final file is
+            // deleted (handled above). The user-facing message stays generic:
+            // exception text never reaches the UI.
             Log.e(TAG, "Llama 3.2 3B GGUF download failed", e)
-            _downloadState.value = LlamaDownloadState.Error("Llama 3.2 3B model download failed: ${e.message ?: e.javaClass.simpleName}")
+            _downloadState.value = LlamaDownloadState.Error(
+                "Llama 3.2 3B model download failed. Check the connection and free space, then try again — the download will resume where it stopped."
+            )
         }
     }
 
@@ -385,13 +730,10 @@ object LlamaLocalManager {
         val file = getLlamaModelFile(context)
         val deleted = if (file.exists()) file.delete() else false
         File(file.parentFile, "${file.name}.tmp").delete()
-        // Also remove the optional hardware-accelerated LiteRT-LM artifact, otherwise a
-        // stale accelerated model survives "delete" and is silently picked up again.
-        val litertFile = LlamaAccelerator.modelFile(context)
-        val litertDeleted = if (litertFile.exists()) litertFile.delete() else false
-        File(litertFile.parentFile, "${litertFile.name}.tmp").delete()
+        downloadStateFile(context).delete()
+        modelSha256File(context).delete()
         _downloadState.value = LlamaDownloadState.NotInstalled
-        return deleted || litertDeleted
+        return deleted
     }
 
     /**
@@ -468,18 +810,8 @@ object LlamaLocalManager {
             conversationHistory = conversationHistory
         )
 
-        // The accelerated path gets the same Llama-3 chat template as the GGUF path so the
-        // Instruct model sees identical formatting whichever runtime serves it.
-        // Hard timeout: a hung accelerator backend must fall through to the GGUF
-        // path (or a clean error), never hang the chat forever.
-        runCatching { withTimeout(ACCELERATOR_TIMEOUT_MS) { LlamaAccelerator.generate(context, llamaPrompt) } }
-            .onFailure { Log.w(TAG, "LiteRT-LM accelerated inference unavailable", it) }
-            .getOrNull()
-            ?.let { result ->
-                Log.i(TAG, "Using verified local accelerator ${result.backend} (${result.modelFile})")
-                return@withContext result.text
-            }
-
+        // Single offline engine: on-device llama.cpp GGUF inference. There is no
+        // alternate offline model — the GGUF path below is the only one.
         try {
             // Warm cache: reuse the loaded model instead of paying the ~2GB
             // storage load on every message (the old per-message load/release
@@ -496,8 +828,11 @@ object LlamaLocalManager {
             if (text.isBlank()) "🦙 [Llama 3.2 3B Local Engine]: I couldn't generate a response. Please try asking the question another way." else text
         } catch (e: Exception) {
             Log.e(TAG, "Local Llama 3.2 3B inference failed", e)
-            val reason = if (e is TimeoutCancellationException) "timed out" else (e.message ?: e.javaClass.simpleName)
-            "🦙 [Llama 3.2 3B Local Engine]: Local inference failed safely: $reason. The model is installed, but the device could not complete inference."
+            val hint = if (e is TimeoutCancellationException)
+                "the request timed out on this device"
+            else
+                "the device could not complete it"
+            "🦙 [Llama 3.2 3B Local Engine]: I couldn't answer that — $hint. Please try asking the question another way."
         }
     }
 }

@@ -5,17 +5,26 @@ import android.util.Base64
 import android.util.Log
 import com.fourgeailabs.neuropath.BuildConfig
 import com.fourgeailabs.neuropath.data.model.AppLanguage
+import com.fourgeailabs.neuropath.data.model.AppLanguageDictionary
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlin.random.Random
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.HttpException
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 interface LlamaApiService {
@@ -34,20 +43,171 @@ enum class ChatModelMode(
     val displayName: String,
     val icon: String,
     val description: String,
+    /** Dictionary key for the user-facing option label ("Cloud AI" / "Local AI" / "Socratic Teacher"). */
+    val labelKey: String,
+    /** Dictionary key for the user-facing option description. */
+    val descriptionKey: String,
     val isFreeTier: Boolean = true,
     val tierLabel: String = "Llama 3.2 3B",
     val temperature: Float = 0.6f,
     val maxTokens: Int = 512
 ) {
-    GENERAL("GENERAL", "meta-llama/Llama-3.2-3B-Instruct", "Llama 3.2 3B Cloud", "🦙", "Hugging Face Cloud • Balanced Llama 3.2 3B tutor", true, "Hugging Face", 0.6f, 512),
-    FAST("FAST", "meta-llama/Llama-3.2-3B-Instruct", "Llama 3.2 3B Quick", "⚡", "Hugging Face Cloud • Shorter, quicker Llama 3.2 3B answers", true, "Fast Tier", 0.7f, 256),
-    COMPLEX("COMPLEX", "meta-llama/Llama-3.2-3B-Instruct", "Llama 3.2 3B Detailed", "🧠", "Hugging Face Cloud • Longer, more detailed Llama 3.2 3B reasoning", true, "Reasoning", 0.4f, 1024),
-    LLAMA_LOCAL("LLAMA_LOCAL", "Llama-3.2-3B-Instruct-Q4_K_M.gguf", "Llama 3.2 3B Local", "💎", "On-Device Llama 3.2 3B • Hugging Face GGUF inference", true, "Local Llama", 0.6f, 384),
-    OFFLINE("OFFLINE", "offline-socratic", "Offline Socratic", "🛡️", "Offline Local • Zero-network accredited curriculum engine", true, "Offline", 0.6f, 384)
+    GENERAL("GENERAL", "meta-llama/Llama-3.2-3B-Instruct", "Cloud AI", "☁️", "Cloud AI • Llama 3.2 3B tutor", "ai_option_cloud", "ai_option_cloud_desc", true, "Hugging Face", 0.6f, 512),
+    LLAMA_LOCAL("LLAMA_LOCAL", "Llama-3.2-3B-Instruct-Q4_K_M.gguf", "Local AI", "📱", "Local AI • On-device Llama 3.2 3B", "ai_option_local", "ai_option_local_desc", true, "Local Llama", 0.6f, 384),
+    OFFLINE("OFFLINE", "offline-socratic", "Socratic Teacher", "🧑‍🏫", "Socratic Teacher • Offline no-AI curriculum engine", "ai_option_socratic", "ai_option_socratic_desc", true, "Offline", 0.6f, 384)
 }
 
 object LlamaClient {
     private const val TAG = "LlamaClient"
+
+    /**
+     * Classified network failure. Used to decide what is retryable and what
+     * the UI may honestly report (offline vs. server trouble vs. bad key).
+     */
+    enum class NetworkErrorKind {
+        /** DNS failure / unreachable host: the device is offline or blocked. */
+        NO_NETWORK,
+        /** Connect or read timeout. */
+        TIMEOUT,
+        /** HTTP 5xx: the server is having trouble. */
+        SERVER_ERROR,
+        /** HTTP 401/403: the API key is missing, wrong, or revoked. */
+        AUTH,
+        /** Other HTTP 4xx: the request itself was rejected. */
+        CLIENT_ERROR,
+        /** Anything else. */
+        UNKNOWN
+    }
+
+    /**
+     * Walks the causal chain so wrapped exceptions (Retrofit/OkHttp wrap the
+     * raw [java.io.IOException]) still classify correctly. Never inspects or
+     * logs credential material.
+     */
+    fun classifyNetworkError(throwable: Throwable): NetworkErrorKind {
+        var current: Throwable? = throwable
+        while (current != null) {
+            when (current) {
+                is UnknownHostException, is NoRouteToHostException -> return NetworkErrorKind.NO_NETWORK
+                is ConnectException -> return NetworkErrorKind.NO_NETWORK
+                is SocketTimeoutException -> return NetworkErrorKind.TIMEOUT
+                is HttpException -> return when (current.code()) {
+                    401, 403 -> NetworkErrorKind.AUTH
+                    in 500..599 -> NetworkErrorKind.SERVER_ERROR
+                    else -> NetworkErrorKind.CLIENT_ERROR
+                }
+            }
+            current = current.cause
+        }
+        return NetworkErrorKind.UNKNOWN
+    }
+
+    /**
+     * Bounded retries with exponential backoff + jitter, for idempotent calls
+     * only. All current call sites are POSTs to the stateless chat-completions
+     * endpoint (a retry regenerates the same answer; nothing is mutated
+     * server-side). Retries transient failures (timeouts, 5xx); auth
+     * failures, client errors, and coroutine cancellation are never retried.
+     */
+    internal suspend fun <T> withNetworkRetry(
+        maxAttempts: Int = 3,
+        initialDelayMs: Long = 1_000L,
+        block: suspend () -> T
+    ): T {
+        var attempt = 0
+        var delayMs = initialDelayMs
+        while (true) {
+            try {
+                return block()
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (e: Exception) {
+                attempt++
+                val kind = classifyNetworkError(e)
+                val retryable = kind == NetworkErrorKind.TIMEOUT || kind == NetworkErrorKind.SERVER_ERROR
+                if (attempt >= maxAttempts || !retryable) throw e
+                val jitter = if (delayMs > 0) Random.nextLong(0, delayMs / 2 + 1) else 0L
+                delay(delayMs + jitter)
+                delayMs = (delayMs * 2).coerceAtMost(30_000L)
+            }
+        }
+    }
+
+    /**
+     * Exception text safe for logs: redacts anything shaped like a bearer
+     * token, so no library surprise can leak the API key into logcat.
+     */
+    internal fun safeMessage(e: Throwable): String =
+        (e.message ?: e.javaClass.simpleName)
+            .replace(Regex("(?i)bearer\\s+[A-Za-z0-9._~+/-]+=*"), "Bearer [redacted]")
+
+    /**
+     * One-line kill switch for the Socratic last resort. When true (default), paths
+     * that cannot reach a real model serve the built-in offline template engine,
+     * explicitly labeled [ChatReplySource.SOCRATIC_FALLBACK] ("Socratic Teacher" —
+     * never presented as Llama). When false, those paths return an honest
+     * [ChatReplySource.ERROR] instead.
+     */
+    const val ALLOW_SOCRATIC_FALLBACK = true
+
+    /**
+     * Prefix of every failure banner returned by
+     * [LlamaLocalManager.generateLlamaResponse] — replies starting with this are
+     * engine errors, not model answers.
+     */
+    const val LOCAL_ENGINE_ERROR_PREFIX = "\uD83E\uDD99 [Llama 3.2 3B Local Engine]:"
+
+    /**
+     * Wraps a raw on-device engine string, marking engine failure banners as
+     * [ChatReplySource.ERROR] so callers surface them as errors, never as answers.
+     */
+    fun localEngineChatReply(text: String): ChatReply =
+        ChatReply(
+            text = text,
+            source = if (text.startsWith(LOCAL_ENGINE_ERROR_PREFIX)) ChatReplySource.ERROR else ChatReplySource.LOCAL_MODEL
+        )
+
+    /**
+     * The Socratic last resort, wrapped with its honest provenance label. When
+     * [ALLOW_SOCRATIC_FALLBACK] is false — or the parent has turned Socratic
+     * Teacher off for this child ([allowSocraticFallback] = false) — this returns
+     * an explicit, honestly-worded connection-required error instead of
+     * teaching. Internal (not private) so the chat ViewModel can use the same
+     * labeled fallback for its explicit offline branch.
+     */
+    internal fun socraticChatReply(
+        lastUserMessage: String,
+        schoolDistrict: String = "",
+        stateOrProvince: String = "",
+        country: String = "",
+        standardTitle: String = "",
+        languageCode: String = "en-US",
+        conversationHistory: List<Pair<String, String>> = emptyList(),
+        curriculumContext: String = "",
+        lessonContext: LessonContext = LessonContext(),
+        allowSocraticFallback: Boolean = true
+    ): ChatReply {
+        if (!ALLOW_SOCRATIC_FALLBACK || !allowSocraticFallback) {
+            return ChatReply(
+                text = AppLanguageDictionary.getString("ai_connection_required", languageCode),
+                source = ChatReplySource.ERROR
+            )
+        }
+        return ChatReply(
+            text = generateLocalSocraticReply(
+                lastUserMessage = lastUserMessage,
+                schoolDistrict = schoolDistrict,
+                stateOrProvince = stateOrProvince,
+                country = country,
+                standardTitle = standardTitle,
+                languageCode = languageCode,
+                conversationHistory = conversationHistory,
+                curriculumContext = curriculumContext,
+                lessonContext = lessonContext
+            ),
+            source = ChatReplySource.SOCRATIC_FALLBACK
+        )
+    }
     // Hugging Face Serverless Inference API, OpenAI-compatible route.
     // Documented at https://huggingface.co/docs/inference-providers/en/index :
     // base https://router.huggingface.co/v1 + POST /chat/completions, model id in the request body.
@@ -144,11 +304,14 @@ object LlamaClient {
     /**
      * Surfaces a Hugging Face API-level error payload instead of silently pretending
      * everything worked. Returns the user-facing message, or null when there is no error.
+     *
+     * The raw payload is never logged: error bodies are server-controlled and
+     * could contain anything, so only the call site is recorded.
      */
     private fun apiErrorMessage(response: LlamaChatResponse, callSite: String): String? {
         val apiError = response.error?.trim()
         if (apiError.isNullOrBlank()) return null
-        Log.w(TAG, "Hugging Face API error in $callSite: $apiError")
+        Log.w(TAG, "Hugging Face API error in $callSite (payload withheld from logs)")
         return "The cloud tutor ran into a problem and couldn't answer just now. " +
             "Please check the internet connection and API key, then try again — " +
             "or switch to the on-device Llama 3.2 tutor in the model picker."
@@ -173,8 +336,10 @@ object LlamaClient {
         curriculumContext: String = "",
         modelMode: ChatModelMode = ChatModelMode.GENERAL,
         customApiKey: String = "",
-        appContext: Context? = null
-    ): String = withContext(Dispatchers.IO) {
+        appContext: Context? = null,
+        /** Parent-controlled: when false, a dead AI surfaces an honest connection-required error instead of Socratic teaching. */
+        allowSocraticFallback: Boolean = true
+    ): ChatReply = withContext(Dispatchers.IO) {
         val apiKey = getApiKey(customApiKey)
         val langName = AppLanguage.fromCode(languageCode).displayName
         val lastUserMessage = conversationHistory.lastOrNull { it.first == "user" }?.second ?: ""
@@ -182,20 +347,22 @@ object LlamaClient {
         if (modelMode == ChatModelMode.LLAMA_LOCAL) {
             val ctx = appContext
             if (ctx != null) {
-                return@withContext LlamaLocalManager.generateLlamaResponse(
-                    context = ctx,
-                    prompt = lastUserMessage,
-                    systemPrompt = systemPrompt,
-                    schoolDistrict = schoolDistrict,
-                    stateOrProvince = stateOrProvince,
-                    country = country,
-                    standardTitle = standardTitle,
-                    languageCode = languageCode,
-                    conversationHistory = conversationHistory,
-                    curriculumContext = curriculumContext
+                return@withContext localEngineChatReply(
+                    LlamaLocalManager.generateLlamaResponse(
+                        context = ctx,
+                        prompt = lastUserMessage,
+                        systemPrompt = systemPrompt,
+                        schoolDistrict = schoolDistrict,
+                        stateOrProvince = stateOrProvince,
+                        country = country,
+                        standardTitle = standardTitle,
+                        languageCode = languageCode,
+                        conversationHistory = conversationHistory,
+                        curriculumContext = curriculumContext
+                    )
                 )
             }
-            return@withContext generateLocalSocraticReply(
+            return@withContext socraticChatReply(
                 lastUserMessage = lastUserMessage,
                 schoolDistrict = schoolDistrict,
                 stateOrProvince = stateOrProvince,
@@ -203,7 +370,8 @@ object LlamaClient {
                 standardTitle = standardTitle,
                 languageCode = languageCode,
                 conversationHistory = conversationHistory,
-                curriculumContext = curriculumContext
+                curriculumContext = curriculumContext,
+                allowSocraticFallback = allowSocraticFallback
             )
         }
 
@@ -214,20 +382,22 @@ object LlamaClient {
             val ctx = appContext
             if (ctx != null && LlamaLocalManager.isLlamaInstalled(ctx)) {
                 Log.i(TAG, "No cloud API key; routing ${modelMode.name} through the installed on-device Llama 3.2 model")
-                return@withContext LlamaLocalManager.generateLlamaResponse(
-                    context = ctx,
-                    prompt = lastUserMessage,
-                    systemPrompt = systemPrompt,
-                    schoolDistrict = schoolDistrict,
-                    stateOrProvince = stateOrProvince,
-                    country = country,
-                    standardTitle = standardTitle,
-                    languageCode = languageCode,
-                    conversationHistory = conversationHistory,
-                    curriculumContext = curriculumContext
+                return@withContext localEngineChatReply(
+                    LlamaLocalManager.generateLlamaResponse(
+                        context = ctx,
+                        prompt = lastUserMessage,
+                        systemPrompt = systemPrompt,
+                        schoolDistrict = schoolDistrict,
+                        stateOrProvince = stateOrProvince,
+                        country = country,
+                        standardTitle = standardTitle,
+                        languageCode = languageCode,
+                        conversationHistory = conversationHistory,
+                        curriculumContext = curriculumContext
+                    )
                 )
             }
-            return@withContext generateLocalSocraticReply(
+            return@withContext socraticChatReply(
                 lastUserMessage = lastUserMessage,
                 schoolDistrict = schoolDistrict,
                 stateOrProvince = stateOrProvince,
@@ -235,7 +405,8 @@ object LlamaClient {
                 standardTitle = standardTitle,
                 languageCode = languageCode,
                 conversationHistory = conversationHistory,
-                curriculumContext = curriculumContext
+                curriculumContext = curriculumContext,
+                allowSocraticFallback = allowSocraticFallback
             )
         }
 
@@ -268,18 +439,21 @@ object LlamaClient {
 
         try {
             val authHeader = if (apiKey.startsWith("Bearer ", ignoreCase = true)) apiKey else "Bearer $apiKey"
-            val response = service.createChatCompletion(authHeader, request)
-            apiErrorMessage(response, "generateChatReply")?.let { return@withContext it }
+            val response = withNetworkRetry { service.createChatCompletion(authHeader, request) }
+            apiErrorMessage(response, "generateChatReply")?.let {
+                return@withContext ChatReply(text = it, source = ChatReplySource.ERROR)
+            }
             val replyText = response.choices?.firstOrNull()?.message?.content?.trim()
             if (!replyText.isNullOrBlank()) {
-                return@withContext replyText
+                return@withContext ChatReply(text = replyText, source = ChatReplySource.CLOUD)
             }
             Log.w(TAG, "Hugging Face Llama 3.2 API returned no content; falling back to local Socratic engine.")
         } catch (e: Exception) {
-            Log.w(TAG, "Hugging Face Llama 3.2 API call failed, falling back to local Socratic engine: ${e.message}")
+            val kind = classifyNetworkError(e)
+            Log.w(TAG, "Hugging Face Llama 3.2 API call failed [$kind], falling back to local Socratic engine: ${safeMessage(e)}")
         }
 
-        generateLocalSocraticReply(
+        socraticChatReply(
             lastUserMessage = conversationHistory.lastOrNull { it.first == "user" }?.second ?: "",
             schoolDistrict = schoolDistrict,
             stateOrProvince = stateOrProvince,
@@ -287,7 +461,8 @@ object LlamaClient {
             standardTitle = standardTitle,
             languageCode = languageCode,
             conversationHistory = conversationHistory,
-            curriculumContext = curriculumContext
+            curriculumContext = curriculumContext,
+            allowSocraticFallback = allowSocraticFallback
         )
     }
 
@@ -308,7 +483,10 @@ object LlamaClient {
         country: String = "",
         standardTitle: String = "State Academic Standards",
         languageCode: String = "en-US",
-        customApiKey: String = ""
+        customApiKey: String = "",
+        lessonContext: LessonContext = LessonContext(),
+        /** Parent-controlled: when false, a dead live-voice AI surfaces an honest error instead of Socratic teaching. */
+        allowSocraticFallback: Boolean = true
     ): LiveVoiceTurnResult = withContext(Dispatchers.IO) {
         try {
             LlamaLiveApiClient.generateTurn(
@@ -324,6 +502,14 @@ object LlamaClient {
                 customApiKey = customApiKey
             )
         } catch (_: Exception) {
+            if (!allowSocraticFallback) {
+                return@withContext LiveVoiceTurnResult(
+                    transcriptText = AppLanguageDictionary.getString("ai_connection_required", languageCode),
+                    audioBase64 = null,
+                    curriculumCitation = "",
+                    source = ChatReplySource.ERROR
+                )
+            }
             val fallback = generateLocalSocraticReply(
                 lastUserMessage = userText ?: "Hello!",
                 schoolDistrict = schoolDistrict,
@@ -332,12 +518,14 @@ object LlamaClient {
                 standardTitle = standardTitle,
                 languageCode = languageCode,
                 conversationHistory = conversationHistory,
-                curriculumContext = curriculumContext
+                curriculumContext = curriculumContext,
+                lessonContext = lessonContext
             )
             LiveVoiceTurnResult(
                 transcriptText = fallback,
                 audioBase64 = null,
-                curriculumCitation = if (standardTitle.isNotBlank()) "Standard: $standardTitle" else ""
+                curriculumCitation = if (standardTitle.isNotBlank()) "Standard: $standardTitle" else "",
+                source = ChatReplySource.SOCRATIC_FALLBACK
             )
         }
     }
@@ -378,10 +566,12 @@ object LlamaClient {
 
         try {
             val authHeader = if (apiKey.startsWith("Bearer ", ignoreCase = true)) apiKey else "Bearer $apiKey"
-            val response = service.createChatCompletion(
-                authHeader,
-                LlamaChatRequest(messages = messages, temperature = 0.6f, maxTokens = 256)
-            )
+            val response = withNetworkRetry {
+                service.createChatCompletion(
+                    authHeader,
+                    LlamaChatRequest(messages = messages, temperature = 0.6f, maxTokens = 256)
+                )
+            }
             apiErrorMessage(response, "generateAdaptiveHint")?.let { return@withContext it }
             response.choices?.firstOrNull()?.message?.content?.trim()
                 ?: "Mistakes are how our brains make new connections! Take another look at the clues."
@@ -476,10 +666,12 @@ object LlamaClient {
 
         try {
             val authHeader = if (apiKey.startsWith("Bearer ", ignoreCase = true)) apiKey else "Bearer $apiKey"
-            val response = service.createChatCompletion(
-                authHeader,
-                LlamaChatRequest(messages = messages, temperature = 0.4f, maxTokens = 768)
-            )
+            val response = withNetworkRetry {
+                service.createChatCompletion(
+                    authHeader,
+                    LlamaChatRequest(messages = messages, temperature = 0.4f, maxTokens = 768)
+                )
+            }
             val text = response.choices?.firstOrNull()?.message?.content?.trim()
                 ?: "Curriculum synchronized from OER Commons Curated Collections (https://oercommons.org/curated-collections) across all K-12 grades for $schoolDistrict."
             DownloadedCurriculumResult(
@@ -490,12 +682,12 @@ object LlamaClient {
                 isOnlineSynced = true
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to download curriculum for locale", e)
+            Log.e(TAG, "Failed to download curriculum for locale [${classifyNetworkError(e)}]", e)
             DownloadedCurriculumResult(
                 officialSourceAgency = officialAgency,
                 officialSourceUrl = officialUrl,
                 gradesSummary = "Pre-K through High School (Grades 9-12)",
-                curriculumSummary = "Sync note: ${e.message}. Using offline curriculum based on OER Commons Curated Collections (https://oercommons.org/curated-collections) for $schoolDistrict ($stateOrProvince, $country) under $standardTitle.",
+                curriculumSummary = "Using offline curriculum based on OER Commons Curated Collections (https://oercommons.org/curated-collections) for $schoolDistrict ($stateOrProvince, $country) under $standardTitle.",
                 isOnlineSynced = false
             )
         }
@@ -511,7 +703,9 @@ object LlamaClient {
     ): String = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
         if (apiKey.isBlank()) {
-            return@withContext "Custom curriculum alignment verified for $district ($city, $state, $country)."
+            // Honest: without a key nothing was verified or synchronized.
+            return@withContext "Couldn't reach the curriculum service — no API key is set. " +
+                "District on file: $district ($city, $state, $country)."
         }
 
         val langName = AppLanguage.fromCode(languageCode).displayName
@@ -533,14 +727,17 @@ object LlamaClient {
 
         try {
             val authHeader = if (apiKey.startsWith("Bearer ", ignoreCase = true)) apiKey else "Bearer $apiKey"
-            val response = service.createChatCompletion(
-                authHeader,
-                LlamaChatRequest(messages = messages, temperature = 0.5f, maxTokens = 384)
-            )
+            val response = withNetworkRetry {
+                service.createChatCompletion(
+                    authHeader,
+                    LlamaChatRequest(messages = messages, temperature = 0.5f, maxTokens = 384)
+                )
+            }
             response.choices?.firstOrNull()?.message?.content?.trim()
-                ?: "$district ($city, $state) $grade curriculum synchronized."
+                ?: "The curriculum service returned no summary for $district ($city, $state)."
         } catch (_: Exception) {
-            "$district ($city, $state) $grade curriculum synchronized."
+            // Honest failure: never claim "synchronized" when the call failed.
+            "Couldn't reach the curriculum service for $district ($city, $state) — please check the connection and try again."
         }
     }
 
@@ -677,7 +874,8 @@ object LlamaClient {
         standardTitle: String = "",
         languageCode: String = "en-US",
         conversationHistory: List<Pair<String, String>> = emptyList(),
-        curriculumContext: String = ""
+        curriculumContext: String = "",
+        lessonContext: LessonContext = LessonContext()
     ): String {
         val raw = lastUserMessage.trim()
         val query = raw.lowercase()
@@ -776,6 +974,19 @@ object LlamaClient {
         }
 
         if (isExampleRequest) {
+            // Grounded example: teach from the actual on-screen material first.
+            val lessonPoints = lessonContext.points(2)
+            if (lessonPoints.isNotEmpty()) {
+                val lessonName = lessonContext.lessonTitle.ifBlank { "your current lesson" }
+                val bullets = lessonPoints.mapIndexed { i, p -> "${i + 1}. $p" }.joinToString("\n")
+                return """
+                    💡 **From "$lessonName":**
+                    
+                    $bullets
+                    
+                    Connecting new ideas to what you just saw on screen makes every concept stick! Which of these would you like to dig into together?
+                """.trimIndent()
+            }
             return """
                 💡 **Here is a Clear Real-World Example:**
                 
@@ -788,6 +999,22 @@ object LlamaClient {
         }
 
         if (isQuizRequest) {
+            // Grounded quiz: when lesson material is on screen, quiz on a REAL
+            // fact from it — never a generic placeholder question.
+            val lessonPoints = lessonContext.points(3)
+            if (lessonPoints.isNotEmpty()) {
+                val fact = lessonPoints.first()
+                val lessonName = lessonContext.lessonTitle.ifBlank { "this lesson" }
+                return """
+                    🎯 **Quick Check-In: "$lessonName"!**
+                    
+                    From what we just learned: **$fact**
+                    
+                    **Question**: In your own words, what does that tell us? Type your answer and I'll check it with you!
+                    
+                    *Reply with your best explanation — there are no wrong guesses here, only good thinking!*
+                """.trimIndent()
+            }
             return """
                 🎯 **Quick Learning Buddy Check-In Quiz!**
                 
@@ -822,6 +1049,27 @@ object LlamaClient {
                     "4. 🗺️ **Social Studies**: Map reading, community civics, government branches, and history.\n" +
                     "5. 💼 **Life Skills & SEL**: Emotional self-regulation (4-7-8 breathing) & time management.\n\n" +
                     "💡 *Research Assistant Tip*: Ask me any question on these topics to explore them step-by-step!"
+        }
+
+        // 4b. Lesson recap: teach back the actual on-screen material.
+        val isLessonRecap = query.contains("what are we learning") || query.contains("recap") ||
+                query.contains("summarize the lesson") || query.contains("summarise the lesson") ||
+                query.contains("what did we learn") || query.contains("lesson summary") ||
+                query.contains("what is this lesson about")
+
+        if (isLessonRecap && lessonContext.hasContent()) {
+            val lessonName = lessonContext.lessonTitle.ifBlank { "your current lesson" }
+            val subjectLine = if (lessonContext.subject.isNotBlank()) " (${lessonContext.subject})" else ""
+            val bullets = lessonContext.points(4).mapIndexed { i, p -> "${i + 1}. $p" }.joinToString("\n")
+            return """
+                📚 **Lesson Recap: "$lessonName"**$subjectLine
+                
+                Here are the key ideas from your lesson:
+                
+                $bullets
+                
+                💡 *Socratic nudge*: Pick the point that feels trickiest and ask me about it — we'll crack it together, one question at a time!
+            """.trimIndent()
         }
 
         // 5. Subject Specific Answers & Explanation Engines
@@ -946,11 +1194,13 @@ object LlamaClient {
         // 6. Test & Status verification queries
         val isTestCheck = query.contains("test") || query.contains("working") || query.contains("ready") || query.contains("status") || query.contains("are you working")
         if (isTestCheck) {
-            val distStr = if (schoolDistrict.isNotBlank()) " synchronized with $schoolDistrict ($standardTitle)" else ""
+            // Honest identity: this branch runs inside the offline template engine, so it
+            // must identify as the Socratic Teacher — never as the Llama 3.2 3B model.
+            val distStr = if (schoolDistrict.isNotBlank()) " I'm set up for $schoolDistrict ($standardTitle)." else ""
             return """
                 ✅ **I am fully working and ready to assist you!**
                 
-                I am your AI Learning Buddy powered by Llama 3.2 3B$distStr. I am active and ready for your questions!
+                I am your Socratic Teacher — the built-in offline learning engine that works without the internet.$distStr I answer from a built-in curriculum guide, not from the Llama AI model.
                 
                 **Here is what we can explore together:**
                 - 📐 **Math & Problem Solving**: Type any equation, fraction, or word problem for step-by-step guidance.
@@ -965,6 +1215,26 @@ object LlamaClient {
 
         // 7. Dynamic Response Generator for Any Custom Question
         val cleanQuestion = if (raw.length <= 60) raw.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() } else raw.take(55) + "..."
+
+        // Grounded fallback: when lesson material is on screen, anchor the
+        // Socratic guidance to a REAL fact from it instead of generic filler.
+        // Still honestly labeled — the Socratic Teacher, never Llama.
+        val groundedPoints = lessonContext.points(2)
+        if (groundedPoints.isNotEmpty()) {
+            val lessonName = lessonContext.lessonTitle.ifBlank { "your lesson" }
+            val fact = groundedPoints.first()
+            return """
+                💡 **Exploring "$cleanQuestion"** (from "$lessonName")
+                
+                Great question! Let's connect it to what you're learning:
+                
+                - **From your lesson**: **$fact**
+                - **Think about it**: How might that fact help answer your question? What is one connection you can already see?
+                - **Your turn**: Tell me your best guess — we'll build on it together, one step at a time!
+                
+                *I'm your Socratic Teacher, teaching from your on-screen lesson material.*
+            """.trimIndent()
+        }
 
         return """
             💡 **Exploring "$cleanQuestion"**

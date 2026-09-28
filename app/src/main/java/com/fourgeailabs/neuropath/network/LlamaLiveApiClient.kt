@@ -1,6 +1,7 @@
 package com.fourgeailabs.neuropath.network
 
 import android.util.Log
+import com.fourgeailabs.neuropath.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -50,15 +51,22 @@ object LlamaLiveApiClient {
             modelMode = ChatModelMode.GENERAL,
             customApiKey = customApiKey
         )
-        Log.i(
-            TAG,
-            "Live voice turn produced via " +
-                if (LlamaClient.hasValidApiKey(customApiKey)) "cloud Llama 3.2 3B" else "offline Socratic engine"
-        )
+        if (BuildConfig.DEBUG) {
+            Log.i(
+                TAG,
+                "Live voice turn produced via " + when (reply.source) {
+                    ChatReplySource.CLOUD -> "cloud Llama 3.2 3B"
+                    ChatReplySource.LOCAL_MODEL -> "on-device Llama 3.2"
+                    ChatReplySource.SOCRATIC_FALLBACK -> "offline Socratic engine"
+                    ChatReplySource.ERROR -> "error notice"
+                }
+            )
+        }
         LiveVoiceTurnResult(
-            transcriptText = reply,
+            transcriptText = reply.text,
             audioBase64 = null,
-            curriculumCitation = if (standardTitle.isNotBlank()) "Aligned with $standardTitle" else ""
+            curriculumCitation = if (standardTitle.isNotBlank()) "Aligned with $standardTitle" else "",
+            source = reply.source
         )
     }
 }

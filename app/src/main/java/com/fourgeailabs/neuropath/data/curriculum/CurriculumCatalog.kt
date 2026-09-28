@@ -17,7 +17,22 @@ object CurriculumCatalog {
         themeWorldId: String = "dino",
         country: String = "United States"
     ): List<FullLesson> {
-        val all = getMasterCurriculum(themeWorldId, country)
+        return getLessonsForSubjectAndGrade(
+            getMasterCurriculum(themeWorldId, country),
+            subject,
+            gradeLevel
+        )
+    }
+
+    /**
+     * Pure filter over a prebuilt lesson list (e.g. a profile's offline pack).
+     * Same tier-fallback rules as the catalog-backed overload above.
+     */
+    fun getLessonsForSubjectAndGrade(
+        all: List<FullLesson>,
+        subject: EducationalSubject,
+        gradeLevel: GradeLevel
+    ): List<FullLesson> {
         val exactMatches = all.filter { it.subject == subject && it.gradeLevel == gradeLevel }
         if (exactMatches.isNotEmpty()) return exactMatches
 

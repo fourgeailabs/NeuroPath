@@ -87,7 +87,6 @@ class LlamaLoadHonestyTest {
         LlamaLocalManager.MODEL_LOAD_TIMEOUT_MS = 5_000L
         LlamaLocalManager.WARMUP_TIMEOUT_MS = 1_000L
         LlamaLocalManager.GENERATION_TIMEOUT_MS = 5_000L
-        LlamaLocalManager.ACCELERATOR_TIMEOUT_MS = 5_000L
         fake = FakeRuntime()
         LlamaLocalManager.llamaRuntime = fake
     }
@@ -99,7 +98,6 @@ class LlamaLoadHonestyTest {
         LlamaLocalManager.MODEL_LOAD_TIMEOUT_MS = 5 * 60 * 1000L
         LlamaLocalManager.WARMUP_TIMEOUT_MS = 3 * 60 * 1000L
         LlamaLocalManager.GENERATION_TIMEOUT_MS = 5 * 60 * 1000L
-        LlamaLocalManager.ACCELERATOR_TIMEOUT_MS = 8 * 60 * 1000L
         modelFile.delete()
     }
 
@@ -175,7 +173,11 @@ class LlamaLoadHonestyTest {
 
         assertTrue(
             "generation failure must surface as a safe error message",
-            reply.contains("Local inference failed safely")
+            reply.contains("I couldn't answer that")
+        )
+        assertFalse(
+            "raw native exception text must never reach the chat",
+            reply.contains("decode exploded")
         )
     }
 }

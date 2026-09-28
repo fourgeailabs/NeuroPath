@@ -67,6 +67,8 @@ import com.fourgeailabs.neuropath.ui.components.FourSevenEightBreathingVisualize
 import com.fourgeailabs.neuropath.util.rememberReducedMotion
 import com.fourgeailabs.neuropath.ui.t
 import com.fourgeailabs.neuropath.ui.tf
+import com.fourgeailabs.neuropath.ui.components.BuddyAvatar
+import com.fourgeailabs.neuropath.ui.components.BuddyPose
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,15 +97,7 @@ fun BreathingGuideScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(34.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🧘", fontSize = 18.sp)
-                            }
-                        }
+                        BuddyAvatar(themeId = "wildlife", pose = BuddyPose.COMFORTING, size = 34.dp)
                         Column {
                             Text(
                                 t("4_7_8_breathing_guide"),
